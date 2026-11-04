@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rank Brain</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #000; color: #fff; font-family: Impact, "Arial Black", sans-serif; padding: 6vh 6vw; }
+  h1 { font-size: clamp(36px, 9vw, 72px); color: #ffe500; transform: rotate(-2deg); margin-bottom: 4vh; }
+  h2 { font-family: "Courier New", monospace; font-size: 14px; text-transform: uppercase; opacity: .7; margin: 3vh 0 1vh; }
+  a { display: block; color: #000; background: #fff; text-decoration: none; font-size: 22px; padding: 14px 18px;
+      margin-bottom: 8px; border: 3px solid #000; box-shadow: 5px 5px 0 #ff2d78; max-width: 520px; }
+  a:hover { background: #ffe500; }
+  a small { display: block; font-family: "Courier New", monospace; font-size: 12px; margin-top: 4px; }
+  #counts { font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6; margin-top: 4vh; opacity: .8; }
+</style>
+</head>
+<body>
+<h1>RANK BRAIN</h1>
+<h2>Ranking screens (one per category)</h2>
+<div id="screens"></div>
+<h2>For visitors' phones</h2>
+<a href="feed.html">RankFeed <small>/feed.html — the live news feed</small></a>
+<h2>For you</h2>
+<a href="admin.html">Show control <small>/admin.html — switch between sequence 1 and 2</small></a>
+<div id="counts">loading…</div>
+<script>
+fetch("api/state").then(r => r.json()).then(s => {
+  const cats = s.categories.filter(c => !c.virtual);
+  document.getElementById("screens").innerHTML = cats.map(c =>
+    `<a href="ranking.html?cat=${c.name}&kiosk=1">${c.label}
+       <small>/ranking.html?cat=${c.name}&amp;kiosk=1</small></a>`).join("") +
+    `<a href="ranking.html">All categories with switch <small>/ranking.html</small></a>`;
+  document.getElementById("counts").innerHTML = cats.map(c =>
+    `${c.label}: ${c.entries.length + c.pool.length + c.hovering.length} images in public/images/${c.name}/`).join("<br>");
+}).catch(() => document.getElementById("counts").textContent = "server not reachable");
+</script>
+</body>
+</html>

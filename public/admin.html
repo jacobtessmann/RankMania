@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Show Control</title>
+<style>
+  :root { --ink: #000; --paper: #fff; --grey: #d9d9d9; --blue: #1010ff; --ok: #00c853; --warn: #ff3b30; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--ink); color: var(--paper); font-family: "Courier New", monospace; padding: 24px 16px 48px; }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-family: Impact, "Arial Black", sans-serif; font-weight: 400; font-size: 40px; margin-bottom: 20px; }
+  label { display: block; font-size: 13px; text-transform: uppercase; opacity: .7; margin-bottom: 6px; }
+  input { width: 100%; font: inherit; font-size: 18px; padding: 12px; border: 0; background: var(--grey); color: var(--ink); }
+  .btns { display: grid; gap: 10px; margin: 22px 0; }
+  button { font: 400 22px Impact, "Arial Black", sans-serif; padding: 18px; border: 0; cursor: pointer;
+           text-transform: uppercase; letter-spacing: .03em; background: var(--paper); color: var(--ink); }
+  button.mix { background: var(--blue); color: var(--paper); }
+  button small { display: block; font: 12px "Courier New", monospace; text-transform: none; margin-top: 4px; opacity: .8; }
+  button:disabled { opacity: .35; cursor: default; }
+  #msg { min-height: 1.4em; margin-bottom: 18px; }
+  #msg.err { color: var(--warn); } #msg.ok { color: var(--ok); }
+  .card { border: 2px solid #333; padding: 14px; }
+  .phase { font: 400 26px Impact, "Arial Black", sans-serif; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 5px 0; border-top: 1px solid #222; }
+  td:not(:first-child) { text-align: right; }
+  .active td:first-child::before { content: "● "; color: var(--ok); }
+  #auto { margin-top: 10px; color: #ffe500; }
+</style>
+</head>
+<body>
+<main>
+  <h1>SHOW CONTROL</h1>
+  <label for="key">Password</label>
+  <input id="key" type="password" autocomplete="current-password" placeholder="ADMIN_KEY (default: rankbrain)">
+  <div class="btns">
+    <button class="mix" data-action="mix">Start sequence 2 · Mix
+      <small>All screens clear, then the mix fills the inventions screen</small></button>
+    <button data-action="separate">Restart sequence 1 · Separate
+      <small>All screens clear and every category starts again from empty</small></button>
+  </div>
+  <div id="msg"></div>
+  <div class="card">
+    <div class="phase" id="phase">…</div>
+    <table id="lists"></table>
+    <div id="auto"></div>
+  </div>
+</main>
+<script>
+const base = (new URLSearchParams(location.search).get("server") || "").replace(/\/+$/, "");
+const $ = (id) => document.getElementById(id);
+const NAMES = { separate: "Sequence 1 · Separate", mix: "Sequence 2 · Mix", clearing: "Clearing…" };
+let autoAt = null, offset = 0;
+
+try { $("key").value = localStorage.getItem("rankKey") || ""; } catch {}
+
+document.querySelectorAll("button[data-action]").forEach((b) => (b.onclick = async () => {
+  const key = $("key").value;
+  try { localStorage.setItem("rankKey", key); } catch {}
+  document.querySelectorAll("button").forEach((x) => (x.disabled = true));
+  try {
+    const r = await fetch(base + "/api/control", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, action: b.dataset.action }),
+    });
+    const j = await r.json();
+    $("msg").className = j.ok ? "ok" : "err";
+    $("msg").textContent = j.ok ? "Done. The screens are switching." : j.error;
+  } catch {
+    $("msg").className = "err";
+    $("msg").textContent = "Server not reachable.";
+  }
+  setTimeout(() => document.querySelectorAll("button").forEach((x) => (x.disabled = false)), 1500);
+  poll();
+}));
+
+async function poll() {
+  try {
+    const s = await (await fetch(base + "/api/status", { cache: "no-store" })).json();
+    offset = s.now - Date.now();
+    autoAt = s.autoMixAt;
+    $("phase").textContent = NAMES[s.phase] || s.phase;
+    $("lists").innerHTML = "<tr><td></td><td>ranked</td><td>hovering</td><td>waiting</td></tr>" +
+      s.lists.map((l) => `<tr class="${l.active ? "active" : ""}"><td>${l.label}</td><td>${l.ranked}</td><td>${l.hovering}</td><td>${l.waiting}</td></tr>`).join("");
+  } catch {
+    $("phase").textContent = "Server not reachable";
+  }
+}
+setInterval(poll, 2000);
+setInterval(() => {
+  const left = autoAt ? Math.ceil((autoAt - (Date.now() + offset)) / 1000) : 0;
+  $("auto").textContent = left > 0 ? `All lists are full. The mix starts automatically in ${left} s.` : "";
+}, 250);
+poll();
+</script>
+</body>
+</html>
