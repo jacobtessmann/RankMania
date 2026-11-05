@@ -1,12 +1,12 @@
 // ════════════════════════════════════════════════════════════════
-//  RANK BRAIN — the central server
+//  RANKMANIA — the central server
 //
 //  The show has two sequences:
 //   1. SEPARATE  every category fills its own screen (students, inventions, konzerne)
-//   2. MIX       all screens clear, then the inventions screen fills up with a mix of
-//                all three categories; the other screens stay empty
-//  In both, new entries hover up and down for a few seconds (up to 3 at once) before
-//  they land in a tier, and ranked entries keep drifting up and down.
+//   2. MIX       all screens clear, then every image of all three categories is dealt
+//                to one of the three screens at random, so each screen shows a mix
+//  In both, new entries hover up and down for a few seconds before they land in a tier,
+//  and ranked entries keep drifting up and down.
 //
 //  Switch sequences automatically (AUTO_MIX_AFTER_MS) or by hand on /admin.html.
 //  Every screen and phone receives the same events, so they stay in sync.
@@ -54,11 +54,10 @@ const CATEGORIES = [
   },
 ];
 
-// ── Sequence 2: everything mixed, shown on the screen of `screen`
+// ── Sequence 2: everything mixed. Every image goes to exactly one of the three screens;
+//    each screen gets a random third of every category. Same settings for all three screens.
 const MIX = {
-  id: "mix",
   label: "Everything",
-  screen: "inventions",
   title: "Ranking {n} Students, Inventions and Konzerne",
   source: "",
   headline: "{W} Just Beat {L}. Yes, We Are Comparing These Now.",
@@ -105,7 +104,10 @@ const clients = new Set(); // { res, lite }
 const files = {}; // category → [file names]
 const lists = {};
 for (const c of CATEGORIES) lists[c.id] = newList(c);
-lists.mix = newList({ ...MIX, virtual: true });
+// one mixed list per screen: "mix-students", "mix-inventions", "mix-konzerne"
+for (const c of CATEGORIES) lists[`mix-${c.id}`] = newList({ ...MIX, id: `mix-${c.id}`, screen: c.id, virtual: true });
+const mixLists = () => CATEGORIES.map((c) => lists[`mix-${c.id}`]);
+const mixAssign = new Map(); // image id → screen, for the mix
 const allLists = () => Object.values(lists);
 
 function newList(c) {
@@ -115,6 +117,8 @@ function newList(c) {
 const clamp = (v) => Math.max(1, Math.min(100, Math.round(v)));
 const rand = (a, b) => a + Math.random() * (b - a);
 const tierOf = (score) => TIERS.find((t) => score >= t.min).id;
+// a move past the top or bottom bounces back, so S and F don't fill up over time
+const bounce = (v) => clamp(v > 100 ? 200 - v : v < 1 ? 2 - v : v);
 const rollScore = () => clamp(Math.random() * 105); // a random landing spot: any tier is possible
 
 // "anna_mueller.jpg" → "Anna Mueller", "IBM.png" stays "IBM", "Hans-Peter_Müller.jpg" → "Hans-Peter Müller"
@@ -173,7 +177,6 @@ function snapshot() {
     now: Date.now(),
     seq,
     phase,
-    mixScreen: MIX.screen,
     parallel: PARALLEL,
     tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
     categories: allLists().map((l) => ({
@@ -183,6 +186,7 @@ function snapshot() {
       source: l.source,
       headline: l.headline,
       virtual: !!l.virtual,
+      screen: l.screen || l.id,
       entries: entriesOf(l),
       pool: poolOf(l),
       hovering: [...l.hovering.values()].map((h) => hoverPublic(l, h)),
@@ -195,7 +199,7 @@ function snapshot() {
 // ════════════════ IMAGE FOLDERS ════════════════
 function wantedItems(list) {
   const cats = list.virtual ? CATEGORIES : CATEGORIES.filter((c) => c.id === list.id);
-  return cats.flatMap((c) =>
+  const items = cats.flatMap((c) =>
     (files[c.id] || []).map((f) => ({
       id: list.virtual ? `${c.id}/${f}` : f,
       title: titleFromFile(f),
@@ -203,6 +207,26 @@ function wantedItems(list) {
       named: !!c.names,
     }))
   );
+  if (!list.virtual) return items;
+  // the mix: only the images dealt to this screen (new images go to the emptiest screen)
+  for (const it of items) {
+    if (mixAssign.has(it.id)) continue;
+    const load = {};
+    for (const scr of mixAssign.values()) load[scr] = (load[scr] || 0) + 1;
+    const scr = CATEGORIES.map((c) => c.id).sort((a, b) => (load[a] || 0) - (load[b] || 0))[0];
+    mixAssign.set(it.id, scr);
+  }
+  return items.filter((it) => mixAssign.get(it.id) === list.screen);
+}
+
+// deal every image to one screen: each category is shuffled and dealt round the three screens
+function dealMix() {
+  mixAssign.clear();
+  const screens = CATEGORIES.map((c) => c.id);
+  let k = Math.floor(Math.random() * screens.length);
+  for (const c of CATEGORIES) {
+    for (const f of shuffle([...(files[c.id] || [])])) mixAssign.set(`${c.id}/${f}`, screens[k++ % screens.length]);
+  }
 }
 
 function readFolders() {
@@ -326,7 +350,7 @@ function drift(list) {
     const big = Math.random() < BIG_JUMP_CHANCE * w;
     const size = big ? 25 + Math.random() * (BIG_JUMP_MAX - 25) : 1 + Math.random() * DRIFT_MAX * w;
     const delta = Math.round(size) * (Math.random() < 0.5 ? -1 : 1);
-    e.score = clamp(e.score + delta);
+    e.score = bounce(e.score + delta);
     const after = entriesOf(list);
     const now = after.find((x) => x.id === e.id);
     if (now.score !== was.score) {
@@ -374,15 +398,16 @@ function switchTo(next) {
 
   setTimeout(() => {
     phase = next;
+    if (next === "mix") dealMix();
     allLists().forEach(reset);
-    const run = next === "mix" ? [lists.mix] : CATEGORIES.map((c) => lists[c.id]);
+    const run = next === "mix" ? mixLists() : CATEGORIES.map((c) => lists[c.id]);
     run.forEach(start);
     broadcast(snapshot());
 
     // the feed announces the new round, in the mix with a student next to something else
     let sample;
     if (next === "mix") {
-      const items = shuffle([...lists.mix.items.values()].map(brief));
+      const items = shuffle(mixLists().flatMap((l) => [...l.items.values()]).map(brief));
       const a = items.find((e) => e.named);
       const b = items.find((e) => !e.named);
       sample = a && b ? [a, b] : items.slice(0, 2);
@@ -460,7 +485,7 @@ function status() {
     autoMixAt,
     lists: allLists().map((l) => ({
       name: l.id,
-      label: l.label,
+      label: l.virtual ? `Mix on the ${lists[l.screen].label} screen` : l.label,
       active: l.active,
       ranked: ranking(l).length,
       hovering: l.hovering.size,
@@ -556,7 +581,7 @@ CATEGORIES.forEach((c) => start(lists[c.id]));
 setInterval(rescan, RESCAN_MS);
 
 server.listen(PORT, () => {
-  console.log(`Rank brain running on http://localhost:${PORT}`);
+  console.log(`Rankmania running on http://localhost:${PORT}`);
   for (const c of CATEGORIES) {
     console.log(`  ${c.label.padEnd(20)} ${String(files[c.id].length).padStart(3)} images  ← public/images/${c.id}/`);
   }

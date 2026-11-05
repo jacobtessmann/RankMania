@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════
 //  shared.js — every display (ranking screen, phone feed, …) loads this.
-//  It connects to the rank brain and hands the live events to the page.
+//  It connects to the Rankmania server and hands the live events to the page.
 //
 //  Where is the server?
 //   · Pages served BY the server need nothing (same address).
@@ -32,7 +32,7 @@
   /**
    * connectDisplay({ lite, onSnapshot, onHover, onCommit, onDrift, onRoster, onPhase, onStatus })
    *  lite: true        phones: smaller stream without full lists and hover events
-   *  onSnapshot(snap)  full state: snap.phase, snap.mixScreen, snap.categories[] =
+   *  onSnapshot(snap)  full state: snap.phase, snap.categories[] (mixed lists: virtual, screen) =
    *                    {name,label,title,source,headline,virtual,entries[],pool[],hovering[],waiting}
    *                    (also sent again after every sequence change)
    *  onHover(ev)       a new entry starts hovering: ev.entry, ev.score, ev.tier, ev.slot, ev.startedAt, ev.landAt

@@ -81,7 +81,7 @@
 <script>
 const MAX_POSTS = 80;
 const TEMPLATE_SHARE = 0.25;   // share of move posts that use the category's main headline
-const BEAT_MS = 750;          // a new article appears every 2.5 s, like a steady beat
+const BEAT_MS = 2500;          // a new article appears every 2.5 s, like a steady beat
                                // (the newest change wins, older waiting ones are skipped)
 const REPLAY_SHARE = 0.5;      // when the page opens: share of past changes shown as articles
 
@@ -267,14 +267,14 @@ function movePost(ev, W, L, promoted, demoted) {
   else if (promoted && Math.random() < 0.6) { tpl = pick(PROMOTED); v.T = promoted; pill = `Tier ${promoted} ▲`; }
   else if (demoted && Math.random() < 0.6) { tpl = pick(DEMOTED); v.T = demoted; pill = `Tier ${demoted} ▼`; }
   else if (headlines[ev.category] && Math.random() < TEMPLATE_SHARE) tpl = headlines[ev.category];
-  else tpl = pick([...HEADLINES._any, ...(HEADLINES[ev.category] || [])]);
+  else tpl = pick([...HEADLINES._any, ...(HEADLINES[group(ev.category)] || [])]);
 
   article(ev, pill, fill(tpl, v), W, L, fill(pick(CAPTIONS), v), ["up", "down"]);
 }
 
 function add(post, cat) {
   document.getElementById("waiting")?.remove();
-  post.dataset.cat = cat;
+  post.dataset.cat = group(cat);
   applyFilter(post);
   feed.prepend(post);
   while (feed.children.length > MAX_POSTS) feed.lastChild.remove();
@@ -321,7 +321,12 @@ function setFilter(cat) {
   feed.querySelectorAll(".post").forEach(applyFilter);
   document.querySelectorAll("#nav button").forEach((b) => b.setAttribute("aria-pressed", (b.dataset.cat || null) === cat));
 }
-function buildNav(cats) {
+// the three mixed lists ("mix-students", …) count as one: "mix" = Everything
+const group = (cat) => (cat && cat.startsWith("mix-") ? "mix" : cat);
+
+function buildNav(all) {
+  const cats = all.filter((c) => !c.virtual);
+  if (all.some((c) => c.virtual)) cats.push({ name: "mix", label: "Everything" });
   const nav = document.getElementById("nav");
   nav.innerHTML = "";
   [{ name: null, label: "All" }, ...cats].forEach((c) => {

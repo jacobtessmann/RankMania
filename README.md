@@ -1,4 +1,4 @@
-# Rank Brain
+# Rankmania
 
 One central server computes the rankings. Every screen and phone just shows what the server says, so they are always in sync.
 
@@ -108,11 +108,11 @@ Each entry looks like `{ id, title, image, score, tier, rank }`.
 
 Every start of the server begins with **empty tiers**.
 
-**Sequence 1 · Separate:** each category fills its own screen. A new entry leaves the "…" row and **hovers** up and down the dashed track on the right for 3.5–6.5 s, wild at first, then calmer, then it locks in (blue outline) and drops into its tier. Up to **3 entries hover at the same time**. Ranked entries keep drifting up and down (▲/▼).
+**Sequence 1 · Separate:** each category fills its own screen. A new entry leaves the "…" row and **hovers** up and down the dashed track on the right for 2.5–4.5 s, wild at first, then calmer, then it locks in (blue outline) and drops into its tier. One entry hovers at a time; as soon as it lands, the next one starts (set `PARALLEL` higher for several at once). Ranked entries keep drifting up and down (▲/▼).
 
 **Switch:** all pictures fall off every screen.
 
-**Sequence 2 · Mix:** the Historic Inventions screen fills up with all images of all three categories mixed together, the same way. The Students and Konzerne screens stay empty.
+**Sequence 2 · Mix:** every image of all three categories is dealt to exactly one of the three screens at random (each screen gets about a third of every category), so all three screens fill up with a mix, the same way.
 
 The switch happens automatically 30 s after all three lists are full, or by hand on **/admin.html** (buttons "Start sequence 2" and "Restart sequence 1"). The admin password is `rankbrain` unless you set another one: on Render go to your service → **Environment** → add `ADMIN_KEY` with your own password. Without this, anyone who finds the admin page can switch your show.
 
@@ -121,16 +121,18 @@ Settings at the top of `server.js`:
 | Setting | What it does |
 |---|---|
 | `names` per category | write names on the tierlist pictures (only Students: `true`) |
-| `MIX` | title of the mixed list and on which screen it runs (`screen: "inventions"`) |
-| `PARALLEL` | how many entries hover at once (3) |
-| `START_MIN_MS/MAX_MS` | how often a new entry starts hovering |
+| `MIX` | title of the mixed lists (the same on all three screens) |
+| `PARALLEL` | how many entries hover on the right at once (1) |
+| `NEXT_GAP_MS` | pause between one landing and the next one starting to hover |
 | `HOVER_MIN_MS/MAX_MS` | how long an entry hovers before it lands |
-| `DRIFT_MIN_MS/MAX_MS`, `DRIFT_MAX` | how often and how far ranked entries move |
+| `DRIFT_MIN_MS/MAX_MS`, `DRIFT_MAX` | how often and how far ranked entries move at the start |
+| `BIG_JUMP_CHANCE`, `BIG_JUMP_MAX` | how often an entry jumps 2–3 tiers at once, and how far |
+| `WILDER_AFTER_MS`, `WILDER_FACTOR` | the drift gets this much wilder over this time (`1` = stays the same) |
 | `CLEAR_MS` | how long the clearing between the sequences takes |
 | `AUTO_MIX_AFTER_MS` | auto switch after all lists are full (`null` = only by hand) |
 | `TIERS` | score borders of S A B C D F |
 
-On the ranking screen (`ranking.html`), `STEP_MS`, `SWING` and `SETTLE` control how nervous the hovering looks.
+On the ranking screen (`ranking.html`), `STEP_MS`, `SWING` and `SETTLE` control how nervous the hovering looks. `TILE_SIZE` sets a fixed icon size in pixels (0 = automatic); the automatic size is chosen once per sequence so that one tier can hold `TIER_SHARE` (32%) of all entries.
 
 ## 6. The tierlist screen (ranking.html)
 

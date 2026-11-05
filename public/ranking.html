@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Tierlist Live</title>
+<title>Rankmania</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Courier+Prime&display=swap" rel="stylesheet">
@@ -155,6 +155,8 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
 <script src="shared.js"></script>
 <script>
 const GAP = 2;        // space between pictures (px)
+const TILE_SIZE = 0;  // icon size in px, e.g. 70 — or 0 = automatic (as big as the list allows)
+const TIER_SHARE = 0.32; // automatic size: big enough that one tier can hold this share of all entries
 const STEP_MS = 520;  // how often a hovering entry jumps to a new height
 const SWING = 60;     // how wild the hovering is at the start (score points)
 const SETTLE = 0.78;  // after this share of the hover time it stays at its final height
@@ -162,7 +164,6 @@ const SETTLE = 0.78;  // after this share of the hover time it stays at its fina
 // ── State ──
 let TIER_IDS = [];
 let phase = "separate";
-let mixScreen = "inventions";
 let parallel = 3;
 const lists = {};        // list id → { label, title, source, virtual, entries[], pool[], hovering[] }
 const cards = new Map(); // entry id → { el, shown }   (ranked + waiting)
@@ -178,7 +179,7 @@ const clamp = (v) => Math.max(1, Math.min(100, Math.round(v)));
 // which list this screen shows right now (null = empty screen)
 function shownId() {
   if (phase === "clearing") return null;
-  if (phase === "mix") return screen === mixScreen ? "mix" : null;
+  if (phase === "mix") return `mix-${screen}`; // this screen's share of the mix
   return screen;
 }
 const shown = () => lists[shownId()] || null;
@@ -293,7 +294,7 @@ function railGeometry() {
 function layout() {
   renderHeader();
   const L = shown();
-  $("pool-row").hidden = !(L && L.pool.length);
+  $("pool-row").hidden = !L; // stays even when empty, so the icon size never changes
   $("rail").classList.toggle("on", !!L);
   const app = $("app");
   if (L) {
@@ -318,25 +319,36 @@ function layout() {
   const rows = Object.fromEntries(TIER_IDS.map((t) => [t, []]));
   entries.forEach((e) => (rows[e.tier] || rows[TIER_IDS.at(-1)]).push(e));
 
-  // one picture size for all tiers, so the list looks even (like TierMaker)
-  let size = Infinity;
-  for (const t of TIER_IDS) {
-    if (!rows[t].length) continue;
-    const box = $(`items-${t}`).getBoundingClientRect();
-    size = Math.min(size, fitSize(box.width, box.height, rows[t].length));
-  }
-  for (const t of TIER_IDS) placeRow(`items-${t}`, rows[t], size, t);
-
-  // the "…" row has its own size, it can be very full at the start
-  if (pool.length) {
-    const box = $("items-pool").getBoundingClientRect();
-    placeRow("items-pool", pool, fitSize(box.width, box.height, pool.length), "pool");
+  // one fixed icon size for the whole sequence; only a tier that is too full shrinks, alone
+  if (L) {
+    const sz = tileSizes(L);
+    for (const t of TIER_IDS) {
+      if (!rows[t].length) continue;
+      const box = $(`items-${t}`).getBoundingClientRect();
+      placeRow(`items-${t}`, rows[t], Math.min(sz.tier, fitSize(box.width, box.height, rows[t].length)), t);
+    }
+    placeRow("items-pool", pool, sz.pool, "pool");
   }
   hovers.forEach(placeHover);
 
   const empty = $("empty");
   empty.hidden = !L || !!(entries.length || pool.length || L.hovering.length);
   empty.innerHTML = `Noch keine Bilder.<br>Lege quadratische Bilder in den Ordner<br>public/images/${screen}/`;
+}
+
+// the icon size is chosen once (from how many entries this list has in total) and then kept
+let fixed = { key: "" };
+function tileSizes(L) {
+  const total = L.entries.length + L.pool.length + L.hovering.length;
+  const box = $(`items-${TIER_IDS[0]}`).getBoundingClientRect();
+  const pbox = $("items-pool").getBoundingClientRect();
+  const key = [shownId(), total, Math.round(box.width), Math.round(box.height)].join("|");
+  if (fixed.key !== key) {
+    const tier = TILE_SIZE || fitSize(box.width, box.height, Math.max(1, Math.ceil(total * TIER_SHARE)));
+    const pool = Math.min(tier, fitSize(pbox.width, pbox.height, Math.max(1, total)));
+    fixed = { key, tier, pool };
+  }
+  return fixed;
 }
 
 function placeRow(boxId, list, size, tier) {
@@ -473,6 +485,7 @@ function landHover(ev) {
   const c = cards.get(id);
   if (!c) return;
   c.el.classList.add("fresh");
+  setTimeout(() => { flag(c.el, "stamp", 550); pop(c.el, "NEU", "new"); }, 500);
   setTimeout(() => c.el.classList.remove("fresh"), 1500);
 }
 
@@ -501,7 +514,6 @@ connectDisplay({
     const first = !TIER_IDS.length;
     TIER_IDS = snap.tiers.map((t) => t.id);
     tierMins = snap.tiers.map((t, i) => (i === snap.tiers.length - 1 ? -Infinity : t.min));
-    mixScreen = snap.mixScreen;
     parallel = snap.parallel || 3;
     const before = shownId();
     phase = snap.phase;

@@ -1,5 +1,5 @@
 {
-  "name": "rank-brain",
+  "name": "rankmania",
   "version": "1.0.0",
   "description": "Central ranking server with live tierlist screens and a phone news feed",
   "main": "server.js",
