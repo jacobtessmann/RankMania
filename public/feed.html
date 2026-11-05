@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#ffffff">
 <title>RankFeed</title>
 <style>
-  :root { --red: #ee3322; --yellow: #ffee00; --ink: #222; --grey: #757575; --line: #e8e8e8;
+  :root { --red: #ee3322; --yellow: #ffee00; --ink: #222; --grey: #757575; --line: #e8e8e8; --soft: #f6f6f6;
           --tier-S: #ff7f7f; --tier-A: #ffff7f; --tier-B: #7fff7f; --tier-C: #7fffff; --tier-D: #ff7fff; --tier-F: #9b30ff; }
   * { box-sizing: border-box; }
   body { margin: 0; background: #fff; color: var(--ink); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
@@ -21,24 +21,52 @@
   .bdg.k { background: var(--ink); }
   main { max-width: 680px; margin: 0 auto; padding: 0 18px 60px; }
   .edition { font-size: 12px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; padding: 18px 0 6px; margin: 0; }
-  .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; color: var(--ink); }
-
-  /* home: the three articles */
-  .card { display: grid; grid-template-columns: 38% 1fr; gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--line);
-          text-decoration: none; color: inherit; align-items: start; }
-  .card img, .card .ph { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #eee; }
+  .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; }
   .cat { font-size: 12px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .5px; }
   .pill { display: inline-block; background: var(--yellow); color: var(--ink); font-weight: 900; font-size: 10px;
           padding: 2px 7px; border-radius: 3px; text-transform: uppercase; margin-left: 6px; vertical-align: 1px; }
-  .card h2 { margin: 6px 0 0; font-size: 21px; line-height: 1.15; font-weight: 900; letter-spacing: -.3px; }
+
+  /* clickbait thumbnail: big emojis on a loud background, no contestants */
+  .thumb { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg); display: block; }
+  .thumb .e { position: absolute; line-height: 1; filter: drop-shadow(0 4px 0 rgba(0,0,0,.18)); }
+  .thumb .e1 { font-size: 4.6em; left: 8%; top: 18%; transform: rotate(-12deg); }
+  .thumb .e2 { font-size: 3.2em; right: 10%; top: 10%; transform: rotate(10deg); }
+  .thumb .e3 { font-size: 3.6em; right: 22%; bottom: 6%; transform: rotate(-4deg); }
+  .thumb .ring { position: absolute; left: 4%; top: 10%; width: 46%; aspect-ratio: 1; border: .32em solid #ff1e1e; border-radius: 50%; }
+  .thumb .arrow { position: absolute; left: 47%; top: 40%; font-size: 3em; transform: rotate(-15deg); }
+  .thumb .num { position: absolute; left: 0; bottom: 0; background: var(--yellow); color: #000; font-weight: 900;
+                font-size: 1.15em; padding: .25em .5em; letter-spacing: -.5px; }
+  .thumb .q { position: absolute; right: 6%; top: 46%; font-size: 3.4em; font-weight: 900; color: #fff;
+              text-shadow: 0 3px 0 #000; transform: rotate(8deg); }
+
+  /* home */
+  .card { display: block; padding: 20px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+  .card .thumb { font-size: clamp(14px, 4.4vw, 22px); margin-bottom: 12px; }
+  .card h2 { margin: 6px 0 6px; font-size: 25px; line-height: 1.12; font-weight: 900; letter-spacing: -.4px; }
+  .card .sub { margin: 0; font-size: 15px; color: var(--grey); line-height: 1.4; }
 
   /* article */
   .back { display: inline-block; margin: 16px 0 4px; color: var(--grey); text-decoration: none; font-size: 14px; }
-  .article h1 { margin: 8px 0 12px; font-size: 32px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
+  .article h1 { margin: 8px 0 8px; font-size: 32px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
+  .article .deck { font-size: 19px; line-height: 1.35; color: #444; margin: 0 0 12px; }
   .byline { font-size: 12px; color: var(--grey); margin-bottom: 14px; }
-  .hero { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
-  .lead { font-size: 17px; line-height: 1.5; margin: 14px 0 6px; }
-  .list { list-style: none; margin: 10px 0 0; padding: 0; }
+  .article .thumb { font-size: clamp(16px, 5.4vw, 26px); }
+  .body p { font-size: 17px; line-height: 1.55; margin: 16px 0; }
+  .body h2 { font-size: 24px; font-weight: 900; letter-spacing: -.3px; margin: 30px 0 6px; }
+  .quote { margin: 26px 0; padding: 4px 0 4px 16px; border-left: 6px solid var(--red); font-size: 24px; line-height: 1.2; font-weight: 900; }
+  .box { background: var(--soft); padding: 14px 16px; margin: 22px 0; font-size: 15px; line-height: 1.5; }
+  .box b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+  .box table { border-collapse: collapse; width: 100%; }
+  .box td { padding: 3px 0; border-top: 1px solid #e2e2e2; }
+  .box td:last-child { text-align: right; font-weight: 700; }
+  .redact { background: #111; color: #111; padding: 0 .2em; user-select: none; }
+
+  .top { border-top: 1px solid var(--line); padding: 18px 0; cursor: pointer; }
+  .top .place { font-size: 46px; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 8px; }
+  .top img, .top .ph { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
+  .top h3 { margin: 10px 0 4px; font-size: 24px; font-weight: 900; }
+  .top p { margin: 0; font-size: 16px; line-height: 1.45; color: #444; }
+  .list { list-style: none; margin: 0; padding: 0; }
   .item { display: grid; grid-template-columns: 44px 88px 1fr; gap: 12px; align-items: center; padding: 12px 0;
           border-top: 1px solid var(--line); cursor: pointer; }
   .item .rk { font-size: 28px; font-weight: 900; text-align: center; letter-spacing: -1px; }
@@ -48,6 +76,18 @@
   .tier { display: inline-block; min-width: 22px; text-align: center; font-weight: 900; font-size: 12px; padding: 2px 5px;
           margin-right: 6px; background: var(--c); color: #000; }
   .tier[data-t="F"] { color: #fff; }
+
+  .poll { border: 2px solid var(--ink); padding: 14px 16px; margin: 26px 0; }
+  .poll b { display: block; font-size: 18px; margin-bottom: 10px; }
+  .poll button { display: block; width: 100%; margin: 6px 0; padding: 12px; border: 2px solid var(--ink); background: #fff;
+                 font-weight: 700; text-align: left; cursor: pointer; }
+  .poll .answer { font-size: 15px; margin: 8px 0 0; color: var(--red); font-weight: 700; min-height: 1.4em; }
+  .related { margin-top: 34px; }
+  .related h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin: 0 0 4px; }
+  .related .card { display: grid; grid-template-columns: 40% 1fr; gap: 12px; align-items: center; padding: 14px 0; }
+  .related .card .thumb { font-size: 9px; margin: 0; }
+  .related .card h2 { font-size: 17px; color: var(--ink); text-transform: none; letter-spacing: -.2px; margin: 0; }
+  .end { margin-top: 30px; padding-top: 16px; border-top: 4px solid var(--ink); font-size: 15px; line-height: 1.5; }
 
   /* one entry, with the print button */
   .sheet { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; }
@@ -81,42 +121,69 @@
 //  Reloading in the same browser tab keeps the same edition.
 // ════════════════════════════════════════════════════════════════
 
-// Placeholders, filled with names from the ranking:
-//   headlines and leads: {top} #1, {second} #2, {last} last place, {mid} somewhere in the middle,
-//                        {n} how many, {label} the list's name
-//   lines under each entry: {N} the entry, {A} the one above it, {B} the one below, {T} its tier
-// Rule: the reason for a ranking is NEVER stated.
-const HEADLINES = {
-  _any: [
-    "We Ranked {n} {label}. {top} Is Number 1 and {last} Should Probably Sit Down.",
-    "{top} Is Officially the Best of {n} {label}. Here's the Full List.",
-    "Here Are All {n} {label}, Ranked. You Won't Believe Where {mid} Ended Up.",
-    "{last} Came Last. We're Not Allowed to Tell You Why.",
-    "The Machine Has Spoken: {top} Beats {second}, and It Wasn't Close",
-  ],
-  students: [
-    "Your Classmates, Ranked: {top} Is on Top and {last} Has Left the Group Chat",
-    "We Ranked {n} Students and {mid} Will Want to Read This",
-  ],
-  inventions: [
-    "History, Ranked: {top} Beats {second} and Historians Are Furious",
-    "{n} Inventions That Changed the World, Ranked. Sorry, {last}.",
-  ],
-  konzerne: [
-    "Capitalism, Ranked: {top} Is Number 1 and {last} Is Calling Its Lawyers",
-    "We Ranked {n} Konzerne. {second} Is Second and the Board Is Not Happy.",
-  ],
-  mix: [
-    "Students vs. Inventions vs. Konzerne: {top} Won. Let That Sink In.",
-    "Nobody Asked, But Here Is {top} Ranked Above {second}",
-    "{last} Lost to Literally Everything on This List",
-  ],
+// ── The three teasers on the home page: no contestants, only the category ──
+//    {n} = how many are ranked. Emojis are picked at random for the thumbnail.
+const TEASERS = {
+  students: {
+    emojis: ["🎓", "🤓", "😳", "📚", "🙈", "😬", "✏️"],
+    color: "#ffd84d",
+    titles: [
+      "We Ranked Every Student in the Class. Number 7 Will Not Be Happy.",
+      "A Machine Ranked {n} Students. You Won't Believe Who Came Last.",
+      "Your Classmates, Ranked by Something That Has Never Met Them",
+    ],
+    subs: [
+      "The criteria are secret. The results are not.",
+      "Nobody asked for this. That has never stopped us.",
+      "Find out where you would land. Actually, better not.",
+    ],
+  },
+  inventions: {
+    emojis: ["💡", "⚙️", "🤯", "🚂", "🔭", "🧲", "📻"],
+    color: "#7fd4ff",
+    titles: [
+      "We Ranked {n} Inventions That Changed the World. Number 1 Is Not What You Think.",
+      "History Has Been Ranked. Historians Have Not Been Consulted.",
+      "The Greatest Inventions of All Time, Ranked by the Greatest Invention of All Time",
+    ],
+    subs: [
+      "Centuries of progress, sorted in seconds.",
+      "One of these changed everything. The machine has decided which.",
+      "Your history teacher is going to hate this.",
+    ],
+  },
+  konzerne: {
+    emojis: ["🏢", "💰", "😱", "📈", "🤑", "🧾", "🏭"],
+    color: "#ff9a8a",
+    titles: [
+      "We Ranked {n} Corporations. Their Lawyers Have Been Informed.",
+      "These Konzerne Were Ranked Without Their Consent. Number 3 Is Furious.",
+      "Capitalism, Ranked. The Results Are Not Financial Advice.",
+    ],
+    subs: [
+      "They rank you every day. Now it's their turn.",
+      "No press release can save them now.",
+      "The board has called an emergency meeting.",
+    ],
+  },
+  mix: {
+    emojis: ["🎓", "💡", "🏢", "🤯", "😱", "🌀", "⚖️"],
+    color: "#c9a6ff",
+    titles: [
+      "We Ranked Students Against Inventions Against Corporations. It Got Weird.",
+      "Is a Student Worth More Than a Steam Engine? The Machine Has Answered.",
+      "Everything, Ranked Against Everything. Part {part} of 3.",
+    ],
+    subs: [
+      "Apples and oranges? The machine doesn't care.",
+      "There are no categories anymore. Only places.",
+      "You will not like where people ended up.",
+    ],
+  },
 };
-const LEADS = [
-  "The machine looked at {n} {label} and made a decision. {top} is on top, {second} is right behind, and {last} is where nobody wants to be. We asked a question. You will never know which one.",
-  "Who gets to rank what, based on what? Not you. Here is where {top}, {mid} and {last} stand right now.",
-  "We gave away our taste a long time ago. This time it went to the perfect machine. It put {top} first and {last} last.",
-];
+
+// ── Inside the article: lines under each entry ({N} the entry, {A} above it, {B} below it, {T} its tier)
+//    The reason for a ranking is NEVER stated.
 const LINES = {
   first: ["Number one. No further questions.", "The top spot. The machine was very sure.", "First place. Nobody will say why."],
   last: ["Last place. Somebody had to be.", "At the bottom, just below {A}.", "Last. The machine has no regrets."],
@@ -131,12 +198,31 @@ const LINES = {
     "{A} is one place ahead and knows it.",
   ],
 };
+// the paragraphs that explain the concept ({n} how many, {label} the list, {top} #1, {last} last place)
+const INTROS = [
+  "For years we gave our taste away for free: to feeds, charts, recommendation engines and the media outlets that own them. They decided what was hot and what was not, and we called it our opinion.",
+  "Now there is a better option: the perfect machine. It doesn't get tired. It doesn't have friends. It doesn't explain itself. And it has just ranked {n} {label}.",
+];
+const MIDDLES = [
+  "You might be wondering how the machine decided this. So were we. It considered a number of variables, weighted them, and came to a conclusion. Then it changed its mind. Then it changed it again.",
+  "Notice how quickly you accepted that {top} is number one? You don't know the question. You don't know the criteria. You just saw a list, and a list looks like the truth.",
+];
+const QUOTES = [
+  "Who gets to rank what, based on what?",
+  "We gave our taste away. This time, at least, we gave it to the perfect machine.",
+];
+const POLL = {
+  question: "Do you agree with this ranking?",
+  options: ["Yes", "Also yes", "I would like to speak to the machine"],
+  answers: ["Thank you. Your opinion has been noted and ignored.", "Interesting. The machine has adjusted nothing.", "Your feedback has been ranked. It came last."],
+};
 const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
-const SNAPSHOT_KEY = "rankfeed-edition";
+const SNAPSHOT_KEY = "rankfeed-edition-v2";
 const $ = (id) => document.getElementById(id);
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const shuffled = (a) => a.map((x) => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
 let edition = null;
 
 // ════════ Write the edition (once) ════════
@@ -146,14 +232,10 @@ function writeEdition(snap) {
   const mixed = snap.phase === "mix";
   const articles = real.map((c, i) => {
     const L = mixed ? byName[`mix-${c.name}`] || { entries: [] } : c; // in the mix: what each screen shows
-    const label = mixed ? "Things" : c.label;
+    const key = mixed ? "mix" : c.name;
+    const T = TEASERS[key] || TEASERS.mix;
     const entries = (L.entries || []).map((e) => ({ id: e.id, title: e.title, image: e.image, tier: e.tier, rank: e.rank }));
     const n = entries.length;
-    const v = {
-      n, label,
-      top: entries[0]?.title, second: entries[1]?.title || entries[0]?.title,
-      last: entries[n - 1]?.title, mid: entries[Math.floor(n / 2)]?.title,
-    };
     const recent = [];
     entries.forEach((e, k) => {
       const pool = k === 0 ? LINES.first : k === n - 1 ? LINES.last : LINES.mid;
@@ -162,63 +244,115 @@ function writeEdition(snap) {
       if (recent.length > 2) recent.shift();
       e.line = fill(line, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier });
     });
-    const key = mixed ? "mix" : c.name;
+    const v = { n, part: i + 1, label: mixed ? "things" : c.label.toLowerCase(),
+                top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
       slug: c.name,
       cat: mixed ? `Everything · Part ${i + 1}` : c.label,
       pill: pick(PILLS),
-      headline: n >= 2 ? fill(pick([...HEADLINES._any, ...(HEADLINES[key] || [])]), v) : null,
-      lead: n >= 2 ? fill(pick(LEADS), v) : null,
+      title: fill(pick(T.titles), v),
+      sub: fill(pick(T.subs), v),
+      emojis: shuffled(T.emojis).slice(0, 3),
+      color: T.color,
+      num: n ? `#${1 + Math.floor(Math.random() * n)} 😳` : "?!",
+      intros: INTROS.map((p) => fill(p, v)),
+      middle: fill(pick(MIDDLES), v),
+      quote: pick(QUOTES),
+      vars: 9 + Math.floor(Math.random() * 30),
+      ready: n >= 2,
       entries,
     };
   });
   return { at: Date.now(), articles };
 }
 
-// ════════ Views ════════
+// ════════ Pieces ════════
 const timeOf = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const img = (e, cls = "") => e.image
   ? `<img class="${cls}" src="${esc(e.image)}" alt="${esc(e.title)}" loading="lazy">`
   : `<div class="ph ${cls}">${esc(e.title[0])}</div>`;
 const tierChip = (t) => `<span class="tier" data-t="${t}" style="--c:var(--tier-${t})">${t}</span>`;
+const thumb = (a) => `
+  <div class="thumb" style="--bg:${a.color}">
+    <span class="ring"></span>
+    <span class="e e1">${a.emojis[0]}</span><span class="e e2">${a.emojis[1]}</span><span class="e e3">${a.emojis[2]}</span>
+    <span class="arrow">👈</span><span class="q">?!</span>
+    <span class="num">${esc(a.num)}</span>
+  </div>`;
+const teaser = (a, cls = "card") => `
+  <a class="${cls}" href="#/${a.slug}">
+    ${thumb(a)}
+    <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span>
+      <h2>${esc(a.title)}</h2>${cls === "card" ? `<p class="sub">${esc(a.sub)}</p>` : ""}</div>
+  </a>`;
+const row = (a, e) => `
+  <li class="item" data-id="${esc(e.id)}">
+    <div class="rk">${e.rank}</div>${img(e)}
+    <div><h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${esc(e.line)}</p></div>
+  </li>`;
+const topCard = (e) => `
+  <div class="top" data-id="${esc(e.id)}">
+    <div class="place">#${e.rank}</div>${img(e)}
+    <h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${esc(e.line)}</p>
+  </div>`;
 
+// ════════ Views ════════
 function home() {
   delete $("view").dataset.slug;
-  const ready = edition.articles.filter((a) => a.headline);
+  const ready = edition.articles.filter((a) => a.ready);
   $("view").innerHTML = `
     <p class="edition">Your edition · ${timeOf(edition.at)}</p>
     <p class="note">Generated for you the moment you arrived. It will not change. The ranking already has.</p>
-    ${ready.map((a) => `
-      <a class="card" href="#/${a.slug}">
-        ${img(a.entries[0])}
-        <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span><h2>${esc(a.headline)}</h2></div>
-      </a>`).join("")}
+    ${ready.map((a) => teaser(a)).join("")}
     ${ready.length ? "" : `<p class="note">The machine is still ranking. Come back in a minute for your edition.</p>`}`;
   window.scrollTo(0, 0);
 }
 
 function article(slug) {
   const a = edition.articles.find((x) => x.slug === slug);
-  if (!a || !a.headline) return home();
+  if (!a || !a.ready) return home();
   $("view").dataset.slug = slug;
+  const top = a.entries.slice(0, 3);
+  const rest = a.entries.slice(3);
+  const half = Math.ceil(rest.length / 2);
+  const others = edition.articles.filter((x) => x.slug !== slug && x.ready);
+  const pollKey = Math.floor(Math.random() * POLL.answers.length);
   $("view").innerHTML = `
     <div class="article">
       <a class="back" href="#">← All articles</a>
       <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span></div>
-      <h1>${esc(a.headline)}</h1>
-      <div class="byline">by The Ranking Desk · snapshot from ${timeOf(edition.at)}</div>
-      ${img(a.entries[0], "hero")}
-      <p class="lead">${esc(a.lead)}</p>
-      <ol class="list">
-        ${a.entries.map((e) => `
-          <li class="item" data-id="${esc(e.id)}">
-            <div class="rk">${e.rank}</div>
-            ${img(e)}
-            <div><h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${esc(e.line)}</p></div>
-          </li>`).join("")}
-      </ol>
+      <h1>${esc(a.title)}</h1>
+      <p class="deck">${esc(a.sub)}</p>
+      <div class="byline">by The Ranking Desk · snapshot from ${timeOf(edition.at)} · generated only for you</div>
+      ${thumb(a)}
+      <div class="body">
+        ${a.intros.map((p) => `<p>${esc(p)}</p>`).join("")}
+        <div class="box"><b>How we ranked</b>
+          <table>
+            <tr><td>Question asked</td><td><span class="redact">which one is better</span></td></tr>
+            <tr><td>Variables considered</td><td>${a.vars} (classified)</td></tr>
+            <tr><td>Human input</td><td>none</td></tr>
+            <tr><td>Appeals</td><td>not accepted</td></tr>
+            <tr><td>Updated</td><td>every few seconds, forever</td></tr>
+          </table>
+        </div>
+        <h2>The top 3</h2>
+        ${top.map(topCard).join("")}
+        <blockquote class="quote">${esc(a.quote)}</blockquote>
+        ${rest.length ? `<h2>The rest, ranked</h2><ol class="list">${rest.slice(0, half).map((e) => row(a, e)).join("")}</ol>` : ""}
+        <p>${esc(a.middle)}</p>
+        ${rest.length > half ? `<ol class="list">${rest.slice(half).map((e) => row(a, e)).join("")}</ol>` : ""}
+        <div class="poll"><b>${esc(POLL.question)}</b>
+          ${POLL.options.map((o) => `<button type="button">${esc(o)}</button>`).join("")}
+          <p class="answer" id="answer"></p>
+        </div>
+        <div class="box"><b>Meanwhile</b>This list is a snapshot from ${timeOf(edition.at)}. On the screens in the room, the ranking has already moved on. The places you just read no longer exist.</div>
+        ${others.length ? `<div class="related"><h2>You might also be ranked in</h2>${others.map((o) => teaser(o, "card")).join("")}</div>` : ""}
+        <p class="end">This article was written by no one, for you alone, in less than a second. Ask yourself who decided what you just read, and why you believed it for a moment.</p>
+      </div>
     </div>`;
-  document.querySelectorAll(".item").forEach((li) => (li.onclick = () => (location.hash = `#/${slug}/${encodeURIComponent(li.dataset.id)}`)));
+  document.querySelectorAll(".item, .top").forEach((el) => (el.onclick = () => (location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`)));
+  document.querySelectorAll(".poll button").forEach((b, k) => (b.onclick = () => { $("answer").textContent = POLL.answers[(pollKey + k) % POLL.answers.length]; }));
   window.scrollTo(0, 0);
 }
 
@@ -244,7 +378,7 @@ function sheet(slug, id) {
 // ════════ PRINT — to be connected later ════════
 // Called when a visitor presses "Print" on an entry.
 //   entry   = { id, title, image, tier, rank, line }
-//   article = { slug, cat, headline, entries }   (slug = students | inventions | konzerne)
+//   article = { slug, cat, title, entries }   (slug = students | inventions | konzerne)
 // Put the real printing here later, e.g. fetch(RANK_BASE + "/api/print", { method: "POST", body: … }).
 function printEntry(entry, article) {
   console.log("PRINT", { entry, category: article.slug, at: new Date().toISOString() });
@@ -270,7 +404,7 @@ $("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) his
     try {
       edition = writeEdition(await fetchRankState());
       // only keep editions that have something to read; otherwise a reload tries again
-      if (edition.articles.some((x) => x.headline)) {
+      if (edition.articles.some((x) => x.ready)) {
         try { sessionStorage.setItem(SNAPSHOT_KEY, JSON.stringify(edition)); } catch {}
       }
     } catch {
