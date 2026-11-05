@@ -38,8 +38,8 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
 #title .n { color: var(--blue); }
 
 /* ═══ Tier rows ═══ */
-#tierlist { flex: 6 1 0; display: flex; flex-direction: column; gap: 2px; min-height: 0; padding-top: 2px; }
-.row { flex: 1 1 0; display: flex; min-height: 0; }
+#tierlist { flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
+.row { flex: 0 0 auto; display: flex; height: 80px; transition: height .6s ease; }
 .label {
   flex: 0 0 var(--label-w); display: flex; align-items: center; justify-content: center;
   background: var(--c); color: var(--ink); font-family: var(--f-type); font-size: min(6vh, 6vw);
@@ -50,7 +50,7 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
   flex: 0 0 auto; text-align: center; font-family: var(--f-type); font-size: min(2vh, 2.2vw);
   padding: .6em 1em; color: var(--paper);
 }
-#pool-row { flex: .5 1 0; display: flex; min-height: 0; margin-top: 2px; }
+#pool-row { flex: 0 0 auto; display: flex; height: 40px; margin-top: 2px; transition: height .6s ease; }
 #pool-row .label { background: var(--grey); }
 
 /* ═══ Cards ═══ */
@@ -91,7 +91,7 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
 #live.on::before { content: "● "; color: #0a0; }
 
 /* ═══ Switch ═══ */
-#mode-switch { flex: 0 0 4.5vh; display: flex; gap: 2px; margin-top: 2px; }
+#mode-switch { flex: 0 0 4.5vh; display: flex; gap: 2px; margin-top: auto; }
 #mode-switch button {
   flex: 1 1 0; min-width: 0; border: 0; background: #333; color: var(--paper);
   font-family: var(--f-type); font-size: min(2.2vh, 3.6vw); text-transform: uppercase; cursor: pointer;
@@ -154,7 +154,7 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
 <script>
 const GAP = 2;        // space between pictures (px)
 const TILE_SIZE = 0;  // icon size in px, e.g. 70 — or 0 = automatic (as big as the list allows)
-const TIER_SHARE = 0.4;  // automatic size: big enough that one tier can hold this share of all entries
+const POOL_SCALE = 0.5;  // icons in the "…" row are this much smaller than in the tiers
 const STEP_MS = 750;  // how often a hovering entry jumps to a new height
 const SWING = 60;     // how wild the hovering is at the start (score points)
 const SETTLE = 0.78;  // after this share of the hover time it stays at its final height
@@ -207,7 +207,6 @@ function buildRows() {
     (t) => `<div class="row" id="row-${t}" style="--c:var(--tier-${t})">
        <div class="label">${t}</div><div class="items" id="items-${t}"></div></div>`
   ).join("");
-  $("tierlist").style.flexGrow = TIER_IDS.length; // "…" row = half the height of one tier (flex .5)
 }
 
 function buildSwitch() {
@@ -282,12 +281,10 @@ function fitSize(w, h, n) {
 }
 
 // size of the hover track on the right and of the hovering pictures
+// the hover track is exactly one icon wide, and the hovering icon has the same size as all others
 function railGeometry() {
-  const r = $(`row-${TIER_IDS[0]}`);
-  const row = r.getBoundingClientRect();
-  const free = row.width - r.querySelector(".label").getBoundingClientRect().width;
-  const hsize = Math.max(16, Math.min(row.height - 6, (free * 0.3 - 8 * parallel) / parallel));
-  return { hsize, width: parallel * (hsize + 8) + 8 };
+  const hsize = fixed.tier || 80;
+  return { hsize, width: hsize + 16 };
 }
 
 function layout() {
@@ -296,19 +293,6 @@ function layout() {
   $("pool-row").hidden = !L; // stays even when empty, so the icon size never changes
   $("rail").classList.toggle("on", !!L);
   const app = $("app");
-  if (L) {
-    app.style.setProperty("--rail-w", "0px");
-    const g = railGeometry();
-    app.style.setProperty("--rail-w", g.width + "px");
-    const origin = app.getBoundingClientRect();
-    const tl = $("tierlist").getBoundingClientRect();
-    Object.assign($("rail").style, {
-      left: tl.right - origin.left - g.width + "px", top: tl.top - origin.top + "px",
-      width: g.width + "px", height: tl.height + "px",
-    });
-  } else {
-    app.style.setProperty("--rail-w", "0px");
-  }
 
   const entries = L ? L.entries : [];
   const pool = L ? L.pool : [];
@@ -318,15 +302,33 @@ function layout() {
   const rows = Object.fromEntries(TIER_IDS.map((t) => [t, []]));
   entries.forEach((e) => (rows[e.tier] || rows[TIER_IDS.at(-1)]).push(e));
 
-  // one fixed icon size for the whole sequence; only a tier that is too full shrinks, alone
+  // ONE icon size for everything. A full tier never shrinks its icons: its row gets another line.
+  const sz = L ? tileSizes(L) : { tier: 80, pool: 40, cols: 1, pcols: 1 };
+  app.style.setProperty("--rail-w", L ? railGeometry().width + "px" : "0px");
+  const heights = {};
+  for (const t of TIER_IDS) {
+    const lines = Math.max(1, Math.ceil(rows[t].length / sz.cols));
+    heights[t] = lines * (sz.tier + GAP) - GAP;
+    $(`row-${t}`).style.height = heights[t] + "px";
+  }
+  $("pool-row").style.height = Math.max(1, Math.ceil(pool.length / sz.pcols)) * (sz.pool + GAP) - GAP + "px";
+
   if (L) {
-    const sz = tileSizes(L);
+    const g = railGeometry();
+    const tlH = TIER_IDS.reduce((h, t) => h + heights[t] + 2, 2);
+    Object.assign($("rail").style, {
+      left: app.clientWidth - g.width + "px", top: $("title").offsetHeight + "px",
+      width: g.width + "px", height: tlH + "px",
+    });
+    // positions are computed from the final row heights, so cards don't land mid-animation
+    let y = $("title").offsetHeight + 2;
+    const label = $(`row-${TIER_IDS[0]}`).querySelector(".label").getBoundingClientRect().width;
     for (const t of TIER_IDS) {
-      if (!rows[t].length) continue;
-      const box = $(`items-${t}`).getBoundingClientRect();
-      placeRow(`items-${t}`, rows[t], Math.min(sz.tier, fitSize(box.width, box.height, rows[t].length)), t);
+      placeAt(rows[t], label, y, sz.tier, sz.cols, t);
+      y += heights[t] + 2;
     }
-    placeRow("items-pool", pool, sz.pool, "pool");
+    if (!$("source").hidden) y += $("source").offsetHeight;
+    placeAt(pool, label, y + 2, sz.pool, sz.pcols, "pool");
   }
   hovers.forEach(placeHover);
 
@@ -364,17 +366,50 @@ $("sizeauto").addEventListener("click", () => { setSize(0); $("size").value = fi
 
 // the icon size is chosen once (from how many entries this list has in total) and then kept
 let fixed = { key: "" };
+// Chosen once, as big as possible, so that the list always fits on the screen,
+// however the entries spread over the tiers (rows grow by a line when a tier is full).
 function tileSizes(L) {
   const total = L.entries.length + L.pool.length + L.hovering.length;
-  const box = $(`items-${TIER_IDS[0]}`).getBoundingClientRect();
-  const pbox = $("items-pool").getBoundingClientRect();
-  const key = [shownId(), total, Math.round(box.width), Math.round(box.height)].join("|");
-  if (fixed.key !== key) {
-    const tier = userSize || TILE_SIZE || fitSize(box.width, box.height, Math.max(1, Math.ceil(total * TIER_SHARE)));
-    const pool = Math.min(tier, fitSize(pbox.width, pbox.height, Math.max(1, total)));
-    fixed = { key, tier, pool };
+  const appW = $("app").clientWidth, appH = $("app").clientHeight;
+  const label = $(`row-${TIER_IDS[0]}`).querySelector(".label").getBoundingClientRect().width;
+  const used = $("title").offsetHeight + ($("source").hidden ? 0 : $("source").offsetHeight)
+             + ($("mode-switch").offsetParent ? $("mode-switch").offsetHeight : 0) + 2 * (TIER_IDS.length + 3);
+  const avail = appH - used;
+  const key = [shownId(), total, appW, avail, userSize, TILE_SIZE].join("|");
+  if (fixed.key === key) return fixed;
+  const colsFor = (s, rail) => Math.max(1, Math.floor((appW - label - rail + GAP) / (s + GAP)));
+  const fits = (s) => {
+    const p = Math.max(16, Math.round(s * POOL_SCALE));
+    // all entries ranked: six rows plus the extra lines full tiers can need at most (the "…" row is empty)
+    const ranked = (TIER_IDS.length + Math.floor(total / colsFor(s, s + 16))) * (s + GAP) + (p + GAP);
+    // nothing ranked yet: six empty rows plus a full "…" row
+    const waiting = TIER_IDS.length * (s + GAP) + Math.max(1, Math.ceil(total / colsFor(p, 0))) * (p + GAP);
+    return Math.max(ranked, waiting) <= avail;
+  };
+  let tier = userSize || TILE_SIZE;
+  if (!tier) {
+    tier = Math.floor(avail / (TIER_IDS.length + 1));
+    while (tier > 16 && !fits(tier)) tier--;
   }
+  const pool = Math.max(16, Math.round(tier * POOL_SCALE));
+  fixed = { key, tier, pool, cols: colsFor(tier, tier + 16), pcols: colsFor(pool, 0) };
   return fixed;
+}
+
+// place a row of cards from the left edge of the items area, wrapping into new lines
+function placeAt(list, left, top, size, cols, tier) {
+  list.forEach((e, i) => {
+    if (hovers.has(e.id)) return;
+    let c = cards.get(e.id);
+    if (!c) {
+      c = { el: makeCard(e), shown: tier };
+      cards.set(e.id, c);
+    }
+    c.shown = tier;
+    c.el.classList.toggle("in-pool", tier === "pool");
+    placeCard(c.el, left + (i % cols) * (size + GAP), top + Math.floor(i / cols) * (size + GAP), size);
+    if (c.el.classList.contains("no-anim")) { void c.el.offsetWidth; c.el.classList.remove("no-anim"); }
+  });
 }
 
 function placeRow(boxId, list, size, tier) {
