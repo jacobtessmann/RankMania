@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>rankmania — brain</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; }
+  body { font: 14px/1.35 Menlo, Monaco, "Courier New", monospace; display: flex; flex-direction: column; overflow: hidden; }
+  #bar { background: #fff; color: #000; padding: 2px 8px; white-space: pre; overflow: hidden; flex: 0 0 auto; }
+  #log { flex: 1 1 auto; overflow-y: auto; padding: 8px; white-space: pre-wrap; word-break: break-word; }
+  .dim { color: #888; }
+  .cur::after { content: "█"; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="bar">rankmania brain — connecting…</div>
+<div id="log"></div>
+
+<script src="shared.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════════
+//  The brain, as a terminal. Shows every evaluation and recalculation live.
+//  The variables are theatre: their names and values are made up (always the same values
+//  for the same entity), the scores, tiers and places are the real ones from the server.
+// ════════════════════════════════════════════════════════════════
+const MAX_LINES = 500;
+const VARS = {
+  _any: ["attention_yield", "consensus_drift", "taste_conformity", "click_probability", "outrage_elasticity",
+         "cultural_half_life", "nostalgia_coeff", "trust_decay", "virality_index", "aesthetic_entropy",
+         "symmetry_bias", "moral_residue", "market_resonance", "meme_potential", "gaze_duration", "legacy_weight"],
+  students: ["eye_contact_ratio", "group_chat_latency", "deadline_tolerance", "coffee_dependency", "portfolio_gloss", "laserpointer_grace"],
+  inventions: ["world_change_factor", "patent_aura", "sleep_induction", "grandparent_explainability", "steam_quotient"],
+  konzerne: ["brand_gravity", "lobby_mass", "logo_symmetry", "apology_frequency", "shareholder_mood", "greenwashing_index"],
+};
+const TAG = { students: "STU", inventions: "INV", konzerne: "KON" };
+
+const log = document.getElementById("log");
+const bar = document.getElementById("bar");
+const lists = {};          // list id → entries (for cross-references)
+let phase = "separate", speed = 1, started = Date.now(), connected = "connecting";
+
+// same text → same number between 0 and 1
+function h01(s) {
+  let x = 2166136261;
+  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); }
+  x ^= x >>> 13; x = Math.imul(x, 0x5bd1e995); x ^= x >>> 15;
+  return (x >>> 0) / 4294967296;
+}
+const pad = (s, n) => (s + " ".repeat(n)).slice(0, n);
+const dots = (name, n = 30) => name + " " + ".".repeat(Math.max(2, n - name.length)) + " ";
+const clock = () => new Date().toTimeString().slice(0, 8);
+const catOf = (list, id) => (list.startsWith("mix-") ? id.split("/")[0] : list);
+const tagOf = (list) => (list.startsWith("mix-") ? "MIX>" + TAG[list.slice(4)] : TAG[list] || list).padEnd(7);
+
+function print(text, cls) {
+  const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+  document.querySelectorAll(".cur").forEach((n) => n.classList.remove("cur"));
+  const line = document.createElement("div");
+  line.textContent = text;
+  if (cls) line.className = cls;
+  line.classList.add("cur");
+  log.appendChild(line);
+  while (log.children.length > MAX_LINES) log.firstChild.remove();
+  if (atBottom) log.scrollTop = log.scrollHeight;
+}
+
+function variablesFor(list, entry) {
+  const cat = catOf(list, entry.id);
+  const pool = [...VARS._any, ...(VARS[cat] || [])];
+  const n = 6 + Math.floor(h01(entry.id + "#n") * 4);
+  return pool.map((v) => [v, h01(entry.id + v)]).sort((a, b) => a[1] - b[1]).slice(0, n)
+    .map(([v]) => ({ name: v, value: h01(v + "|" + entry.id) }));
+}
+
+function fmt(v, name) {
+  const k = h01(name) * 3;
+  if (k < 1) return v.toFixed(4);
+  if (k < 2) return (v * 100).toFixed(1) + "%";
+  return (v * 1000 - 500).toFixed(2);
+}
+
+// ── an entry is evaluated while it hovers on the screen ──
+const pending = new Map();
+function evaluate(ev) {
+  const id = ev.entry.id, list = ev.category;
+  const vars = variablesFor(list, ev.entry);
+  const others = (lists[list] || []).filter((e) => e.id !== id);
+  print("");
+  print(`[${clock()}] ${tagOf(list)} EVALUATE  ${ev.entry.title}`);
+  const T = tagOf(list);
+  print(`           ${T}   id=${id}  hash=${(h01(id) * 0xffffffff >>> 0).toString(16).padStart(8, "0")}`, "dim");
+  const total = Math.max(1000, toLocalTime(ev.landAt) - Date.now());
+  const steps = vars.length + (others.length ? 1 : 0);
+  const timers = [];
+  vars.forEach((v, i) => timers.push(setTimeout(() => {
+    print(`           ${T}   ${dots(v.name)}${fmt(v.value, v.name)}`);
+  }, (total * 0.85 * i) / steps)));
+  if (others.length) {
+    const o = others[Math.floor(h01(id + "x") * others.length)];
+    timers.push(setTimeout(() => print(`           ${T}   cross-ref ≈ ${o.title} (similarity ${h01(id + o.id).toFixed(2)})`, "dim"),
+      (total * 0.85 * vars.length) / steps));
+  }
+  pending.set(id, timers);
+}
+
+function result(ev) {
+  (pending.get(ev.entry.id) || []).forEach(clearTimeout);
+  pending.delete(ev.entry.id);
+  const e = ev.entry, T = tagOf(ev.category);
+  print(`           ${T}   ${dots("Σ weighted")}${e.score.toFixed(2)}`);
+  print(`[${clock()}] ${T} RESULT    ${e.title} → TIER ${e.tier}   #${e.rank}/${ev.entries ? ev.entries.length : "?"}   committed`);
+}
+
+function recalc(ev) {
+  const cat = catOf(ev.category, ev.id);
+  const pool = [...VARS._any, ...(VARS[cat] || [])];
+  const v = pool[Math.floor(Math.random() * pool.length)];
+  const a = h01(v + "|" + ev.id), b = Math.max(0, Math.min(1, a + ev.change / 100));
+  const tier = ev.before.tier === ev.after.tier ? `tier ${ev.after.tier}` : `tier ${ev.before.tier}→${ev.after.tier}`;
+  print(`[${clock()}] ${tagOf(ev.category)} RECALC    ${pad(ev.after.title, 26)} ${v} ${a.toFixed(2)}→${b.toFixed(2)}   score ${ev.before.score}→${ev.after.score}   ${tier}   #${ev.before.rank}→#${ev.after.rank}`);
+}
+
+function status() {
+  const up = Math.floor((Date.now() - started) / 1000);
+  const t = `${String(Math.floor(up / 60)).padStart(2, "0")}:${String(up % 60).padStart(2, "0")}`;
+  const name = phase === "mix" ? "SEQUENCE 2 · MIX" : phase === "clearing" ? "CLEARING" : "SEQUENCE 1 · SEPARATE";
+  const counts = Object.entries(lists).filter(([, v]) => v.length).map(([k, v]) => `${tagOf(k).trim()}:${v.length}`).join(" ");
+  bar.textContent = `rankmania brain   ${name}   speed ${(+speed).toFixed(2)}x   up ${t}   ${counts}   [${connected}]`;
+}
+setInterval(status, 1000);
+
+connectDisplay({
+  onSnapshot(snap) {
+    phase = snap.phase;
+    snap.categories.forEach((c) => (lists[c.name] = c.entries));
+    const active = snap.categories.filter((c) => c.entries.length + c.pool.length + c.hovering.length && (phase === "mix") === !!c.virtual);
+    print("rankmania brain — model loaded", "dim");
+    print(`phase: ${phase}   lists: ${active.length}   entities: ${active.reduce((n, c) => n + c.entries.length + c.pool.length + c.hovering.length, 0)}`, "dim");
+    active.forEach((c) => print(`  ${tagOf(c.name)} ${c.entries.length} ranked, ${c.hovering.length} evaluating, ${c.pool.length} waiting`, "dim"));
+    print("question: [REDACTED]   criteria: [REDACTED]", "dim");
+    snap.categories.forEach((c) => c.hovering.forEach((hv) => evaluate({ ...hv, category: c.name })));
+    fetch(RANK_BASE + "/api/status").then((r) => r.json()).then((s) => { speed = s.speed ?? 1; }).catch(() => {});
+    status();
+  },
+  onHover: evaluate,
+  onCommit(ev) {
+    if (ev.replay) return;
+    lists[ev.category] = ev.entries;
+    result(ev);
+  },
+  onDrift(ev) {
+    if (ev.replay) return;
+    lists[ev.category] = ev.entries;
+    recalc(ev);
+  },
+  onRoster(ev) {
+    lists[ev.category] = ev.entries;
+    print(`[${clock()}] ${tagOf(ev.category)} FOLDER CHANGE  ${ev.entries.length} ranked, ${ev.waiting} waiting`, "dim");
+  },
+  onPhase(ev) {
+    if (ev.replay) return;
+    pending.forEach((t) => t.forEach(clearTimeout));
+    pending.clear();
+    print("");
+    if (ev.phase === "clearing") {
+      phase = "clearing";
+      print(`[${clock()}] ======== PURGE: ALL RANKINGS DELETED ========`);
+    } else {
+      phase = ev.phase;
+      print(`[${clock()}] ======== ${ev.phase === "mix" ? "SEQUENCE 2 · MIX: ALL ENTITIES DEALT TO 3 SCREENS" : "SEQUENCE 1 · SEPARATE: NEW ROUND"} ========`);
+    }
+    status();
+  },
+  onStatus(s) { connected = s; status(); },
+});
+
+// keep the speed in the status bar up to date
+setInterval(() => fetch(RANK_BASE + "/api/status").then((r) => r.json()).then((s) => { speed = s.speed ?? speed; }).catch(() => {}), 5000);
+</script>
+</body>
+</html>

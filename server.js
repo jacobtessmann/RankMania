@@ -5,10 +5,10 @@
 //   1. SEPARATE  every category fills its own screen (students, inventions, konzerne)
 //   2. MIX       all screens clear, then every image of all three categories is dealt
 //                to one of the three screens at random, so each screen shows a mix
-//  In both, new entries hover up and down for a few seconds before they land in a tier,
-//  and ranked entries keep drifting up and down.
+//  In both, each screen does one thing at a time: a new entry hovers in and lands, or one
+//  ranked entry moves up or down. After every action there is a pause.
 //
-//  Switch sequences automatically (AUTO_MIX_AFTER_MS) or by hand on /admin.html.
+//  The mix starts by hand on /admin.html (or automatically if AUTO_MIX_AFTER_MS is set).
 //  Every screen and phone receives the same events, so they stay in sync.
 //  No dependencies. Start with:  node server.js
 // ════════════════════════════════════════════════════════════════
@@ -73,22 +73,23 @@ const TIERS = [
   { id: "F", min: -Infinity },
 ];
 
-// ── Speed ──
-const PARALLEL = 1; // how many new entries hover on the right at the same time (1 = one after another)
-const NEXT_GAP_MS = 400; // when one lands, the next one starts hovering this soon after
-const STAGGER_MS = 1200; // only with PARALLEL > 1: time between the starts of the parallel ones
-const HOVER_MIN_MS = 2500; // how long an entry hovers before it lands
-const HOVER_MAX_MS = 4500;
-// Ranked entries keep moving ("drift"). One tier = 20 score points.
-const DRIFT_MAX = 15; // normal step at the start: up to 15 points (mostly within a tier or into the next)
-const DRIFT_MIN_MS = 900; // at the start a ranked entry moves every 0.9–1.8 s per list
-const DRIFT_MAX_MS = 1800;
+// ── Tempo ──
+// Each screen does ONE thing at a time: either a new entry hovers in and lands, or one ranked
+// entry moves. After every action there is a pause. Nothing ever happens at the same time.
+const HOVER_MIN_MS = 4000; // how long a new entry hovers before it lands (4–6 s)
+const HOVER_MAX_MS = 6000;
+const PAUSE_MIN_MS = 2500; // pause after every action before the next one (2.5–5 s)
+const PAUSE_MAX_MS = 5000;
+const START_SPEED = 1; // tempo of the whole brain: 2 = twice as fast, 0.5 = half (also a slider on /admin.html)
+const INTRO_CHANCE = 0.65; // while images are still waiting: chance the next action is a new entry (else a move)
+// Moves of ranked entries. One tier = 20 score points.
+const DRIFT_MAX = 15; // normal move: up to 15 points (mostly within a tier or into the next)
 const BIG_JUMP_CHANCE = 0.08; // chance that a move is a big jump …
 const BIG_JUMP_MAX = 55; // … of up to this many points (= up to 2–3 tiers at once)
-const WILDER_AFTER_MS = 120000; // over the first 2 minutes of a sequence the drift gets wilder, up to …
-const WILDER_FACTOR = 2.5; // … 2.5× as frequent, 2.5× bigger steps and 2.5× more big jumps (1 = always the same)
+const WILDER_AFTER_MS = 180000; // over the first 3 minutes of a sequence the moves get bigger, up to …
+const WILDER_FACTOR = 1.5; // … 1.5× bigger moves and 1.5× more big jumps (1 = always the same)
 const CLEAR_MS = 2500; // how long the screens take to clear between the sequences
-const AUTO_MIX_AFTER_MS = 30000; // start the mix this long after all 3 lists are full (null = only by hand)
+const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.html (or a time in ms after all lists are full)
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
 
@@ -96,6 +97,7 @@ const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
 
 // ════════════════ STATE ════════════════
 let phase = "separate"; // separate | clearing | mix
+let speed = START_SPEED; // changed live by the slider on /admin.html
 let seq = 0;
 let autoMixTimer = null;
 let autoMixAt = null;
@@ -111,7 +113,7 @@ const mixAssign = new Map(); // image id → screen, for the mix
 const allLists = () => Object.values(lists);
 
 function newList(c) {
-  return { ...c, items: new Map(), queue: [], hovering: new Map(), active: false, timers: new Set(), starting: 0 };
+  return { ...c, items: new Map(), queue: [], hovering: new Map(), active: false, timers: new Set() };
 }
 
 const clamp = (v) => Math.max(1, Math.min(100, Math.round(v)));
@@ -138,7 +140,6 @@ function later(list, fn, ms) {
 }
 function stop(list) {
   list.active = false;
-  list.starting = 0;
   list.timers.forEach(clearTimeout);
   list.timers.clear();
 }
@@ -177,7 +178,7 @@ function snapshot() {
     now: Date.now(),
     seq,
     phase,
-    parallel: PARALLEL,
+    parallel: 1,
     tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
     categories: allLists().map((l) => ({
       name: l.id,
@@ -265,7 +266,6 @@ function sync(list) {
   }
   if (changed) {
     broadcast({ type: "roster", category: list.id, waiting: list.queue.length, entries: entriesOf(list), pool: poolOf(list) });
-    if (list.active) fill(list);
   }
 }
 
@@ -285,41 +285,44 @@ function reset(list) {
 function start(list) {
   list.active = true;
   list.startedAt = Date.now();
-  fill(list, 600);
-  later(list, () => drift(list), 1500);
+  later(list, () => act(list), 1000);
 }
 
-// keep the hover track busy: start new entries for every free place on it
-function fill(list, first = NEXT_GAP_MS) {
-  const free = Math.min(PARALLEL - list.hovering.size - list.starting, list.queue.length - list.starting);
-  for (let k = 0; k < free; k++) {
-    list.starting++;
-    later(list, () => {
-      list.starting--;
-      if (list.hovering.size < PARALLEL && list.queue.length) hover(list);
-    }, first + k * STAGGER_MS);
+const pause = () => rand(PAUSE_MIN_MS, PAUSE_MAX_MS) / speed;
+
+// the one action loop of a list: a new entry OR a move, then a pause, then the next
+function act(list) {
+  const canIntro = list.queue.length > 0;
+  const canMove = ranking(list).length > 1;
+  if (canIntro && (!canMove || Math.random() < INTRO_CHANCE)) {
+    if (hover(list)) return; // land() continues the loop after the entry has landed
+  } else if (canMove) {
+    drift(list);
   }
+  later(list, () => act(list), pause());
 }
 
 // 1. a new entry hovers up and down for a few seconds …
 function hover(list) {
   const id = list.queue.shift();
   const e = list.items.get(id);
-  if (!e) return;
+  if (!e) return false;
   e.score = rollScore();
   const used = new Set([...list.hovering.values()].map((h) => h.slot));
   let slot = 0;
   while (used.has(slot)) slot++;
   const now = Date.now();
-  const h = { id, slot, startedAt: now, landAt: Math.round(now + rand(HOVER_MIN_MS, HOVER_MAX_MS)) };
+  const h = { id, slot, startedAt: now, landAt: Math.round(now + rand(HOVER_MIN_MS, HOVER_MAX_MS) / speed) };
   list.hovering.set(id, h);
   broadcast({ type: "hover", now, category: list.id, ...hoverPublic(list, h), waiting: list.queue.length });
   later(list, () => land(list, id), h.landAt - now);
+  return true;
 }
 
 // … and then lands in its tier
 function land(list, id) {
   const e = list.items.get(id);
+  later(list, () => act(list), pause());
   if (!list.hovering.delete(id) || !e) return;
   e.ranked = true;
   const entries = entriesOf(list);
@@ -332,11 +335,10 @@ function land(list, id) {
     waiting: list.queue.length,
     entries,
   });
-  fill(list);
   checkAutoMix();
 }
 
-// 2. ranked entries keep moving, wilder the longer the sequence runs
+// 2. one ranked entry moves (bigger moves the longer the sequence runs)
 function wildness(list) {
   return 1 + (WILDER_FACTOR - 1) * Math.min(1, (Date.now() - list.startedAt) / WILDER_AFTER_MS);
 }
@@ -367,7 +369,6 @@ function drift(list) {
       });
     }
   }
-  later(list, () => drift(list), rand(DRIFT_MIN_MS, DRIFT_MAX_MS) / w);
 }
 
 // ════════════════ THE TWO SEQUENCES ════════════════
@@ -481,6 +482,7 @@ function json(res, code, obj) {
 function status() {
   return {
     phase,
+    speed,
     now: Date.now(),
     autoMixAt,
     lists: allLists().map((l) => ({
@@ -532,6 +534,13 @@ const server = http.createServer((req, res) => {
         msg = JSON.parse(body || "{}");
       } catch {}
       if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
+      if (msg.action === "speed") {
+        const v = Number(msg.value);
+        if (!(v >= 0.1 && v <= 5)) return json(res, 400, { ok: false, error: "speed must be between 0.1 and 5" });
+        speed = v;
+        console.log(`Speed → ${speed}×`);
+        return json(res, 200, { ok: true, ...status() });
+      }
       if (!["mix", "separate"].includes(msg.action)) return json(res, 400, { ok: false, error: "unknown action" });
       if (!switchTo(msg.action)) return json(res, 409, { ok: false, error: "still clearing, try again in a moment" });
       json(res, 200, { ok: true, ...status() });

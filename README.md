@@ -77,8 +77,9 @@ Pages:
 | `/ranking.html?cat=inventions&kiosk=1` | Ranking screen, Historic Inventions |
 | `/ranking.html?cat=konzerne&kiosk=1` | Ranking screen, Konzerne |
 | `/ranking.html` | All categories with the switch at the bottom |
-| `/feed.html` | The live feed for visitors' phones (make a QR code of this link) |
-| `/admin.html` | Show control: switch between sequence 1 and 2 |
+| `/feed.html` | The personal snapshot feed for visitors' phones (make a QR code of this link) |
+| `/admin.html` | Show control: switch between sequence 1 and 2, brain speed slider |
+| `/brain.html` | The brain as a terminal |
 | `/api/state` | The raw current ranking as JSON |
 
 **Free tier notes:** Render's free service sleeps after ~15 minutes without visitors and needs ~30 s to wake up. Open the ranking screens before the event and keep them open; the open screens keep it awake. Every restart or redeploy starts the show from empty tiers again. Images added on your computer only appear online after you push them to GitHub (Render redeploys automatically).
@@ -106,15 +107,17 @@ Each entry looks like `{ id, title, image, score, tier, rank }`.
 
 ## 5. How the show works (server.js)
 
+> We gave away our personal taste to monopolising media outlets. Now we can give it to the perfect machine. Who gets to rank what, based on what?
+
 Every start of the server begins with **empty tiers**.
 
-**Sequence 1 · Separate:** each category fills its own screen. A new entry leaves the "…" row and **hovers** up and down the dashed track on the right for 2.5–4.5 s, wild at first, then calmer, then it locks in (blue outline) and drops into its tier. One entry hovers at a time; as soon as it lands, the next one starts (set `PARALLEL` higher for several at once). Ranked entries keep drifting up and down (▲/▼).
+**One thing at a time.** Each screen does exactly one action, then pauses (2.5–5 s), then the next: either a new entry leaves the "…" row, hovers up and down the dashed track on the right for 4–6 s and lands in its tier, or one ranked entry moves up or down. Colored outlines show what happened: **white** = just landed, **green** = moved up, **red** = moved down.
 
-**Switch:** all pictures fall off every screen.
+**Sequence 1 · Separate:** each category fills its own screen.
 
-**Sequence 2 · Mix:** every image of all three categories is dealt to exactly one of the three screens at random (each screen gets about a third of every category), so all three screens fill up with a mix, the same way.
+**Sequence 2 · Mix** (only by hand): all pictures fall off every screen, then every image of all three categories is dealt to exactly one of the three screens at random (about a third of every category each), and all three screens fill up again with a mix.
 
-The switch happens automatically 30 s after all three lists are full, or by hand on **/admin.html** (buttons "Start sequence 2" and "Restart sequence 1"). The admin password is `rankbrain` unless you set another one: on Render go to your service → **Environment** → add `ADMIN_KEY` with your own password. Without this, anyone who finds the admin page can switch your show.
+**Show control** on **/admin.html**: the buttons "Start sequence 2" and "Restart sequence 1", and a **speed slider** for the whole brain (0.25× to 3×, live on all screens). The admin password is `rankbrain` unless you set `ADMIN_KEY` on Render (your service → **Environment**). Set it, otherwise anyone who finds the page can control your show.
 
 Settings at the top of `server.js`:
 
@@ -122,35 +125,33 @@ Settings at the top of `server.js`:
 |---|---|
 | `names` per category | write names on the tierlist pictures (only Students: `true`) |
 | `MIX` | title of the mixed lists (the same on all three screens) |
-| `PARALLEL` | how many entries hover on the right at once (1) |
-| `NEXT_GAP_MS` | pause between one landing and the next one starting to hover |
-| `HOVER_MIN_MS/MAX_MS` | how long an entry hovers before it lands |
-| `DRIFT_MIN_MS/MAX_MS`, `DRIFT_MAX` | how often and how far ranked entries move at the start |
-| `BIG_JUMP_CHANCE`, `BIG_JUMP_MAX` | how often an entry jumps 2–3 tiers at once, and how far |
-| `WILDER_AFTER_MS`, `WILDER_FACTOR` | the drift gets this much wilder over this time (`1` = stays the same) |
+| `START_SPEED` | tempo when the server starts (1); the admin slider changes it live |
+| `HOVER_MIN_MS/MAX_MS` | how long a new entry hovers before it lands |
+| `PAUSE_MIN_MS/MAX_MS` | pause after every action |
+| `INTRO_CHANCE` | while images are waiting: chance the next action is a new entry instead of a move |
+| `DRIFT_MAX` | size of a normal move (one tier = 20 points) |
+| `BIG_JUMP_CHANCE`, `BIG_JUMP_MAX` | how often a move jumps 2–3 tiers, and how far |
+| `WILDER_AFTER_MS`, `WILDER_FACTOR` | moves get this much bigger over this time (`1` = stays the same) |
 | `CLEAR_MS` | how long the clearing between the sequences takes |
-| `AUTO_MIX_AFTER_MS` | auto switch after all lists are full (`null` = only by hand) |
+| `AUTO_MIX_AFTER_MS` | `null` = mix only by hand; a time in ms = automatic after all lists are full |
 | `TIERS` | score borders of S A B C D F |
-
-On the ranking screen (`ranking.html`), `STEP_MS`, `SWING` and `SETTLE` control how nervous the hovering looks. `TILE_SIZE` sets a fixed icon size in pixels (0 = automatic); the automatic size is chosen once per sequence so that one tier can hold `TIER_SHARE` (32%) of all entries.
 
 ## 6. The tierlist screen (ranking.html)
 
-Looks like TierMaker: a title bar, the tiers S–F, an optional source line, and the "…" row with the images that are not ranked yet. Works on landscape and portrait screens. The title and source line are set per category in `CATEGORIES` in `server.js` (`title`, where `{n}` becomes the number of images in blue, and `source`, which you can leave `""`).
+Looks like TierMaker: title bar, tiers S–F, source line, the "…" row with the images still waiting, and the hover track on the right. The icon size is chosen once and never changes during a sequence.
 
-## 7. The feed headlines (feed.html)
+**Hidden icon size slider:** press **S** on the keyboard (or double-click the title) on a screen. Drag to set the size, "Auto" to go back. It is saved in that browser, separately for each screen. The icons can't get taller than a tier row.
 
-Every post is one article: a headline, the two square pictures side by side (shown whole, never cropped, no names on them; the names are only in the headline), and a short caption. Headlines are templates at the top of the script in `feed.html`; the placeholders are filled with the names from the ranking each time:
+Settings near the top of the script: `TILE_SIZE` (fixed size in px, 0 = automatic), `TIER_SHARE` (automatic size: one tier can hold this share of all entries), `STEP_MS`, `SWING`, `SETTLE` (how nervous the hovering looks), `MARK_MS` (how long the colored outline stays). Colors and fonts are at the top of the `<style>` part.
 
-| Placeholder | Meaning |
-|---|---|
-| `{W}` / `{L}` | the one that moved up / the one it passed |
-| `{R}` / `{R2}` | their new places |
-| `{N}` / `{O}` | a new entry / the entry right next to it |
-| `{T}` | a tier |
+## 7. The phone feed (feed.html)
 
-Add or change templates freely in `HEADLINES` (general and per category), `NUMBER_ONE`, `PROMOTED`, `DEMOTED`, `NEW_ENTRY` and `CAPTIONS`. Each category's main headline is the `headline` in `CATEGORIES` in `server.js`.
+RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes after that; a reload in the same tab keeps the same edition.
 
-To add a 4th category: add it to `CATEGORIES` in `server.js` and create the matching folder in `public/images/`. Screens and feed pick it up automatically.
+- The home page shows the three articles. Tapping one opens the full list, entries under each other with place, tier, picture, name and a short line.
+- Tapping an entry opens it large with a **Print** button. Printing is not connected yet: put the real code into `printEntry(entry, article)` in `feed.html`.
+- Headlines, intros and lines are templates at the top of the script (`HEADLINES`, `LEADS`, `LINES`). Placeholders: `{top}` `{second}` `{last}` `{mid}` `{n}` `{label}` in headlines and intros; `{N}` `{A}` (above) `{B}` (below) `{T}` (tier) in the lines. The reason for a ranking is never stated.
 
-To start the show from scratch: restart the server, or press "Restart sequence 1" on /admin.html.
+## 8. The brain view (brain.html)
+
+A plain black-and-white terminal that shows the brain working, live: every evaluation with its variables, the result, every recalculation, and the sequence changes. The variable names and values are invented (always the same values for the same entity); the scores, tiers and places are the real ones. The bar at the top shows the sequence, speed and counts.

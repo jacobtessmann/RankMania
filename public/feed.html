@@ -6,360 +6,280 @@
 <meta name="theme-color" content="#ffffff">
 <title>RankFeed</title>
 <style>
-  :root { --red: #ee3322; --yellow: #ffee00; --ink: #222; --grey: #757575; --line: #e8e8e8; }
+  :root { --red: #ee3322; --yellow: #ffee00; --ink: #222; --grey: #757575; --line: #e8e8e8;
+          --tier-S: #ff7f7f; --tier-A: #ffff7f; --tier-B: #7fff7f; --tier-C: #7fffff; --tier-D: #ff7fff; --tier-F: #9b30ff; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #fff; color: var(--ink);
-         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  body { margin: 0; background: #fff; color: var(--ink); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  button { font: inherit; }
   .mast { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line);
-          display: flex; align-items: center; gap: 22px; padding: 12px 24px;
-          padding-top: max(12px, env(safe-area-inset-top)); }
-  .logo { font-size: 30px; font-weight: 900; letter-spacing: -1.5px; color: var(--red); }
+          display: flex; align-items: center; gap: 14px; padding: 12px 18px; padding-top: max(12px, env(safe-area-inset-top)); }
+  .logo { font-size: 28px; font-weight: 900; letter-spacing: -1.5px; color: var(--red); text-decoration: none; }
   .badges { margin-left: auto; display: flex; gap: 6px; }
-  .bdg { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
-         font-size: 9px; font-weight: 900; color: #fff; background: var(--red); }
+  .bdg { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+         font-size: 8px; font-weight: 900; color: #fff; background: var(--red); }
   .bdg.y { background: var(--yellow); color: var(--ink); }
   .bdg.k { background: var(--ink); }
-  #status { font-size: 11px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-  #status.live::before { content: "● "; color: var(--red); }
+  main { max-width: 680px; margin: 0 auto; padding: 0 18px 60px; }
+  .edition { font-size: 12px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; padding: 18px 0 6px; margin: 0; }
+  .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; color: var(--ink); }
 
-  /* category filter */
-  .nav { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 10px 24px;
-         border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 59px; z-index: 4; }
-  .nav::-webkit-scrollbar { display: none; }
-  .nav button { border: 2px solid var(--ink); background: #fff; color: var(--ink); font: 700 13px/1 inherit;
-                font-family: inherit; padding: 7px 12px; border-radius: 99px; white-space: nowrap; cursor: pointer; }
-  .nav button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  /* home: the three articles */
+  .card { display: grid; grid-template-columns: 38% 1fr; gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--line);
+          text-decoration: none; color: inherit; align-items: start; }
+  .card img, .card .ph { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #eee; }
+  .cat { font-size: 12px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .5px; }
+  .pill { display: inline-block; background: var(--yellow); color: var(--ink); font-weight: 900; font-size: 10px;
+          padding: 2px 7px; border-radius: 3px; text-transform: uppercase; margin-left: 6px; vertical-align: 1px; }
+  .card h2 { margin: 6px 0 0; font-size: 21px; line-height: 1.15; font-weight: 900; letter-spacing: -.3px; }
 
-  #feed { max-width: 760px; margin: 0 auto; padding: 8px 20px 60px; }
-  #feed[data-filter] .post:not(.match) { display: none; }
-  .post { border-bottom: 1px solid var(--line); padding: 26px 0; animation: drop .45s ease-out; }
-  @keyframes drop { from { opacity: 0; transform: translateY(-14px); } }
-  .meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--grey); margin-bottom: 8px; flex-wrap: wrap; }
-  .meta .cat { font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .5px; }
-  .meta .pill { background: var(--yellow); color: var(--ink); font-weight: 900; font-size: 10px;
-                padding: 2px 7px; border-radius: 3px; text-transform: uppercase; }
-  .post h2 { margin: 0 0 12px; font-size: 32px; line-height: 1.1; font-weight: 900; letter-spacing: -.5px; }
-  /* two square pictures side by side = one wide 2:1 picture, never cropped */
-  .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 10px; }
-  .imgs figure { margin: 0; min-width: 0; position: relative; }
-  /* small ranking number in the bottom left corner of each picture */
-  .imgs .rank { position: absolute; left: 6px; bottom: 6px; max-width: calc(100% - 12px);
-                background: #fff; color: var(--ink); font-size: 13px; font-weight: 900; line-height: 1;
-                padding: 5px 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .imgs .rank .up { color: #0a8a3a; } .imgs .rank .down { color: var(--red); }
-  .imgs img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; }
-  .imgs .ph { width: 100%; aspect-ratio: 1; background: #eee; display: grid; place-items: center;
-              font-size: 48px; font-weight: 900; color: #bbb; }
-  .caption { font-size: 17px; line-height: 1.45; margin: 0; }
-  .byline { font-size: 12px; color: var(--grey); margin-top: 10px; }
+  /* article */
+  .back { display: inline-block; margin: 16px 0 4px; color: var(--grey); text-decoration: none; font-size: 14px; }
+  .article h1 { margin: 8px 0 12px; font-size: 32px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
+  .byline { font-size: 12px; color: var(--grey); margin-bottom: 14px; }
+  .hero { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
+  .lead { font-size: 17px; line-height: 1.5; margin: 14px 0 6px; }
+  .list { list-style: none; margin: 10px 0 0; padding: 0; }
+  .item { display: grid; grid-template-columns: 44px 88px 1fr; gap: 12px; align-items: center; padding: 12px 0;
+          border-top: 1px solid var(--line); cursor: pointer; }
+  .item .rk { font-size: 28px; font-weight: 900; text-align: center; letter-spacing: -1px; }
+  .item img, .item .ph { width: 88px; height: 88px; object-fit: cover; display: block; background: #eee; }
+  .item h3 { margin: 0 0 3px; font-size: 18px; font-weight: 900; }
+  .item p { margin: 0; font-size: 14px; color: var(--grey); line-height: 1.35; }
+  .tier { display: inline-block; min-width: 22px; text-align: center; font-weight: 900; font-size: 12px; padding: 2px 5px;
+          margin-right: 6px; background: var(--c); color: #000; }
+  .tier[data-t="F"] { color: #fff; }
 
-
-  #waiting { text-align: center; color: var(--grey); padding: 60px 0; font-size: 14px; }
-
-  @media (max-width: 600px) {
-    .mast { gap: 12px; padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); }
-    .logo { font-size: 24px; }
-    .bdg { width: 28px; height: 28px; font-size: 8px; }
-    .nav { padding: 8px 14px; top: 49px; }
-    #feed { padding: 4px 14px 40px; }
-    .post { padding: 20px 0; }
-    .post h2 { font-size: 24px; }
-    .caption { font-size: 15px; }
-  }
+  /* one entry, with the print button */
+  .sheet { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; }
+  .sheet[hidden] { display: none; }
+  .panel { background: #fff; width: 100%; max-width: 680px; margin: 0 auto; max-height: 92vh; overflow: auto;
+           padding: 18px 18px max(22px, env(safe-area-inset-bottom)); border-radius: 14px 14px 0 0; }
+  .panel img, .panel .ph { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
+  .panel h2 { margin: 14px 0 4px; font-size: 28px; font-weight: 900; letter-spacing: -.4px; }
+  .panel .meta { font-size: 15px; margin-bottom: 8px; }
+  .panel p { font-size: 15px; line-height: 1.45; margin: 0 0 16px; }
+  .print { width: 100%; padding: 16px; border: 0; background: var(--ink); color: #fff; font-weight: 900; font-size: 17px; cursor: pointer; }
+  .close { width: 100%; padding: 12px; border: 0; background: none; color: var(--grey); margin-top: 6px; cursor: pointer; }
+  .printnote { font-size: 13px; color: var(--grey); text-align: center; min-height: 1.3em; margin-top: 8px; }
+  .ph { display: grid; place-items: center; font-size: 40px; font-weight: 900; color: #bbb; }
 </style>
 </head>
 <body>
 <div class="mast">
-  <div class="logo">RankFeed</div>
+  <a class="logo" href="#">RankFeed</a>
   <div class="badges"><div class="bdg">OMG</div><div class="bdg y">LOL</div><div class="bdg k">WTF</div></div>
-  <span id="status">connecting…</span>
 </div>
-<nav class="nav" id="nav"></nav>
-<main id="feed"><div id="waiting">Waiting for the next ranking update…</div></main>
+<main id="view"><p class="edition">Loading your edition…</p></main>
+<div class="sheet" id="sheet" hidden><div class="panel" id="panel"></div></div>
 
 <script src="shared.js"></script>
 <script>
-const MAX_POSTS = 80;
-const TEMPLATE_SHARE = 0.25;   // share of move posts that use the category's main headline
-const BEAT_MS = 2500;          // a new article appears every 2.5 s, like a steady beat
-                               // (the newest change wins, older waiting ones are skipped)
-const REPLAY_SHARE = 0.5;      // when the page opens: share of past changes shown as articles
+// ════════════════════════════════════════════════════════════════
+//  RankFeed — a personal snapshot
+//  The moment someone opens this page, it loads the ranking ONCE and writes three
+//  articles for this visitor only (one per category). It never changes afterwards.
+//  Reloading in the same browser tab keeps the same edition.
+// ════════════════════════════════════════════════════════════════
 
-// decided by chance, but the same chance on every phone (based on the event number)
-function lucky(ev) {
-  let x = Math.imul(ev.seq, 2654435761) >>> 0;
-  x = Math.imul(x ^ (x >>> 15), 2246822519) >>> 0;
-  return ((x ^ (x >>> 13)) >>> 0) / 4294967296 < REPLAY_SHARE;
-}
-const feed = document.getElementById("feed");
-let headlines = {};            // category -> main headline template
-let labels = {};               // category -> display name
-
-// Every headline is a template; the placeholders are filled with the names from the ranking:
-// {W} winner (moved up), {L} loser (moved down), {R} new rank of W, {R2} new rank of L,
-// {N} a new entry, {O} the entry next to it, {T} a tier.
-// Rule: the reason for a ranking is NEVER stated. No metric, no value, no hint at the question.
+// Placeholders, filled with names from the ranking:
+//   headlines and leads: {top} #1, {second} #2, {last} last place, {mid} somewhere in the middle,
+//                        {n} how many, {label} the list's name
+//   lines under each entry: {N} the entry, {A} the one above it, {B} the one below, {T} its tier
+// Rule: the reason for a ranking is NEVER stated.
 const HEADLINES = {
   _any: [
-    "{W} Just Overtook {L} and Honestly? We Saw It Coming",
-    "{L} Lost Their Spot to {W} and Nobody Will Say Why",
-    "{W} Is Now #{R} and the Internet Has Thoughts",
-    "We Can't Stop Thinking About What {W} Just Did to {L}",
-    "{L} Dropped to #{R2}. Here's What We Know.",
-    "Only True Fans Will Understand Why {W} Is Now Above {L}",
-    "{W} Climbed Past {L} and We're Not Okay",
-    "This Is the Exact Moment {L} Was Replaced by {W}",
-    "{W} vs. {L}: It's Over, and It Wasn't Close",
-    "{L} Had One Job. {W} Did It Better.",
+    "We Ranked {n} {label}. {top} Is Number 1 and {last} Should Probably Sit Down.",
+    "{top} Is Officially the Best of {n} {label}. Here's the Full List.",
+    "Here Are All {n} {label}, Ranked. You Won't Believe Where {mid} Ended Up.",
+    "{last} Came Last. We're Not Allowed to Tell You Why.",
+    "The Machine Has Spoken: {top} Beats {second}, and It Wasn't Close",
   ],
   students: [
-    "{W} Moved Up and {L} Has Left the Group Chat",
-    "Someone Please Tell {L} About {W}",
-    "{W} Is Now #{R} and the Class Is Very Quiet",
+    "Your Classmates, Ranked: {top} Is on Top and {last} Has Left the Group Chat",
+    "We Ranked {n} Students and {mid} Will Want to Read This",
   ],
   inventions: [
-    "{W} Just Beat {L} and Historians Are Furious",
-    "{L} Changed the World. It Wasn't Enough.",
-    "{W} Is #{R} Now and Your History Teacher Will Never Be the Same",
-  ],
-  mix: [
-    "{W} Just Beat {L}. Yes, We Are Comparing These Now.",
-    "Nobody Asked, But {W} Is Now Above {L}",
-    "{L} Lost to {W}. Let That Sink In.",
+    "History, Ranked: {top} Beats {second} and Historians Are Furious",
+    "{n} Inventions That Changed the World, Ranked. Sorry, {last}.",
   ],
   konzerne: [
-    "{W} Just Overtook {L} and the Board Has Called an Emergency Meeting",
-    "{L} Dropped to #{R2}. The Press Release Is Being Written.",
-    "{W} Is #{R} Now and LinkedIn Is Losing It",
+    "Capitalism, Ranked: {top} Is Number 1 and {last} Is Calling Its Lawyers",
+    "We Ranked {n} Konzerne. {second} Is Second and the Board Is Not Happy.",
+  ],
+  mix: [
+    "Students vs. Inventions vs. Konzerne: {top} Won. Let That Sink In.",
+    "Nobody Asked, But Here Is {top} Ranked Above {second}",
+    "{last} Lost to Literally Everything on This List",
   ],
 };
-const NUMBER_ONE = [
-  "{W} Is the New Number 1 and It's Not Who You'd Expect",
-  "BREAKING: {W} Takes the Top Spot From {L}",
-  "{L} Is No Longer Number 1. {W} Made Sure of That.",
+const LEADS = [
+  "The machine looked at {n} {label} and made a decision. {top} is on top, {second} is right behind, and {last} is where nobody wants to be. We asked a question. You will never know which one.",
+  "Who gets to rank what, based on what? Not you. Here is where {top}, {mid} and {last} stand right now.",
+  "We gave away our taste a long time ago. This time it went to the perfect machine. It put {top} first and {last} last.",
 ];
-const PROMOTED = [
-  "{W} Just Made It Into Tier {T} and {L} Was Not Consulted",
-  "Welcome to Tier {T}, {W}. {L} Did Not Expect You.",
-  "{W} Is Tier {T} Now. {L} Has Seen Enough.",
-];
-const DEMOTED = [
-  "{L} Has Fallen to Tier {T}. {W} Sends Thoughts and Prayers.",
-  "{L} Is Tier {T} Now and Is Not Taking Questions",
-  "{W} Watched {L} Slide Into Tier {T}. Nobody Said a Word.",
-];
-const NEW_ENTRY = [
-  "{N} Just Entered at #{R} and {O} Is Already Nervous",
-  "Who Let {N} In? Straight to Tier {T}, Right Next to {O}.",
-  "{N} Has Been Ranked. {O} Has Questions.",
-  "We Just Found Out Where {N} Belongs: Right Next to {O}",
-  "{N} Joins Tier {T}. {O} Pretends Not to Notice.",
-];
-const CAPTIONS = [
-  "That's all we're allowed to say.",
-  "The ranking has spoken. We just report it.",
-  "We asked a question. You will never know which one.",
-  "Don't get comfortable. It will probably change again.",
-  "Our editors have no comment at this time.",
-  "Sources close to #{R} say this was a long time coming.",
-  "Nobody saw this coming. Except the ranking.",
-  "We checked twice. It's real.",
-];
-// sequence changes: {A} and {B} are two pictures picked by the server
-const CLEARING = [
-  "BREAKING: Every Ranking Was Just Wiped. {A} and {B} Are Back to Zero.",
-  "{A} and {B} Were on Top. Then Everything Disappeared.",
-];
-const MIX_START = [
-  "Students, Inventions and Konzerne Are Now Ranked Against Each Other. {A} Has Concerns.",
-  "{A} vs. {B}: It's Finally Happening",
-  "It's Official: {A} Will Now Be Compared to {B}",
-];
-const RESTART = [
-  "A New Round Begins. {A} and {B} Start From Zero.",
-  "Everything Starts Over. {A} Is Ready. {B} Is Not.",
-];
-const PILLS = ["Trending", "Hot", "Viral", "Breaking", "Must Read", "LOL", "OMG"];
+const LINES = {
+  first: ["Number one. No further questions.", "The top spot. The machine was very sure.", "First place. Nobody will say why."],
+  last: ["Last place. Somebody had to be.", "At the bottom, just below {A}.", "Last. The machine has no regrets."],
+  mid: [
+    "{N} sits right above {B}.",
+    "Just behind {A}. Close, but no.",
+    "Tier {T}. The machine was very sure.",
+    "Better than {B}. Worse than {A}.",
+    "Nobody saw this coming. Except the ranking.",
+    "Exactly where {N} belongs, apparently.",
+    "Ahead of {B}. For now.",
+    "{A} is one place ahead and knows it.",
+  ],
+};
+const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
+const SNAPSHOT_KEY = "rankfeed-edition";
+const $ = (id) => document.getElementById(id);
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let edition = null;
 
-function fmtAgo(t) {
-  const s = Math.round((Date.now() - t) / 1000);
-  if (s < 10) return "just now";
-  if (s < 60) return `${s} seconds ago`;
-  const m = Math.round(s / 60);
-  if (m < 60) return m === 1 ? "1 minute ago" : `${m} minutes ago`;
-  const h = Math.round(m / 60);
-  return h === 1 ? "1 hour ago" : `${h} hours ago`;
-}
-
-function el(tag, cls, text) {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text != null) e.textContent = text;
-  return e;
-}
-
-function meta(ev, pill) {
-  const m = el("div", "meta");
-  m.append(el("span", "cat", labels[ev.category] || ev.label || ev.category));
-  if (pill) m.append(el("span", "pill", pill));
-  const t = el("time");
-  t.dataset.t = ev.t ? toLocalTime(ev.t) : Date.now();
-  t.textContent = fmtAgo(+t.dataset.t);
-  m.append(t);
-  return m;
-}
-
-// one square picture, shown whole (never cropped), with "▲ #16 Name" in the bottom left corner
-function figure(e, dir) {
-  const f = el("figure");
-  const img = el("img"); img.src = e.image; img.alt = e.title; img.loading = "lazy";
-  img.onerror = () => img.replaceWith(el("div", "ph"));
-  f.append(img);
-  const label = el("span", "rank");
-  if (dir) label.append(el("span", dir, dir === "up" ? "▲ " : "▼ "));
-  label.append((e.rank ? `#${e.rank} ` : "") + e.title);
-  f.append(label);
-  return f;
-}
-
-// every post is one article: headline, two squares side by side (left = the one in the spotlight), caption.
-// It is only built when its turn comes, so skipped articles never load their pictures.
-function article(ev, pill, headline, left, right, caption, dirs = []) {
-  offer(ev, () => {
-    const p = el("article", "post");
-    p.append(meta(ev, pill), el("h2", null, headline));
-    const imgs = el("div", "imgs");
-    imgs.append(figure(left, dirs[0]), figure(right, dirs[1]));
-    p.append(imgs, el("p", "caption", caption), el("div", "byline", "by The Ranking Desk"));
-    return p;
+// ════════ Write the edition (once) ════════
+function writeEdition(snap) {
+  const real = snap.categories.filter((c) => !c.virtual);
+  const byName = Object.fromEntries(snap.categories.map((c) => [c.name, c]));
+  const mixed = snap.phase === "mix";
+  const articles = real.map((c, i) => {
+    const L = mixed ? byName[`mix-${c.name}`] || { entries: [] } : c; // in the mix: what each screen shows
+    const label = mixed ? "Things" : c.label;
+    const entries = (L.entries || []).map((e) => ({ id: e.id, title: e.title, image: e.image, tier: e.tier, rank: e.rank }));
+    const n = entries.length;
+    const v = {
+      n, label,
+      top: entries[0]?.title, second: entries[1]?.title || entries[0]?.title,
+      last: entries[n - 1]?.title, mid: entries[Math.floor(n / 2)]?.title,
+    };
+    const recent = [];
+    entries.forEach((e, k) => {
+      const pool = k === 0 ? LINES.first : k === n - 1 ? LINES.last : LINES.mid;
+      const line = pick(pool.filter((l) => !recent.includes(l)));
+      recent.push(line);
+      if (recent.length > 2) recent.shift();
+      e.line = fill(line, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier });
+    });
+    const key = mixed ? "mix" : c.name;
+    return {
+      slug: c.name,
+      cat: mixed ? `Everything · Part ${i + 1}` : c.label,
+      pill: pick(PILLS),
+      headline: n >= 2 ? fill(pick([...HEADLINES._any, ...(HEADLINES[key] || [])]), v) : null,
+      lead: n >= 2 ? fill(pick(LEADS), v) : null,
+      entries,
+    };
   });
+  return { at: Date.now(), articles };
 }
 
-// ── the beat: one article every BEAT_MS ──
-let waitingPost = null;   // the newest normal article waiting for its turn
-const urgent = [];        // sequence changes: always shown, before anything else
-function offer(ev, build) {
-  if (ev.replay) {        // the page just opened: show (part of) the past right away
-    if (ev.type === "phase" || lucky(ev)) add(build(), ev.category);
-    return;
+// ════════ Views ════════
+const timeOf = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const img = (e, cls = "") => e.image
+  ? `<img class="${cls}" src="${esc(e.image)}" alt="${esc(e.title)}" loading="lazy">`
+  : `<div class="ph ${cls}">${esc(e.title[0])}</div>`;
+const tierChip = (t) => `<span class="tier" data-t="${t}" style="--c:var(--tier-${t})">${t}</span>`;
+
+function home() {
+  delete $("view").dataset.slug;
+  const ready = edition.articles.filter((a) => a.headline);
+  $("view").innerHTML = `
+    <p class="edition">Your edition · ${timeOf(edition.at)}</p>
+    <p class="note">Generated for you the moment you arrived. It will not change. The ranking already has.</p>
+    ${ready.map((a) => `
+      <a class="card" href="#/${a.slug}">
+        ${img(a.entries[0])}
+        <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span><h2>${esc(a.headline)}</h2></div>
+      </a>`).join("")}
+    ${ready.length ? "" : `<p class="note">The machine is still ranking. Come back in a minute for your edition.</p>`}`;
+  window.scrollTo(0, 0);
+}
+
+function article(slug) {
+  const a = edition.articles.find((x) => x.slug === slug);
+  if (!a || !a.headline) return home();
+  $("view").dataset.slug = slug;
+  $("view").innerHTML = `
+    <div class="article">
+      <a class="back" href="#">← All articles</a>
+      <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span></div>
+      <h1>${esc(a.headline)}</h1>
+      <div class="byline">by The Ranking Desk · snapshot from ${timeOf(edition.at)}</div>
+      ${img(a.entries[0], "hero")}
+      <p class="lead">${esc(a.lead)}</p>
+      <ol class="list">
+        ${a.entries.map((e) => `
+          <li class="item" data-id="${esc(e.id)}">
+            <div class="rk">${e.rank}</div>
+            ${img(e)}
+            <div><h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${esc(e.line)}</p></div>
+          </li>`).join("")}
+      </ol>
+    </div>`;
+  document.querySelectorAll(".item").forEach((li) => (li.onclick = () => (location.hash = `#/${slug}/${encodeURIComponent(li.dataset.id)}`)));
+  window.scrollTo(0, 0);
+}
+
+function sheet(slug, id) {
+  const a = edition.articles.find((x) => x.slug === slug);
+  const e = a && a.entries.find((x) => x.id === id);
+  if (!e) return;
+  const above = a.entries[e.rank - 2], below = a.entries[e.rank];
+  const ctx = [above && `below ${above.title}`, below && `above ${below.title}`].filter(Boolean).join(", ");
+  $("panel").innerHTML = `
+    ${img(e)}
+    <h2>${esc(e.title)}</h2>
+    <div class="meta">${tierChip(e.tier)}#${e.rank} of ${a.entries.length} · ${esc(a.cat)}</div>
+    <p>${esc(e.line)}${ctx ? ` Ranked ${esc(ctx)}.` : ""}</p>
+    <button class="print" id="print">Print</button>
+    <div class="printnote" id="printnote"></div>
+    <button class="close" id="close">Close</button>`;
+  $("sheet").hidden = false;
+  $("print").onclick = () => printEntry(e, a);
+  $("close").onclick = () => history.back();
+}
+
+// ════════ PRINT — to be connected later ════════
+// Called when a visitor presses "Print" on an entry.
+//   entry   = { id, title, image, tier, rank, line }
+//   article = { slug, cat, headline, entries }   (slug = students | inventions | konzerne)
+// Put the real printing here later, e.g. fetch(RANK_BASE + "/api/print", { method: "POST", body: … }).
+function printEntry(entry, article) {
+  console.log("PRINT", { entry, category: article.slug, at: new Date().toISOString() });
+  $("printnote").textContent = "Printing isn't connected yet.";
+}
+
+// ════════ Routing: #/students and #/students/<entry id> ════════
+function route() {
+  if (!edition) return;
+  const [, slug, id] = location.hash.split("/");
+  if (!slug) { $("sheet").hidden = true; return home(); }
+  if ($("view").dataset.slug !== slug) article(slug);
+  if (id) sheet(slug, decodeURIComponent(id));
+  else $("sheet").hidden = true;
+}
+window.addEventListener("hashchange", route);
+$("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) history.back(); });
+
+// ════════ Start: load once, write once ════════
+(async function start() {
+  try { edition = JSON.parse(sessionStorage.getItem(SNAPSHOT_KEY)); } catch { edition = null; }
+  if (!edition) {
+    try {
+      edition = writeEdition(await fetchRankState());
+      // only keep editions that have something to read; otherwise a reload tries again
+      if (edition.articles.some((x) => x.headline)) {
+        try { sessionStorage.setItem(SNAPSHOT_KEY, JSON.stringify(edition)); } catch {}
+      }
+    } catch {
+      $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking machine can't be reached right now. Try again in a moment.</p>`;
+      return;
+    }
   }
-  if (ev.type === "phase") urgent.push({ ev, build });
-  else waitingPost = { ev, build };
-}
-function beat() {
-  let next = urgent.shift();
-  if (!next && waitingPost) {
-    next = waitingPost;
-    waitingPost = null;
-  }
-  if (next) add(next.build(), next.ev.category);
-  // all phones beat at the same moments (server clock)
-  setTimeout(beat, BEAT_MS - (serverNow() % BEAT_MS));
-}
-
-// W is now directly above L
-function movePost(ev, W, L, promoted, demoted) {
-  const v = { W: W.title, L: L.title, R: W.rank, R2: L.rank };
-  let tpl, pill = pick(PILLS);
-  if (W.rank === 1 && (W.id === ev.id || ev.before.rank === 1)) tpl = pick(NUMBER_ONE);
-  else if (promoted && Math.random() < 0.6) { tpl = pick(PROMOTED); v.T = promoted; pill = `Tier ${promoted} ▲`; }
-  else if (demoted && Math.random() < 0.6) { tpl = pick(DEMOTED); v.T = demoted; pill = `Tier ${demoted} ▼`; }
-  else if (headlines[ev.category] && Math.random() < TEMPLATE_SHARE) tpl = headlines[ev.category];
-  else tpl = pick([...HEADLINES._any, ...(HEADLINES[group(ev.category)] || [])]);
-
-  article(ev, pill, fill(tpl, v), W, L, fill(pick(CAPTIONS), v), ["up", "down"]);
-}
-
-function add(post, cat) {
-  document.getElementById("waiting")?.remove();
-  post.dataset.cat = group(cat);
-  applyFilter(post);
-  feed.prepend(post);
-  while (feed.children.length > MAX_POSTS) feed.lastChild.remove();
-}
-
-// a new entry has been ranked: shown next to its new neighbour
-function onCommit(ev) {
-  const e = ev.entry;
-  const O = ev.below || ev.above; // the one below it, else the one above
-  if (!O) return; // only one entry so far: nothing to put next to it
-  const v = { N: e.title, O: O.title, R: e.rank, T: e.tier };
-  article(ev, `New · Tier ${e.tier}`, fill(pick(NEW_ENTRY), v), e, O, fill(pick(CAPTIONS), v));
-}
-
-// live change: did it overtake someone, fall behind someone, or change tier?
-function onDrift(ev) {
-  const { before, after, above, below } = ev;
-  const tierChanged = after.tier !== before.tier && after.tier;
-  if (after.rank < before.rank && below) return movePost(ev, after, below, tierChanged, null);
-  if (after.rank > before.rank && above) return movePost(ev, above, after, null, tierChanged);
-  if (tierChanged) {
-    if (ev.change > 0 && below) return movePost(ev, after, below, tierChanged, null);
-    if (ev.change < 0 && above) return movePost(ev, above, after, null, tierChanged);
-  }
-  // small change without a new place or tier: not news
-}
-
-// the show switches between its two sequences
-function onPhase(ev) {
-  const [A, B] = ev.sample || [];
-  if (!A || !B) return;
-  const v = { A: A.title, B: B.title };
-  const tpl = ev.phase === "clearing" ? CLEARING : ev.phase === "mix" ? MIX_START : RESTART;
-  const pill = ev.phase === "clearing" ? "Breaking" : ev.phase === "mix" ? "Everything" : "New Round";
-  article({ ...ev, category: "all" }, pill, fill(pick(tpl), v), A, B, pick(CAPTIONS.filter((c) => !c.includes("{"))));
-}
-
-// ── category filter ──
-let filter = null;
-function applyFilter(post) { post.classList.toggle("match", !filter || post.dataset.cat === filter || post.dataset.cat === "all"); }
-function setFilter(cat) {
-  filter = cat;
-  if (cat) feed.dataset.filter = cat; else delete feed.dataset.filter;
-  feed.querySelectorAll(".post").forEach(applyFilter);
-  document.querySelectorAll("#nav button").forEach((b) => b.setAttribute("aria-pressed", (b.dataset.cat || null) === cat));
-}
-// the three mixed lists ("mix-students", …) count as one: "mix" = Everything
-const group = (cat) => (cat && cat.startsWith("mix-") ? "mix" : cat);
-
-function buildNav(all) {
-  const cats = all.filter((c) => !c.virtual);
-  if (all.some((c) => c.virtual)) cats.push({ name: "mix", label: "Everything" });
-  const nav = document.getElementById("nav");
-  nav.innerHTML = "";
-  [{ name: null, label: "All" }, ...cats].forEach((c) => {
-    const b = el("button", null, c.label);
-    if (c.name) b.dataset.cat = c.name;
-    b.onclick = () => setFilter(c.name);
-    nav.append(b);
-  });
-  setFilter(filter);
-}
-
-setTimeout(beat, 500);
-setInterval(() => {
-  for (const t of feed.querySelectorAll("time")) t.textContent = fmtAgo(+t.dataset.t);
-}, 5000);
-
-connectDisplay({
-  onSnapshot: snap => {
-    headlines = Object.fromEntries(snap.categories.map(c => [c.name, c.headline]));
-    labels = Object.fromEntries(snap.categories.map(c => [c.name, c.label]));
-    labels.all = "All Rankings";
-    buildNav(snap.categories);
-  },
-  lite: true,
-  onCommit,
-  onDrift,
-  onPhase,
-  onStatus: s => {
-    const st = document.getElementById("status");
-    st.textContent = s;
-    st.classList.toggle("live", s === "live");
-  },
-});
+  route();
+})();
 </script>
 </body>
 </html>

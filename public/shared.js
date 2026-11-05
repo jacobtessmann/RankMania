@@ -29,6 +29,14 @@
     return m;
   }
 
+  /** fetchRankState() → the current state once (no live updates), e.g. for the phone feed */
+  window.fetchRankState = async function () {
+    const r = await fetch(BASE + "/api/state", { cache: "no-store" });
+    const m = await r.json();
+    if (m.now) offset = m.now - Date.now();
+    return fix(m);
+  };
+
   /**
    * connectDisplay({ lite, onSnapshot, onHover, onCommit, onDrift, onRoster, onPhase, onStatus })
    *  lite: true        phones: smaller stream without full lists and hover events

@@ -13,10 +13,14 @@
 All screens clear, then every screen fills with a random mix of all three categories.</p>
 <p><button data-action="separate">Restart sequence 1 (separate)</button><br>
 All screens clear and every category starts again from empty.</p>
+<p><label for="speed">Brain speed: <output id="speedval">1×</output></label><br>
+<input id="speed" type="range" min="0.25" max="3" step="0.05" value="1"><br>
+Slower to the left, faster to the right. Changes the tempo of all screens at once.</p>
 <p id="msg"></p>
 <h2 id="phase">…</h2>
 <table id="lists" border="1" cellpadding="4"></table>
 <p id="auto"></p>
+<p><a href="brain.html">Open the brain view</a></p>
 <script>
 const base = (new URLSearchParams(location.search).get("server") || "").replace(/\/+$/, "");
 const $ = (id) => document.getElementById(id);
@@ -45,11 +49,35 @@ document.querySelectorAll("button[data-action]").forEach((b) => (b.onclick = asy
   poll();
 }));
 
+// brain speed: sent when the slider is let go
+let dragging = false;
+$("speed").oninput = () => { dragging = true; $("speedval").textContent = (+$("speed").value).toFixed(2) + "×"; };
+$("speed").onchange = async () => {
+  const key = $("key").value;
+  try { localStorage.setItem("rankKey", key); } catch {}
+  try {
+    const r = await fetch(base + "/api/control", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, action: "speed", value: +$("speed").value }),
+    });
+    const j = await r.json();
+    $("msg").textContent = j.ok ? `Speed set to ${j.speed}×.` : j.error;
+  } catch {
+    $("msg").textContent = "Server not reachable.";
+  }
+  dragging = false;
+  poll();
+};
+
 async function poll() {
   try {
     const s = await (await fetch(base + "/api/status", { cache: "no-store" })).json();
     offset = s.now - Date.now();
     autoAt = s.autoMixAt;
+    if (!dragging && s.speed != null) {
+      $("speed").value = s.speed;
+      $("speedval").textContent = (+s.speed).toFixed(2) + "×";
+    }
     $("phase").textContent = NAMES[s.phase] || s.phase;
     $("lists").innerHTML = "<tr><td></td><td>ranked</td><td>hovering</td><td>waiting</td></tr>" +
       s.lists.map((l) => `<tr><td>${l.label}${l.active ? " (running)" : ""}</td><td>${l.ranked}</td><td>${l.hovering}</td><td>${l.waiting}</td></tr>`).join("");
