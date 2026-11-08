@@ -22,7 +22,8 @@
   --f-type: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --f-name: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --label-w: min(14vh, 16vw);
-  --side-w: min(3.4vh, 6vw);
+  --side-w: min(2.4vh, 4.4vw);
+  --row-gap: 3px;                                  /* white line between the tiers (keep in sync with ROW_GAP) */
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
@@ -49,21 +50,21 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 #title .n { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; }
 
 /* ═══ Tier rows ═══ */
-#tierlist { flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
+#tierlist { flex: 0 0 auto; display: flex; flex-direction: column; gap: var(--row-gap); padding-top: var(--row-gap); }
 .row { flex: 0 0 auto; display: flex; height: 80px; transition: height .6s ease; }
 .label {
   flex: 0 0 var(--label-w); display: flex; align-items: center; justify-content: center;
-  background: var(--ink); color: var(--paper); font-family: var(--f-type); font-weight: 400; font-size: min(8vh, 9vw);
+  background: var(--ink); color: var(--paper); font-family: var(--f-type); font-weight: 400; font-size: calc(var(--tile, 80px) * .6);
 }
 .items { flex: 1; min-width: 0; }
 
 #source { display: none; }
-#pool-row { flex: 0 0 auto; display: flex; height: 40px; margin-top: 2px; transition: height .6s ease; }
+#pool-row { flex: 1 1 auto; display: flex; min-height: 0; margin-top: var(--row-gap); } /* the waiting row gets all the space that is left */
 
 /* ═══ Side strip: vertical texts, read from bottom to top ═══ */
 #side {
   flex: 0 0 var(--side-w); display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-  font-family: var(--f-type); font-size: min(1.6vh, 2.6vw); color: var(--ink); white-space: nowrap; overflow: hidden;
+  font-family: var(--f-type); font-size: min(1.1vh, 1.9vw); color: var(--ink); white-space: nowrap; overflow: hidden;
 }
 #side span { writing-mode: vertical-rl; transform: rotate(180deg); }
 
@@ -76,7 +77,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 .card.no-anim { transition: none; }
 .face { width: 100%; height: 100%; position: relative; overflow: hidden; background: var(--paper); }
 /* vignette (inner shadow: blur 19, spread 14 at ~135 px, scaled to the icon size).
-   Its color shows the state: white = ranked, none = still undecided (hovering),
+   Its color shows the state: white = ranked, none = waiting in the "…" row or still undecided (hovering),
    green = just moved up, red = just moved down. */
 .face::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
                box-shadow: inset 0 0 calc(var(--s, 100px) * .14) calc(var(--s, 100px) * .1) var(--vig, #fff);
@@ -100,7 +101,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   overflow: hidden;
 }
 .name span { display: block; white-space: nowrap; }
-.card.in-pool .face { filter: saturate(.9); }
+.card.in-pool .face { --vig: transparent; } /* no vignette while waiting in the "…" row */
 .card.fresh { z-index: 5; }
 
 /* connection status: only visible when the connection is lost */
@@ -130,7 +131,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 #pool-row .items { margin-right: 0; }
 #rail {
   position: absolute; z-index: 3; pointer-events: none; display: none;
-  border-left: 4px solid var(--paper);
+  border-left: 0;
 }
 #rail.on { display: block; }
 .card.hover { z-index: 7; transition: transform .7s cubic-bezier(.45, 0, .2, 1), width .4s, height .4s; }
@@ -143,6 +144,11 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 
 /* ═══ Clearing between the sequences: everything falls off the screen ═══ */
 .card.falling { transition: transform 1.1s cubic-bezier(.55, 0, .9, .45) !important; }
+
+#soundhint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 25;
+  background: #000; color: #fff; font-family: var(--f-type); font-size: 14px; padding: 6px 12px;
+}
 
 /* hidden icon size slider: press S or double-click the title to show/hide */
 #sizer {
@@ -167,6 +173,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   <div id="cards"></div>
   <div id="live">verbinde…</div>
   <div id="empty" hidden></div>
+  <div id="soundhint" hidden>Click anywhere to turn on sound · M = mute</div>
   <div id="sizer" hidden>
     Icon size <input id="size" type="range" min="0" max="400" step="2"> <span id="sizeval"></span>
     <button type="button" id="sizeauto">Auto</button>
@@ -177,9 +184,10 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 <script>
 const SITE_TEXT = "rankmania.netlify.com"; // top text in the side strip
 const TIMER_TEXT = "{t} until reset";       // bottom text in the side strip ({t} = time left), shown when a timer runs
-const GAP = 2;        // space between pictures (px)
+const GAP = 0;        // space between pictures in the same tier (px), 0 = they touch
+const ROW_GAP = 3;    // space between the tiers (px): the white line between the letter boxes
 const TILE_SIZE = 0;  // icon size in px, e.g. 70 — or 0 = automatic (as big as the list allows)
-const POOL_SCALE = 0.5;  // icons in the "…" row are this much smaller than in the tiers
+const POOL_SCALE = 0.75; // icons in the "…" row are at most this big compared to the others (they get smaller if many wait)
 const STEP_MS = 750;  // how often a hovering entry jumps to a new height
 const SWING = 60;     // how wild the hovering is at the start (score points)
 const SETTLE = 0.78;  // after this share of the hover time it stays at its final height
@@ -333,24 +341,15 @@ function layout() {
   // ONE icon size for everything. A full tier never shrinks its icons: its row gets another line.
   const sz = L ? tileSizes(L) : { tier: 80, pool: 40, cols: 1, pcols: 1 };
   app.style.setProperty("--rail-w", L ? railGeometry().width + "px" : "0px");
+  // each tier row is exactly one icon tall, two when it needs a second line; the "…" row gets the rest
+  app.style.setProperty("--tile", sz.tier + "px");
   const heights = {};
   for (const t of TIER_IDS) {
     const lines = Math.max(1, Math.ceil(rows[t].length / sz.cols));
     heights[t] = lines * (sz.tier + GAP) - GAP;
     $(`row-${t}`).style.height = heights[t] + "px";
   }
-  const poolH = Math.max(1, Math.ceil(pool.length / sz.pcols)) * (sz.pool + GAP) - GAP;
-  $("pool-row").style.height = poolH + "px";
-  $("pool-row").querySelector(".label").style.fontSize = Math.round(poolH * 0.7) + "px";
-  // the rows share the rest of the screen, so the list always fills the full height;
-  // a full tier gets taller (another line of icons), the others give way
-  const free = $("stage").clientHeight - $("title").offsetHeight - poolH - 2 * (TIER_IDS.length + 2)
-             - ($("mode-switch").offsetParent ? $("mode-switch").offsetHeight : 0);
-  const extra = Math.max(0, free - TIER_IDS.reduce((h, t) => h + heights[t], 0)) / TIER_IDS.length;
-  for (const t of TIER_IDS) {
-    heights[t] = Math.floor(heights[t] + extra);
-    $(`row-${t}`).style.height = heights[t] + "px";
-  }
+  $("app").style.setProperty("--row-gap", ROW_GAP + "px");
 
   if (L) {
     const g = railGeometry();
@@ -359,16 +358,15 @@ function layout() {
     const first = $(`row-${TIER_IDS[0]}`);
     const top = first.getBoundingClientRect().top - origin.top;
     const left = first.querySelector(".label").getBoundingClientRect().right - origin.left;
-    const allH = TIER_IDS.reduce((h, t) => h + heights[t] + 2, 0) + poolH;
     Object.assign($("rail").style, {
       left: stage.right - origin.left - g.width + "px", top: top + "px",
-      width: g.width + "px", height: allH + "px",
+      width: g.width + "px", height: stage.bottom - origin.top - top + "px",
     });
     // positions are computed from the final row heights, so cards don't land mid-animation
     let y = top;
     for (const t of TIER_IDS) {
       placeAt(rows[t], left, y, sz.tier, sz.cols, t);
-      y += heights[t] + 2;
+      y += heights[t] + ROW_GAP;
     }
     placeAt(pool, left, y, sz.pool, sz.pcols, "pool");
   }
@@ -414,27 +412,26 @@ function tileSizes(L) {
   const total = L.entries.length + L.pool.length + L.hovering.length;
   const appW = $("stage").clientWidth, appH = $("stage").clientHeight;
   const label = $(`row-${TIER_IDS[0]}`).querySelector(".label").getBoundingClientRect().width;
-  const used = $("title").offsetHeight
-             + ($("mode-switch").offsetParent ? $("mode-switch").offsetHeight : 0) + 2 * (TIER_IDS.length + 3);
+  const used = $("title").offsetHeight + ($("mode-switch").offsetParent ? $("mode-switch").offsetHeight : 0)
+             + ROW_GAP * (TIER_IDS.length + 1);
   const avail = appH - used;
   const key = [shownId(), total, appW, avail, userSize, TILE_SIZE].join("|");
   if (fixed.key === key) return fixed;
   const colsFor = (s, rail) => Math.max(1, Math.floor((appW - label - rail + GAP) / (s + GAP)));
-  const fits = (s) => {
-    const p = Math.max(16, Math.round(s * POOL_SCALE));
-    // all entries ranked: six rows plus the extra lines full tiers can need at most (the "…" row is empty)
-    const ranked = (TIER_IDS.length + Math.floor(total / colsFor(s, s + 16))) * (s + GAP) + (p + GAP);
-    // nothing ranked yet: six empty rows plus a full "…" row
-    const waiting = TIER_IDS.length * (s + GAP) + Math.max(1, Math.ceil(total / colsFor(p, 0))) * (p + GAP);
-    return Math.max(ranked, waiting) <= avail;
-  };
+  const MIN_POOL = 24; // the "…" row never gets thinner than this
+  // all entries ranked: six rows plus the extra lines full tiers can need at most, and a thin "…" row
+  const fits = (s) => (TIER_IDS.length + Math.floor(total / colsFor(s, s + 16))) * (s + GAP) + MIN_POOL <= avail;
   let tier = userSize || TILE_SIZE;
   if (!tier) {
     tier = Math.floor(avail / (TIER_IDS.length + 1));
     while (tier > 16 && !fits(tier)) tier--;
   }
-  const pool = Math.max(16, Math.round(tier * POOL_SCALE));
-  fixed = { key, tier, pool, cols: colsFor(tier, tier + 16), pcols: colsFor(pool, 0) };
+  // the waiting icons: as big as possible (at most POOL_SCALE of the others) so that all of them
+  // fit into the space below six one-line rows at the start
+  const poolW = appW - label - (tier + 16);
+  const poolSpace = Math.max(MIN_POOL, avail - TIER_IDS.length * (tier + GAP));
+  const pool = Math.max(16, Math.min(Math.round(tier * POOL_SCALE), fitSize(poolW, poolSpace, Math.max(1, total))));
+  fixed = { key, tier, pool, cols: colsFor(tier, tier + 16), pcols: colsFor(pool, tier + 16) };
   return fixed;
 }
 
@@ -550,8 +547,10 @@ function startHover(ev) {
       h.prov = clamp(h.score + (Math.random() * 2 - 1) * SWING * calm);
     }
     placeHover(h);
+    if (p < SETTLE) Sound.tick(h.prov);
     if (p < 1) h.timer = setTimeout(step, STEP_MS * (0.7 + Math.random() * 0.6));
   };
+  if (toLocalTime(ev.startedAt) > Date.now() - 1500) Sound.hoverStart(); // not for ones already hovering when the page opened
   layout();
   step();
 }
@@ -587,12 +586,14 @@ function landHover(ev) {
   const c = cards.get(id);
   if (!c) return;
   c.el.classList.add("fresh");
+  Sound.land();
   mark(c.el, "mark-new");
   setTimeout(() => c.el.classList.remove("fresh"), 1500);
 }
 
 // ════════ Clearing between the sequences ════════
 function fallOff() {
+  Sound.clear();
   hovers.forEach((h) => clearTimeout(h.timer));
   const els = [...cards.values(), ...hovers.values()].map((c) => c.el);
   hovers.clear();
@@ -609,6 +610,79 @@ function fallOff() {
   $("rail").classList.remove("on");
   $("pool-row").hidden = true;
 }
+
+// ════════ Sound effects (made in the browser, no sound files) ════════
+// Browsers only allow sound after someone clicks or presses a key once on the page.
+// M = mute / unmute (remembered in this browser).
+const SOUND_ON = true;  // false = no sound at all
+const VOLUME = 0.5;     // 0 … 1
+const Sound = (() => {
+  let ctx = null, master = null;
+  let muted = false;
+  try { muted = localStorage.getItem("rankmania-muted") === "1"; } catch {}
+  const hint = () => ($("soundhint").hidden = !SOUND_ON || !!ctx || muted);
+  function unlock() {
+    if (!SOUND_ON || ctx) return;
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : VOLUME;
+      master.connect(ctx.destination);
+    } catch { ctx = null; }
+    hint();
+  }
+  ["pointerdown", "keydown", "touchstart"].forEach((ev) => document.addEventListener(ev, unlock, { passive: true }));
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "m" && ev.key !== "M") return;
+    muted = !muted;
+    try { localStorage.setItem("rankmania-muted", muted ? "1" : "0"); } catch {}
+    if (master) master.gain.value = muted ? 0 : VOLUME;
+    hint();
+  });
+  setTimeout(hint, 1500);
+
+  // one tone: frequency (or a slide from f0 to f1), length, loudness, wave shape
+  function tone(f0, f1, dur, vol = 0.3, type = "sine", delay = 0) {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime + delay;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(master);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  }
+  // a burst of noise (for the whoosh)
+  function noise(dur, vol = 0.25, from = 3000, to = 200) {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf;
+    f.type = "bandpass";
+    f.frequency.setValueAtTime(from, t);
+    f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(master);
+    src.start(t);
+  }
+  return {
+    hoverStart: () => tone(330, 660, 0.18, 0.18, "triangle"),
+    // while undecided: a short tick, higher for a higher place
+    tick: (score) => tone(220 + score * 6, 220 + score * 6, 0.05, 0.08, "square"),
+    land: () => { tone(160, 70, 0.25, 0.45, "sine"); tone(1200, 1200, 0.03, 0.12, "square"); },
+    up: () => { tone(523, 523, 0.09, 0.22, "triangle"); tone(784, 784, 0.14, 0.22, "triangle", 0.09); },
+    down: () => { tone(392, 392, 0.09, 0.22, "triangle"); tone(262, 262, 0.16, 0.22, "triangle", 0.09); },
+    clear: () => { noise(1.4, 0.35); tone(400, 60, 1.2, 0.2, "sawtooth"); },
+  };
+})();
 
 // ════════ Live connection ════════
 connectDisplay({
@@ -659,7 +733,10 @@ connectDisplay({
     layout();
     const c = cards.get(ev.id);
     const moved = ev.after.rank !== ev.before.rank || ev.after.tier !== ev.before.tier;
-    if (c && moved) mark(c.el, ev.change > 0 ? "mark-up" : "mark-down");
+    if (c && moved) {
+      mark(c.el, ev.change > 0 ? "mark-up" : "mark-down");
+      ev.change > 0 ? Sound.up() : Sound.down();
+    }
   },
   onRoster(ev) {
     const L = lists[ev.category];

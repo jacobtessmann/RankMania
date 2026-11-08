@@ -347,7 +347,8 @@ function act(list) {
   if (canIntro && (!canMove || Math.random() >= moveChance(list))) {
     if (hover(list)) return; // land() continues the loop after the entry has landed
   } else if (canMove) {
-    drift(list);
+    // a move must be visible; if no visible move is possible, bring in a new entry instead
+    if (!drift(list) && canIntro && hover(list)) return;
   }
   later(list, () => act(list), pause());
 }
@@ -393,19 +394,27 @@ function wildness(list) {
   return 1 + (WILDER_FACTOR - 1) * Math.min(1, (Date.now() - list.startedAt) / WILDER_AFTER_MS);
 }
 
+// Every move is visible on screen: it changes the entry's place or its tier.
+// Up to 30 tries; a try that would change nothing visible is undone. Returns false if none worked.
 function drift(list) {
   const w = wildness(list);
   const before = entriesOf(list);
-  if (before.length) {
+  if (!before.length) return false;
+  for (let attempt = 0; attempt < 30; attempt++) {
     const was = before[Math.floor(Math.random() * before.length)];
     const e = list.items.get(was.id);
     const big = Math.random() < BIG_JUMP_CHANCE * w;
     const size = big ? 25 + Math.random() * (BIG_JUMP_MAX - 25) : 1 + Math.random() * DRIFT_MAX * w;
     const delta = Math.round(size) * (Math.random() < 0.5 ? -1 : 1);
+    const old = e.score;
     e.score = bounce(e.score + delta);
     const after = entriesOf(list);
     const now = after.find((x) => x.id === e.id);
-    if (now.score !== was.score) {
+    if (now.rank === was.rank && now.tier === was.tier) {
+      e.score = old; // invisible: undo and try another
+      continue;
+    }
+    {
       record({
         type: "drift",
         category: list.id,
@@ -418,7 +427,9 @@ function drift(list) {
         entries: after,
       });
     }
+    return true;
   }
+  return false;
 }
 
 // ════════════════ THE TWO SEQUENCES ════════════════
