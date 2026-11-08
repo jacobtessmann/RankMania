@@ -82,6 +82,11 @@
   .poll button { display: block; width: 100%; margin: 6px 0; padding: 12px; border: 2px solid var(--ink); background: #fff;
                  font-weight: 700; text-align: left; cursor: pointer; }
   .poll .answer { font-size: 15px; margin: 8px 0 0; color: var(--red); font-weight: 700; min-height: 1.4em; }
+  .poll .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .poll .row2 button { text-align: center; font-size: 18px; }
+  .poll button:disabled { opacity: .35; cursor: default; }
+  .poll .catch { font-size: 15px; line-height: 1.45; margin: 6px 0 0; }
+  .poll small { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin-bottom: 6px; }
   .related { margin-top: 34px; }
   .related h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin: 0 0 4px; }
   .related .card { display: grid; grid-template-columns: 40% 1fr; gap: 12px; align-items: center; padding: 14px 0; }
@@ -211,14 +216,22 @@ const QUOTES = [
   "Who gets to rank what, based on what?",
   "We gave our taste away. This time, at least, we gave it to the perfect machine.",
 ];
-const POLL = {
-  question: "Do you agree with this ranking?",
-  options: ["Yes", "Also yes", "I would like to speak to the machine"],
-  answers: ["Thank you. Your opinion has been noted and ignored.", "Interesting. The machine has adjusted nothing.", "Your feedback has been ranked. It came last."],
+// The verdict at the end of each article: the visitor rates the whole list. It really goes to the brain
+// (one green or red dot on that screen, and the screen gets a little calmer or more restless).
+const VERDICT = {
+  title: "Your verdict",
+  question: "Is this ranking good or bad?",
+  good: "Good",
+  bad: "Bad",
+  thanksGood: "Thank you. The machine feels confirmed.",
+  thanksBad: "Thank you. The machine is reconsidering.",
+  catch: "Your verdict has been fed into the machine. It learns from every vote, on its way to becoming the perfect ranking machine.",
+  tooFast: "The machine is still processing your last verdict. Try again in a moment.",
+  offline: "The machine can't be reached right now.",
 };
 const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
-const SNAPSHOT_KEY = "rankfeed-edition-v2";
+const SNAPSHOT_KEY = "rankfeed-edition-v3";
 const $ = (id) => document.getElementById(id);
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -248,6 +261,7 @@ function writeEdition(snap) {
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
       slug: c.name,
+      list: mixed ? `mix-${c.name}` : c.name, // the list on the screen, for the verdict
       cat: mixed ? `Everything · Part ${i + 1}` : c.label,
       pill: pick(PILLS),
       title: fill(pick(T.titles), v),
@@ -316,7 +330,6 @@ function article(slug) {
   const rest = a.entries.slice(3);
   const half = Math.ceil(rest.length / 2);
   const others = edition.articles.filter((x) => x.slug !== slug && x.ready);
-  const pollKey = Math.floor(Math.random() * POLL.answers.length);
   $("view").innerHTML = `
     <div class="article">
       <a class="back" href="#">← All articles</a>
@@ -342,8 +355,9 @@ function article(slug) {
         ${rest.length ? `<h2>The rest, ranked</h2><ol class="list">${rest.slice(0, half).map((e) => row(a, e)).join("")}</ol>` : ""}
         <p>${esc(a.middle)}</p>
         ${rest.length > half ? `<ol class="list">${rest.slice(half).map((e) => row(a, e)).join("")}</ol>` : ""}
-        <div class="poll"><b>${esc(POLL.question)}</b>
-          ${POLL.options.map((o) => `<button type="button">${esc(o)}</button>`).join("")}
+        <div class="poll"><small>${esc(VERDICT.title)}</small><b>${esc(VERDICT.question)}</b>
+          <div class="row2"><button type="button" data-vote="good">${esc(VERDICT.good)}</button>
+          <button type="button" data-vote="bad">${esc(VERDICT.bad)}</button></div>
           <p class="answer" id="answer"></p>
         </div>
         <div class="box"><b>Meanwhile</b>This list is a snapshot from ${timeOf(edition.at)}. On the screens in the room, the ranking has already moved on. The places you just read no longer exist.</div>
@@ -352,7 +366,7 @@ function article(slug) {
       </div>
     </div>`;
   document.querySelectorAll(".item, .top").forEach((el) => (el.onclick = () => (location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`)));
-  document.querySelectorAll(".poll button").forEach((b, k) => (b.onclick = () => { $("answer").textContent = POLL.answers[(pollKey + k) % POLL.answers.length]; }));
+  setupVerdict(a);
   window.scrollTo(0, 0);
 }
 
@@ -373,6 +387,36 @@ function sheet(slug, id) {
   $("sheet").hidden = false;
   $("print").onclick = () => printEntry(e, a);
   $("close").onclick = () => history.back();
+}
+
+// ════════ The verdict: one vote per article, sent to the brain ════════
+function setupVerdict(a) {
+  const key = `rankfeed-voted-${edition.at}-${a.slug}`;
+  const buttons = document.querySelectorAll(".poll [data-vote]");
+  const done = (vote) => {
+    buttons.forEach((b) => (b.disabled = true));
+    $("answer").innerHTML = `${esc(vote === "good" ? VERDICT.thanksGood : VERDICT.thanksBad)}<p class="catch">${esc(VERDICT.catch)}</p>`;
+  };
+  let already = null;
+  try { already = localStorage.getItem(key); } catch {}
+  if (already) return done(already);
+  buttons.forEach((b) => (b.onclick = async () => {
+    const vote = b.dataset.vote;
+    buttons.forEach((x) => (x.disabled = true));
+    try {
+      const r = await fetch(RANK_BASE + "/api/vote", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ list: a.list, vote }),
+      });
+      if (r.status === 429) { $("answer").textContent = VERDICT.tooFast; buttons.forEach((x) => (x.disabled = false)); return; }
+      if (!r.ok) throw new Error();
+      try { localStorage.setItem(key, vote); } catch {}
+      done(vote);
+    } catch {
+      $("answer").textContent = VERDICT.offline;
+      buttons.forEach((x) => (x.disabled = false));
+    }
+  }));
 }
 
 // ════════ PRINT — to be connected later ════════

@@ -240,6 +240,13 @@ connectDisplay({
     lists[ev.category] = ev.entries;
     recalc(ev);
   },
+  onVote(ev) {
+    const good = (ev.votes || []).filter((v) => v === "good").length;
+    const bad = (ev.votes || []).length - good;
+    const T = tagOf(ev.category);
+    print(`[${clock()}] ${T} FEEDBACK  verdict "${ev.vote}"   good ${good} · bad ${bad}   weight ${(0.15).toFixed(3)}   mood ${ev.mood >= 0 ? "+" : ""}${ev.mood.toFixed(2)}`);
+    print(`           ${T}   ${ev.vote === "bad" ? "reconsidering … learning from human taste" : "confirmed … learning from human taste"}`, "dim");
+  },
   onRoster(ev) {
     lists[ev.category] = ev.entries;
     print(`[${clock()}] ${tagOf(ev.category)} FOLDER CHANGE  ${ev.entries.length} ranked, ${ev.waiting} waiting`, "dim");

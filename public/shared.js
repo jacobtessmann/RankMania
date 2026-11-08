@@ -48,13 +48,14 @@
    *  onDrift(ev)       live adjustment: ev.id, ev.before, ev.after, ev.change, ev.above/ev.below, ev.entries
    *  onRoster(ev)      images added/removed: ev.entries, ev.pool
    *  onTitles(ev)      the headlines changed: ev.titles = { screen: headline }
+   *  onVote(ev)        a verdict from RankFeed: ev.category, ev.vote (good|bad), ev.votes (all of this round), ev.mood
    *  onPhase(ev)       ev.phase = "clearing" (with ev.next) | "mix" | "separate"; ev.sample = 2 entries
    *  onStatus(text)    connection status
    *  Past events are replayed once with ev.replay = true (without entries/pool).
    */
   window.connectDisplay = function (h) {
     const status = (s) => h.onStatus && h.onStatus(s);
-    const HANDLER = { hover: "onHover", commit: "onCommit", drift: "onDrift", roster: "onRoster", phase: "onPhase", titles: "onTitles" };
+    const HANDLER = { hover: "onHover", commit: "onCommit", drift: "onDrift", roster: "onRoster", phase: "onPhase", titles: "onTitles", vote: "onVote" };
     const call = (m) => h[HANDLER[m.type]] && h[HANDLER[m.type]](m);
     let es = null;
     let lastSeq = 0;

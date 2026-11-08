@@ -80,6 +80,9 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   font-family: var(--f-type); font-size: min(1.1vh, 1.9vw); color: var(--ink); white-space: nowrap; overflow: hidden;
 }
 #side span { writing-mode: vertical-rl; transform: rotate(180deg); }
+#side-votes { font-size: 1.3em; line-height: 1.05; letter-spacing: .05em; }
+#side-votes .good { color: #00ff00; }
+#side-votes .bad { color: #ff0000; }
 
 /* ═══ Cards ═══ */
 #cards { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
@@ -182,7 +185,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
     <div id="pool-row" hidden><div class="label">…</div><div class="items" id="items-pool"></div></div>
     <div id="mode-switch"></div>
   </div>
-  <div id="side"><span id="side-url"></span><span id="side-source"></span><span id="side-timer"></span></div>
+  <div id="side"><span id="side-url"></span><span id="side-source"></span><span id="side-votes"></span></div>
   <div id="rail"></div>
   <div id="cards"></div>
   <div id="live">verbinde…</div>
@@ -203,7 +206,8 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 <script src="shared.js"></script>
 <script>
 const SITE_TEXT = "rankmania.netlify.com"; // top text in the side strip
-const TIMER_TEXT = "{t} until reset";       // bottom text in the side strip ({t} = time left), shown when a timer runs
+const DOT = "\u25CF";                        // the verdict dots at the bottom of the side strip: ● green = good, red = bad
+const MAX_DOTS = 80;                        // at most this many (the newest)
 const GAP = 0;        // space between pictures in the same tier (px), 0 = they touch
 const ROW_GAP = 3;    // space between the tiers (px): the white line between the letter boxes
 const TILE_SIZE = 0;  // icon size in px, e.g. 70 — or 0 = automatic (as big as the list allows)
@@ -345,6 +349,7 @@ function railGeometry() {
 
 function layout() {
   renderHeader();
+  renderVotes();
   const L = shown();
   $("pool-row").hidden = !L; // stays even when empty, so the icon size never changes
   $("rail").classList.toggle("on", !!L);
@@ -744,7 +749,7 @@ connectDisplay({
     titles = snap.titles || {};
     snap.categories.forEach((c) => {
       lists[c.name] = { label: c.label, title: c.title, source: c.source, virtual: c.virtual,
-                        entries: c.entries, pool: c.pool, hovering: c.hovering };
+                        entries: c.entries, pool: c.pool, hovering: c.hovering, votes: c.votes || [] };
     });
     screens = snap.categories.filter((c) => !c.virtual).map((c) => c.name);
     if (first) buildRows();
@@ -799,12 +804,18 @@ connectDisplay({
     fallOff();
     renderHeader();
   },
+  onVote(ev) {
+    const L = lists[ev.category];
+    if (!L) return;
+    L.votes = ev.votes || [];
+    if (ev.category === shownId()) renderVotes();
+  },
   onTitles(ev) {
     titles = ev.titles || {};
     renderHeader();
   },
   onStatus(s) {
-    if (s === "live") pollTimer();
+    if (s === "live") renderVotes();
     $("live").textContent = s === "live" ? "LIVE" : s;
     $("live").classList.toggle("on", s === "live");
   },
@@ -812,19 +823,20 @@ connectDisplay({
 
 window.addEventListener("resize", layout);
 
-// ── "until reset": countdown of the sequence timer from /admin.html, in the side strip ──
-let endsAt = null;
-function pollTimer() {
-  fetch(RANK_BASE + "/api/status", { cache: "no-store" }).then((r) => r.json())
-    .then((st) => { endsAt = st.phase === "clearing" ? null : st.phaseEndsAt; }).catch(() => {});
+// ── verdict dots from RankFeed, at the bottom of the side strip (newest at the bottom)
+function renderVotes() {
+  const L = shown();
+  const votes = (L && L.votes) || [];
+  const el = $("side-votes");
+  el.textContent = "";
+  votes.slice(-MAX_DOTS).forEach((v) => {
+    const d = document.createElement("i");
+    d.className = v === "good" ? "good" : "bad";
+    d.style.fontStyle = "normal";
+    d.textContent = DOT;
+    el.append(d);
+  });
 }
-setInterval(pollTimer, 5000);
-setInterval(() => {
-  const el = $("side-timer");
-  if (!endsAt) { el.textContent = ""; return; }
-  const left = Math.max(0, Math.round((endsAt - serverNow()) / 1000));
-  el.textContent = TIMER_TEXT.replace("{t}", `${String(Math.floor(left / 60)).padStart(2, "0")}:${String(left % 60).padStart(2, "0")}`);
-}, 500);
 </script>
 </body>
 </html>

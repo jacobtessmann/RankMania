@@ -140,7 +140,7 @@ Settings at the top of `server.js`:
 
 ## 6. The tierlist screen (ranking.html)
 
-Black title block with the number underlined, black tier letters on a white background with a soft grey band slowly running down it, as if it were rendering, the "…" row with the images still waiting, the hover track on the right behind a white line, and a white side strip with three vertical texts: the website (`SITE_TEXT`), the source line (`source` in server.js) and the countdown of the sequence timer (`TIMER_TEXT`, only while a timer runs). Every picture has a vignette and its name in yellow Helvetica. The vignette's color shows the state: white = ranked, no vignette = still undecided (hovering), green = just moved up, red = just moved down.
+Black title block with the number underlined, black tier letters on a white background with a soft grey band slowly running down it, as if it were rendering, the "…" row with the images still waiting, the hover track on the right behind a white line, and a white side strip with three vertical texts: the website (`SITE_TEXT`), the source line (`source` in server.js) and the verdict dots from RankFeed (● green = good, ● red = bad; `DOT`, `MAX_DOTS`). The sequence countdown is on /admin.html and in the brain view. Every picture has a vignette and its name in yellow Helvetica. The vignette's color shows the state: white = ranked, no vignette = still undecided (hovering), green = just moved up, red = just moved down.
 
 Look settings at the top of the `<style>` part: `--shade` and `--render-time` (the grey band that slowly runs down the white background), `--name` (name color), `--vig-undecided`, `--vig-up`, `--vig-down` (vignette colors), `--frame` (white frame), `--label-w` (width of the letter boxes), `--side-w` (side strip). The vignette strength is `--vig-blur` (.14) and `--vig-spread` (.1), both relative to the icon size.
 
@@ -161,6 +161,8 @@ RankFeed is a **personal snapshot**. The moment someone opens it, it loads the r
 - The home page shows the three articles. Tapping one opens the full list, entries under each other with place, tier, picture, name and a short line.
 - Tapping an entry opens it large with a **Print** button. Printing is not connected yet: put the real code into `printEntry(entry, article)` in `feed.html`.
 - Headlines, intros and lines are templates at the top of the script (`HEADLINES`, `LEADS`, `LINES`). Placeholders: `{top}` `{second}` `{last}` `{mid}` `{n}` `{label}` in headlines and intros; `{N}` `{A}` (above) `{B}` (below) `{T}` (tier) in the lines. The reason for a ranking is never stated.
+
+**Verdict:** at the end of each article, visitors rate the whole list "Good" or "Bad" (once per article). The vote really reaches the brain: it appears as a green or red ● at the bottom of that screen's side strip, as a FEEDBACK line in the brain terminal, and it nudges the brain a little: "bad" makes that screen more restless for a while (shorter pauses, more and bigger moves), "good" calms it. The effect adds up and fades out (half gone after 90 s). Settings in `server.js`: `VOTE_WEIGHT`, `MOOD_HALF_LIFE_MS`, `VOTE_COOLDOWN_MS`. Texts in `feed.html`: `VERDICT`. The dots reset at every new sequence.
 
 ## 8. The brain view (brain.html)
 

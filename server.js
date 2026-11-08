@@ -59,6 +59,13 @@ const CATEGORIES = [
 //    In the mix, each screen gets this many, drawn evenly from all three folders.
 const ENTRIES_PER_SCREEN = 20;
 
+// ── Verdicts from RankFeed: visitors rate a whole list "good" or "bad". The brain "learns" a little:
+//    "bad" makes that screen more restless for a while (shorter pauses, more and bigger moves),
+//    "good" calms it down. The effect adds up per vote and fades out by itself.
+const VOTE_WEIGHT = 0.15; // how much one vote changes the mood (the mood goes from -1 calm to +1 restless)
+const MOOD_HALF_LIFE_MS = 90000; // after 90 s, half of the effect is gone
+const VOTE_COOLDOWN_MS = 15000; // one phone can vote for the same list at most every 15 s
+
 // ── Headlines on top of the screens. Edited live on /admin.html (one list per mode).
 //    {n} becomes the number of entries on that screen (shown underlined).
 //    Each screen picks one at the start of every sequence; in the mix the three screens get different ones.
@@ -130,6 +137,7 @@ let phaseStartedAt = Date.now();
 let headlines = loadHeadlines();
 let titles = {}; // screen → the headline it shows right now
 let rotateTimer = null;
+const voteSeen = new Map(); // phone + list → time of its last vote
 let phaseEndsAt = null;
 let phaseTimer = null;
 let seq = 0;
@@ -147,7 +155,8 @@ const mixAssign = new Map(); // image id → screen, for the mix
 const allLists = () => Object.values(lists);
 
 function newList(c) {
-  return { ...c, items: new Map(), queue: [], hovering: new Map(), active: false, timers: new Set() };
+  return { ...c, items: new Map(), queue: [], hovering: new Map(), active: false, timers: new Set(),
+           votes: [], mood: 0, moodAt: Date.now() };
 }
 
 const clamp = (v) => Math.max(1, Math.min(100, Math.round(v)));
@@ -229,6 +238,7 @@ function snapshot() {
       pool: poolOf(l),
       hovering: [...l.hovering.values()].map((h) => hoverPublic(l, h)),
       waiting: l.queue.length,
+      votes: l.votes,
     })),
     history,
   };
@@ -324,6 +334,8 @@ function reset(list) {
   if (!list.virtual) pickSelection(list);
   list.items = new Map(wantedItems(list).map((w) => [w.id, { ...w, score: 0, ranked: false }]));
   list.hovering = new Map();
+  list.votes = [];
+  list.mood = 0;
   list.queue = shuffle([...list.items.keys()]);
 }
 
@@ -333,12 +345,17 @@ function start(list) {
   later(list, () => act(list), 1000);
 }
 
-const pause = () => rand(PAUSE_MIN_MS, PAUSE_MAX_MS) / speed;
+// the mood from the verdicts, fading out over time: -1 (calm, after "good") … +1 (restless, after "bad")
+function moodOf(list) {
+  return (list.mood || 0) * Math.pow(0.5, (Date.now() - list.moodAt) / MOOD_HALF_LIFE_MS);
+}
+const pause = (list) => (rand(PAUSE_MIN_MS, PAUSE_MAX_MS) / speed) * (1 - 0.35 * (list ? moodOf(list) : 0));
 
 // the one action loop of a list: a new entry OR a move, then a pause, then the next
 function moveChance(list) {
   const placed = ranking(list).length;
-  return Math.min(MOVE_CHANCE_MAX, MOVE_CHANCE_START + MOVE_CHANCE_STEP * Math.floor(placed / MOVE_STEP_EVERY));
+  const base = MOVE_CHANCE_START + MOVE_CHANCE_STEP * Math.floor(placed / MOVE_STEP_EVERY);
+  return Math.max(0.1, Math.min(MOVE_CHANCE_MAX, base + 0.25 * moodOf(list)));
 }
 
 function act(list) {
@@ -350,7 +367,7 @@ function act(list) {
     // a move must be visible; if no visible move is possible, bring in a new entry instead
     if (!drift(list) && canIntro && hover(list)) return;
   }
-  later(list, () => act(list), pause());
+  later(list, () => act(list), pause(list));
 }
 
 // 1. a new entry hovers up and down for a few seconds …
@@ -373,7 +390,7 @@ function hover(list) {
 // … and then lands in its tier
 function land(list, id) {
   const e = list.items.get(id);
-  later(list, () => act(list), pause());
+  later(list, () => act(list), pause(list));
   if (!list.hovering.delete(id) || !e) return;
   e.ranked = true;
   const entries = entriesOf(list);
@@ -404,7 +421,8 @@ function drift(list) {
     const was = before[Math.floor(Math.random() * before.length)];
     const e = list.items.get(was.id);
     const big = Math.random() < BIG_JUMP_CHANCE * w;
-    const size = big ? 25 + Math.random() * (BIG_JUMP_MAX - 25) : 1 + Math.random() * DRIFT_MAX * w;
+    const restless = 1 + 0.5 * Math.max(0, moodOf(list)); // after "bad" votes the moves get bigger
+    const size = big ? 25 + Math.random() * (BIG_JUMP_MAX - 25) : 1 + Math.random() * DRIFT_MAX * w * restless;
     const delta = Math.round(size) * (Math.random() < 0.5 ? -1 : 1);
     const old = e.score;
     e.score = bounce(e.score + delta);
@@ -545,7 +563,7 @@ function record(ev) {
 
 // phones ("lite") only get what the feed needs: no full lists, no hover/roster events
 function liteVersion(msg) {
-  if (msg.type === "hover" || msg.type === "roster" || msg.type === "titles") return null;
+  if (msg.type === "hover" || msg.type === "roster" || msg.type === "titles" || msg.type === "vote") return null;
   if (msg.type === "snapshot") {
     return {
       ...msg,
@@ -640,6 +658,36 @@ const server = http.createServer((req, res) => {
   if (url.pathname === "/api/status") return json(res, 200, status());
 
   // admin: POST /api/control  {"key": "...", "action": "mix" | "separate"}
+  // a verdict from RankFeed: POST /api/vote  {"list": "students", "vote": "good" | "bad"}
+  if (url.pathname === "/api/vote" && req.method === "POST") {
+    let body = "";
+    req.on("data", (d) => {
+      body += d;
+      if (body.length > 2000) req.destroy();
+    });
+    req.on("end", () => {
+      let msg = {};
+      try {
+        msg = JSON.parse(body || "{}");
+      } catch {}
+      const list = lists[msg.list];
+      if (!list || !["good", "bad"].includes(msg.vote)) return json(res, 400, { ok: false, error: "unknown list or vote" });
+      const who = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+      const key = who + "|" + list.id;
+      if (Date.now() - (voteSeen.get(key) || 0) < VOTE_COOLDOWN_MS) return json(res, 429, { ok: false, error: "too fast" });
+      voteSeen.set(key, Date.now());
+      const m = Math.max(-1, Math.min(1, moodOf(list) + (msg.vote === "bad" ? VOTE_WEIGHT : -VOTE_WEIGHT)));
+      list.mood = m;
+      list.moodAt = Date.now();
+      list.votes.push(msg.vote);
+      if (list.votes.length > 500) list.votes.shift();
+      broadcast({ type: "vote", now: Date.now(), category: list.id, vote: msg.vote, votes: list.votes, mood: m });
+      console.log(`Vote ${msg.vote} for ${list.id} → mood ${m.toFixed(2)}`);
+      json(res, 200, { ok: true, votes: list.votes.length });
+    });
+    return;
+  }
+
   if (url.pathname === "/api/control" && req.method === "POST") {
     let body = "";
     req.on("data", (d) => {
