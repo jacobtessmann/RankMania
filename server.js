@@ -32,14 +32,14 @@ const CATEGORIES = [
     id: "students",
     label: "Students",
     names: true,
-    title: "Ranking {n} Students from VC ZHdK",
-    source: "Information sourced from visualcommunication.zhdk.ch and thispersondoesnotexist.com",
+    title: "Ranking {n} Students of VisCom",
+    source: "data sourced from visualcommunication.zhdk.ch and thispersondoesnotexist.com",
     headline: "{W} Is Now Ahead of {L} and the Whole Class Knows It",
   },
   {
     id: "inventions",
     label: "Historic Inventions",
-    names: false,
+    names: true,
     title: "Ranking {n} Historic Inventions",
     source: "",
     headline: "{W} Just Out-Invented {L} and History Will Never Recover",
@@ -47,7 +47,7 @@ const CATEGORIES = [
   {
     id: "konzerne",
     label: "Konzerne",
-    names: false,
+    names: true,
     title: "Ranking {n} Konzerne",
     source: "",
     headline: "{W} Overtook {L} and the Shareholders Are Screaming",
@@ -133,7 +133,9 @@ const rollScore = () => clamp(Math.random() * 105); // a random landing spot: an
 
 // "anna_mueller.jpg" → "Anna Mueller", "IBM.png" stays "IBM", "Hans-Peter_Müller.jpg" → "Hans-Peter Müller"
 function titleFromFile(file) {
-  let t = file.normalize("NFC").replace(IMG_EXT, "").replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+  let t = file.normalize("NFC").replace(IMG_EXT, "")
+    .replace(/[-_ .]?(jpe?g|png|webp)$/i, "") // "ak-47jpg.jpg" → "ak-47"
+    .replace(/_+/g, " ").replace(/\s+/g, " ").trim();
   if (t === t.toLowerCase()) t = t.replace(/(^|\s)\S/g, (s) => s.toUpperCase());
   return t;
 }

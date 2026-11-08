@@ -4,54 +4,62 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Rankmania</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Courier+Prime&display=swap" rel="stylesheet">
 <style>
 /*
-  TierMaker look: title bar — tier rows S–F — source line — "…" row with the entries not ranked yet
+  Rankmania look (design sketch): black title block — black tier letters on a grey gradient —
+  "…" row with the entries not ranked yet — hover track on the right — vertical side strip.
   Works in landscape and portrait. All cards sit absolutely in #cards and are placed by layout().
   The ranking comes ONLY from the server; this page just shows it.
 */
 :root {
-  --ink: #000; --paper: #fff; --grey: #d9d9d9; --blue: #1010ff;
-  --tier-S: #ff7f7f; --tier-A: #ffff7f; --tier-B: #7fff7f;
-  --tier-C: #7fffff; --tier-D: #ff7fff; --tier-F: #9b30ff;
-  --f-type: "Courier Prime", "Courier New", monospace;
-  --f-name: Anton, Impact, "Arial Narrow Bold", sans-serif;
+  --ink: #000; --paper: #fff;
+  --grad-top: #ffffff; --grad-bottom: #6b6b6b;   /* background behind the tiers */
+  --name: #ffff00;                                 /* color of the names on the pictures */
+  --frame: 4px;                                    /* white frame around everything */
+  --f-type: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --f-name: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --label-w: min(14vh, 16vw);
+  --side-w: min(3.4vh, 6vw);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
-html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(--paper); }
+html, body { height: 100%; overflow: hidden; background: var(--paper); color: var(--ink); }
 #app {
-  width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative;
-  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  width: 100%; height: 100%; display: flex; flex-direction: row; overflow: hidden; position: relative;
+  background: var(--paper); gap: var(--frame);
+  padding: calc(var(--frame) + env(safe-area-inset-top, 0px)) calc(var(--frame) + env(safe-area-inset-right, 0px))
+           calc(var(--frame) + env(safe-area-inset-bottom, 0px)) calc(var(--frame) + env(safe-area-inset-left, 0px));
 }
+#stage { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; position: relative;
+         background: linear-gradient(90deg, var(--paper) 0 var(--label-w), transparent var(--label-w)),
+                     linear-gradient(var(--grad-top), var(--grad-bottom)); }
 
 /* ═══ Title ═══ */
 #title {
-  flex: 0 0 auto; background: var(--grey); color: var(--ink); text-align: center;
-  font-family: var(--f-type); font-size: min(7vh, 5.4vw); line-height: 1.15; letter-spacing: .02em;
-  text-transform: uppercase; padding: .2em .4em .15em; white-space: nowrap; overflow: hidden;
+  flex: 0 0 auto; background: var(--ink); color: var(--paper); text-align: left;
+  font-family: var(--f-type); font-weight: 400; font-size: min(6.4vh, 7.6vw); line-height: 1.02;
+  letter-spacing: -.01em; padding: .3em .5em .35em; overflow: hidden;
 }
-#title .n { color: var(--blue); }
+#title .n { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; }
 
 /* ═══ Tier rows ═══ */
 #tierlist { flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
 .row { flex: 0 0 auto; display: flex; height: 80px; transition: height .6s ease; }
 .label {
   flex: 0 0 var(--label-w); display: flex; align-items: center; justify-content: center;
-  background: var(--c); color: var(--ink); font-family: var(--f-type); font-size: min(6vh, 6vw);
+  background: var(--ink); color: var(--paper); font-family: var(--f-type); font-weight: 400; font-size: min(8vh, 9vw);
 }
 .items { flex: 1; min-width: 0; }
 
-#source {
-  flex: 0 0 auto; text-align: center; font-family: var(--f-type); font-size: min(2vh, 2.2vw);
-  padding: .6em 1em; color: var(--paper);
-}
+#source { display: none; }
 #pool-row { flex: 0 0 auto; display: flex; height: 40px; margin-top: 2px; transition: height .6s ease; }
-#pool-row .label { background: var(--grey); }
+
+/* ═══ Side strip: vertical texts, read from bottom to top ═══ */
+#side {
+  flex: 0 0 var(--side-w); display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+  font-family: var(--f-type); font-size: min(1.6vh, 2.6vw); color: var(--ink); white-space: nowrap; overflow: hidden;
+}
+#side span { writing-mode: vertical-rl; transform: rotate(180deg); }
 
 /* ═══ Cards ═══ */
 #cards { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
@@ -60,48 +68,54 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
   transition: transform 1.4s cubic-bezier(.45, 0, .2, 1), width .65s, height .65s;
 }
 .card.no-anim { transition: none; }
-.face { width: 100%; height: 100%; position: relative; overflow: hidden; background: #333; }
+.face { width: 100%; height: 100%; position: relative; overflow: hidden; background: var(--paper); }
+/* white vignette (inner shadow: blur 25, spread 14 at ~135 px, scaled to the icon size) */
+.face::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+               box-shadow: inset 0 0 calc(var(--s, 100px) * .185) calc(var(--s, 100px) * .1) #fff; }
+/* marks and the hover outline sit on top of the vignette */
+.face::before { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+                border: 5px solid transparent; transition: border-color 1s ease; }
 .face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .init {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: var(--f-name); color: #777; font-size: 40%;
 }
-/* the name on the picture: white with a black outline, like on TierMaker */
+/* the name on the picture: yellow Helvetica Regular with a thin black outline */
 .name {
   position: absolute; left: 2%; right: 2%; top: 4%; z-index: 2; text-align: center;
-  font-family: var(--f-name); color: var(--paper); line-height: .95; letter-spacing: .01em;
+  font-family: var(--f-name); font-weight: 400; color: var(--name); line-height: .98; letter-spacing: -.01em;
   text-shadow:
-    -.07em -.07em 0 #000, .07em -.07em 0 #000, -.07em .07em 0 #000, .07em .07em 0 #000,
-    0 -.09em 0 #000, 0 .09em 0 #000, -.09em 0 0 #000, .09em 0 0 #000;
+    -.035em -.035em 0 #000, .035em -.035em 0 #000, -.035em .035em 0 #000, .035em .035em 0 #000,
+    0 -.05em 0 #000, 0 .05em 0 #000, -.05em 0 0 #000, .05em 0 0 #000;
   overflow: hidden;
 }
 .name span { display: block; white-space: nowrap; }
-.card.in-pool .face { filter: saturate(.85); }
+.card.in-pool .face { filter: saturate(.9); }
 .card.fresh { z-index: 5; }
-/* a colored outline marks what just happened: green = moved up, red = moved down, white = just landed */
-.face { outline: 5px solid transparent; outline-offset: -5px; transition: outline-color 1s ease; }
-.card.mark-up .face { outline-color: #19d65c; }
-.card.mark-down .face { outline-color: #ff2b2b; }
-.card.mark-new .face { outline-color: #ffffff; }
+/* a colored outline marks what just happened: green = moved up, red = moved down, black = just landed */
+.card.mark-up .face::before { border-color: #19d65c; }
+.card.mark-down .face::before { border-color: #ff2b2b; }
+.card.mark-new .face::before { border-color: #000; }
 
+/* connection status: only visible when the connection is lost */
 #live {
-  position: absolute; right: 8px; top: 8px; z-index: 20;
-  font-family: var(--f-type); font-size: min(1.4vh, 1.6vw); color: var(--ink); opacity: .55;
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 20;
+  font-family: var(--f-type); font-size: 14px; background: #000; color: #fff; padding: 4px 10px;
 }
-#live.on::before { content: "● "; color: #0a0; }
+#live.on { display: none; }
 
 /* ═══ Switch ═══ */
 #mode-switch { flex: 0 0 4.5vh; display: flex; gap: 2px; margin-top: auto; }
 #mode-switch button {
-  flex: 1 1 0; min-width: 0; border: 0; background: #333; color: var(--paper);
-  font-family: var(--f-type); font-size: min(2.2vh, 3.6vw); text-transform: uppercase; cursor: pointer;
+  flex: 1 1 0; min-width: 0; border: 0; background: #000; color: var(--paper);
+  font-family: var(--f-type); font-size: min(2.2vh, 3.6vw); cursor: pointer;
 }
-#mode-switch button[aria-pressed="true"] { background: var(--grey); color: var(--ink); }
+#mode-switch button[aria-pressed="true"] { background: var(--paper); color: var(--ink); outline: 1px solid #000; outline-offset: -1px; }
 .kiosk #mode-switch { display: none; }
 
 #empty {
   position: absolute; left: 20%; right: 8%; top: 35%; z-index: 20; text-align: center;
-  background: var(--ink); border: 2px dashed var(--paper); padding: 2vh 3vw;
+  background: var(--ink); color: var(--paper); border: 2px dashed var(--paper); padding: 2vh 3vw;
   font-family: var(--f-type); font-size: min(2vh, 3.4vw); line-height: 1.4;
 }
 
@@ -110,12 +124,14 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
 #pool-row .items { margin-right: 0; }
 #rail {
   position: absolute; z-index: 3; pointer-events: none; display: none;
-  border-left: 2px dashed rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .05);
+  border-left: 4px solid var(--paper);
 }
 #rail.on { display: block; }
 .card.hover { z-index: 7; transition: transform .7s cubic-bezier(.45, 0, .2, 1), width .4s, height .4s; }
-.card.hover .face { outline: 3px dashed var(--paper); outline-offset: -3px; animation: shake .3s steps(2) infinite; }
-.card.hover.settled .face { outline-style: solid; animation-duration: .12s; }
+.card.hover .face { animation: shake .3s steps(2) infinite; }
+.card.hover .face::before { border: 3px dashed #000; }
+.card.hover.settled .face { animation-duration: .12s; }
+.card.hover.settled .face::before { border-style: solid; }
 @keyframes shake {
   from { transform: translate(-1px, 1px) rotate(-2deg); }
   to { transform: translate(1px, -1px) rotate(2deg); }
@@ -135,11 +151,14 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
 </head>
 <body>
 <div id="app">
-  <div id="title">&nbsp;</div>
-  <div id="tierlist"></div>
-  <div id="source" hidden></div>
-  <div id="pool-row" hidden><div class="label">…</div><div class="items" id="items-pool"></div></div>
-  <div id="mode-switch"></div>
+  <div id="stage">
+    <div id="title">&nbsp;</div>
+    <div id="tierlist"></div>
+    <div id="source" hidden></div>
+    <div id="pool-row" hidden><div class="label">…</div><div class="items" id="items-pool"></div></div>
+    <div id="mode-switch"></div>
+  </div>
+  <div id="side"><span id="side-url"></span><span id="side-source"></span><span id="side-timer"></span></div>
   <div id="rail"></div>
   <div id="cards"></div>
   <div id="live">verbinde…</div>
@@ -152,6 +171,8 @@ html, body { height: 100%; overflow: hidden; background: var(--ink); color: var(
 
 <script src="shared.js"></script>
 <script>
+const SITE_TEXT = "rankmania.netlify.com"; // top text in the side strip
+const TIMER_TEXT = "{t} until reset";       // bottom text in the side strip ({t} = time left), shown when a timer runs
 const GAP = 2;        // space between pictures (px)
 const TILE_SIZE = 0;  // icon size in px, e.g. 70 — or 0 = automatic (as big as the list allows)
 const POOL_SCALE = 0.5;  // icons in the "…" row are this much smaller than in the tiers
@@ -258,16 +279,9 @@ function renderHeader() {
     if (i) { const s = document.createElement("span"); s.className = "n"; s.textContent = n; t.append(s); }
     t.append(p);
   });
-  // shrink the title until it fits on one line
-  t.style.fontSize = "";
-  const cs = getComputedStyle(t);
-  const pad = parseFloat(cs.paddingLeft) * 2;
-  if (t.scrollWidth - pad > t.clientWidth - pad) {
-    t.style.fontSize = Math.floor(parseFloat(cs.fontSize) * (t.clientWidth - pad) / (t.scrollWidth - pad)) + "px";
-  }
   const src = (L || own).source || "";
-  $("source").textContent = src;
-  $("source").hidden = !src;
+  if ($("side-source").textContent !== src) $("side-source").textContent = src;
+  if ($("side-url").textContent !== SITE_TEXT) $("side-url").textContent = SITE_TEXT;
 }
 
 // ════════ Layout: the server's ranking decides tier and order ════════
@@ -311,24 +325,38 @@ function layout() {
     heights[t] = lines * (sz.tier + GAP) - GAP;
     $(`row-${t}`).style.height = heights[t] + "px";
   }
-  $("pool-row").style.height = Math.max(1, Math.ceil(pool.length / sz.pcols)) * (sz.pool + GAP) - GAP + "px";
+  const poolH = Math.max(1, Math.ceil(pool.length / sz.pcols)) * (sz.pool + GAP) - GAP;
+  $("pool-row").style.height = poolH + "px";
+  $("pool-row").querySelector(".label").style.fontSize = Math.round(poolH * 0.7) + "px";
+  // the rows share the rest of the screen, so the list always fills the full height;
+  // a full tier gets taller (another line of icons), the others give way
+  const free = $("stage").clientHeight - $("title").offsetHeight - poolH - 2 * (TIER_IDS.length + 2)
+             - ($("mode-switch").offsetParent ? $("mode-switch").offsetHeight : 0);
+  const extra = Math.max(0, free - TIER_IDS.reduce((h, t) => h + heights[t], 0)) / TIER_IDS.length;
+  for (const t of TIER_IDS) {
+    heights[t] = Math.floor(heights[t] + extra);
+    $(`row-${t}`).style.height = heights[t] + "px";
+  }
 
   if (L) {
     const g = railGeometry();
-    const tlH = TIER_IDS.reduce((h, t) => h + heights[t] + 2, 2);
+    const origin = app.getBoundingClientRect();
+    const stage = $("stage").getBoundingClientRect();
+    const first = $(`row-${TIER_IDS[0]}`);
+    const top = first.getBoundingClientRect().top - origin.top;
+    const left = first.querySelector(".label").getBoundingClientRect().right - origin.left;
+    const allH = TIER_IDS.reduce((h, t) => h + heights[t] + 2, 0) + poolH;
     Object.assign($("rail").style, {
-      left: app.clientWidth - g.width + "px", top: $("title").offsetHeight + "px",
-      width: g.width + "px", height: tlH + "px",
+      left: stage.right - origin.left - g.width + "px", top: top + "px",
+      width: g.width + "px", height: allH + "px",
     });
     // positions are computed from the final row heights, so cards don't land mid-animation
-    let y = $("title").offsetHeight + 2;
-    const label = $(`row-${TIER_IDS[0]}`).querySelector(".label").getBoundingClientRect().width;
+    let y = top;
     for (const t of TIER_IDS) {
-      placeAt(rows[t], label, y, sz.tier, sz.cols, t);
+      placeAt(rows[t], left, y, sz.tier, sz.cols, t);
       y += heights[t] + 2;
     }
-    if (!$("source").hidden) y += $("source").offsetHeight;
-    placeAt(pool, label, y + 2, sz.pool, sz.pcols, "pool");
+    placeAt(pool, left, y, sz.pool, sz.pcols, "pool");
   }
   hovers.forEach(placeHover);
 
@@ -370,9 +398,9 @@ let fixed = { key: "" };
 // however the entries spread over the tiers (rows grow by a line when a tier is full).
 function tileSizes(L) {
   const total = L.entries.length + L.pool.length + L.hovering.length;
-  const appW = $("app").clientWidth, appH = $("app").clientHeight;
+  const appW = $("stage").clientWidth, appH = $("stage").clientHeight;
   const label = $(`row-${TIER_IDS[0]}`).querySelector(".label").getBoundingClientRect().width;
-  const used = $("title").offsetHeight + ($("source").hidden ? 0 : $("source").offsetHeight)
+  const used = $("title").offsetHeight
              + ($("mode-switch").offsetParent ? $("mode-switch").offsetHeight : 0) + 2 * (TIER_IDS.length + 3);
   const avail = appH - used;
   const key = [shownId(), total, appW, avail, userSize, TILE_SIZE].join("|");
@@ -464,10 +492,11 @@ function placeCard(el, x, y, size) {
   s.transform = `translate(${x}px,${y}px)`;
   el.dataset.x = x;
   el.dataset.y = y;
+  s.setProperty("--s", size + "px"); // the vignette scales with the icon
   const name = el.querySelector(".name");
   if (name) {
     // the name gets as big as possible but always fits on the picture
-    const fs = Math.min(size * 0.16, (size * 0.94) / (+el.dataset.longest * 0.46));
+    const fs = Math.min(size * 0.17, (size * 0.92) / (+el.dataset.longest * 0.54));
     name.style.fontSize = Math.max(5, fs) + "px";
   }
   el.querySelector(".init").style.fontSize = size * 0.4 + "px";
@@ -631,12 +660,27 @@ connectDisplay({
     renderHeader();
   },
   onStatus(s) {
+    if (s === "live") pollTimer();
     $("live").textContent = s === "live" ? "LIVE" : s;
     $("live").classList.toggle("on", s === "live");
   },
 });
 
 window.addEventListener("resize", layout);
+
+// ── "until reset": countdown of the sequence timer from /admin.html, in the side strip ──
+let endsAt = null;
+function pollTimer() {
+  fetch(RANK_BASE + "/api/status", { cache: "no-store" }).then((r) => r.json())
+    .then((st) => { endsAt = st.phase === "clearing" ? null : st.phaseEndsAt; }).catch(() => {});
+}
+setInterval(pollTimer, 5000);
+setInterval(() => {
+  const el = $("side-timer");
+  if (!endsAt) { el.textContent = ""; return; }
+  const left = Math.max(0, Math.round((endsAt - serverNow()) / 1000));
+  el.textContent = TIMER_TEXT.replace("{t}", `${String(Math.floor(left / 60)).padStart(2, "0")}:${String(left % 60).padStart(2, "0")}`);
+}, 500);
 </script>
 </body>
 </html>
