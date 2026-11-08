@@ -150,7 +150,7 @@ Look settings at the top of the `<style>` part: `--shade` and `--render-time` (t
 
 **One icon size, rows that grow.** All icons (in the tiers, on the hover track) have the same size, and it never changes during a sequence. Each tier row is exactly one icon tall; when a tier is full, its row gets another line, like on TierMaker. All the space that is left goes to the "…" row at the bottom. Icons in the same tier touch; a white line separates the tiers. The size is chosen once, as big as possible while the whole list is guaranteed to fit on the screen however the entries spread over the tiers.
 
-**Hidden icon size slider:** press **S** on the keyboard (or double-click the title) on a screen. Drag to set the size, "Auto" to go back. It is saved in that browser, separately for each screen. With a big manual size, very full tiers can run off the bottom of the screen.
+**Hidden icon size slider:** press **S** on the keyboard (or double-click the title) on a screen. Drag to set the size, "Auto" to go back. It is saved in that browser, separately for each screen. The same panel has the background settings: shade color, band width and speed (saved in that browser for all screens, "Reset background" goes back to the defaults). With a big manual size, very full tiers can run off the bottom of the screen.
 
 Settings near the top of the script: `TILE_SIZE` (fixed size in px for all screens, 0 = automatic), `POOL_SCALE` (size of the "…" icons compared to the others), `STEP_MS`, `SWING`, `SETTLE` (how nervous the hovering looks), `MARK_MS` (how long the colored outline stays). Colors and fonts are at the top of the `<style>` part.
 

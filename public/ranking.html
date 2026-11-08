@@ -15,6 +15,7 @@
   --ink: #000; --paper: #fff;
   --shade: #d6d6d6;                                /* the grey band that slowly runs down the background */
   --render-time: 14s;                              /* how long one pass of the band takes */
+  --band: 18%;                                     /* half the height of the grey band (share of the screen) */
   --name: #ffff00;                                 /* color of the names on the pictures */
   --vig-undecided: transparent;                    /* vignette while an entry is still hovering (transparent = none) */
   --vig-up: #00ff00;                               /* vignette after moving up */
@@ -42,7 +43,8 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   content: ""; position: absolute; left: 0; right: 0; top: -100%; height: 200%; z-index: -1; pointer-events: none;
   background:
     linear-gradient(90deg, var(--paper) 0 var(--label-w), transparent var(--label-w)),
-    repeating-linear-gradient(180deg, var(--paper) 0%, var(--paper) 22%, var(--shade) 40%, var(--paper) 58%, var(--paper) 100%) 0 0 / 100% 50%;
+    repeating-linear-gradient(180deg, var(--paper) 0%, var(--paper) calc(50% - var(--band)), var(--shade) 50%,
+                              var(--paper) calc(50% + var(--band)), var(--paper) 100%) 0 0 / 100% 50%;
   animation: render var(--render-time) linear infinite;
 }
 @keyframes render { from { transform: translateY(0); } to { transform: translateY(50%); } }
@@ -165,7 +167,8 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   background: #000; color: #fff; border: 1px solid #fff; padding: 10px 14px;
   font-family: var(--f-type); font-size: 14px;
 }
-#sizer input { width: min(60vw, 420px); vertical-align: middle; }
+#sizer input[type=range] { width: min(50vw, 360px); vertical-align: middle; }
+#sizer > div { margin: 6px 0; }
 </style>
 </head>
 <body>
@@ -184,8 +187,12 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   <div id="empty" hidden></div>
   <div id="soundhint" hidden>Click anywhere to turn on sound · M = mute</div>
   <div id="sizer" hidden>
-    Icon size <input id="size" type="range" min="0" max="400" step="2"> <span id="sizeval"></span>
-    <button type="button" id="sizeauto">Auto</button>
+    <div>Icon size <input id="size" type="range" min="0" max="400" step="2"> <span id="sizeval"></span>
+      <button type="button" id="sizeauto">Auto</button></div>
+    <div>Shade <input id="shade" type="color"> <span id="shadeval"></span></div>
+    <div>Band width <input id="band" type="range" min="4" max="48" step="1"> <span id="bandval"></span></div>
+    <div>Speed <input id="render" type="range" min="3" max="60" step="1"> <span id="renderval"></span></div>
+    <div><button type="button" id="bgreset">Reset background</button></div>
   </div>
 </div>
 
@@ -389,6 +396,27 @@ function layout() {
 // ── hidden icon size slider (press S, or double-click the title). Saved in this browser, per screen.
 let userSize = 0;
 const sizeKey = () => `rankmania-size-${screen}`;
+// ── background settings in the same hidden panel (saved in this browser, for all screens)
+const BG_DEFAULT = { shade: "#d6d6d6", band: 18, render: 14 };
+let bg = { ...BG_DEFAULT };
+try { bg = { ...BG_DEFAULT, ...JSON.parse(localStorage.getItem("rankmania-bg") || "{}") }; } catch {}
+function applyBg(save) {
+  const r = document.documentElement.style;
+  r.setProperty("--shade", bg.shade);
+  r.setProperty("--band", bg.band + "%");
+  r.setProperty("--render-time", bg.render + "s");
+  $("shade").value = bg.shade; $("shadeval").textContent = bg.shade;
+  $("band").value = bg.band; $("bandval").textContent = bg.band * 2 + " % of the height";
+  $("render").value = bg.render; $("renderval").textContent = bg.render + " s per pass";
+  if (save) try { localStorage.setItem("rankmania-bg", JSON.stringify(bg)); } catch {}
+}
+$("shade").addEventListener("input", () => { bg.shade = $("shade").value; applyBg(true); });
+$("band").addEventListener("input", () => { bg.band = +$("band").value; applyBg(true); });
+$("render").addEventListener("change", () => { bg.render = +$("render").value; applyBg(true); });
+$("render").addEventListener("input", () => { $("renderval").textContent = $("render").value + " s per pass"; });
+$("bgreset").addEventListener("click", () => { bg = { ...BG_DEFAULT }; applyBg(true); });
+applyBg(false);
+
 function loadSize() {
   try { userSize = +localStorage.getItem(sizeKey()) || 0; } catch { userSize = 0; }
   $("size").value = userSize || fixed.tier || 100;
