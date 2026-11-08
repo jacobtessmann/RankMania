@@ -47,6 +47,11 @@ Each screen picks one at the start of every sequence. In the mix, the three scre
 <h2 id="phase">…</h2>
 <table id="lists" border="1" cellpadding="4"></table>
 <p id="auto"></p>
+<h2>What the brain learned from the verdicts</h2>
+<p id="learnsum">…</p>
+<p><button type="button" id="forget">Forget everything it learned</button><br>
+Learning is kept in memory only. It is also forgotten when the server restarts (redeploy, or Render sleeping).</p>
+<table id="learned" border="1" cellpadding="4"></table>
 <p><a href="brain.html">Open the brain view</a></p>
 <script>
 const base = (new URLSearchParams(location.search).get("server") || "").replace(/\/+$/, "");
@@ -75,6 +80,22 @@ document.querySelectorAll("button[data-action]").forEach((b) => (b.onclick = asy
   setTimeout(() => document.querySelectorAll("button").forEach((x) => (x.disabled = false)), 1500);
   poll();
 }));
+
+$("forget").onclick = async () => {
+  if (!confirm("Forget everything the brain learned from the verdicts?")) return;
+  const key = $("key").value;
+  try {
+    const r = await fetch(base + "/api/control", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, action: "forget" }),
+    });
+    const j = await r.json();
+    $("msg").textContent = j.ok ? "The brain forgot what it learned." : j.error;
+  } catch {
+    $("msg").textContent = "Server not reachable.";
+  }
+  poll();
+};
 
 // brain speed: sent when the slider is let go
 let dragging = false;
@@ -185,6 +206,13 @@ async function poll() {
       $("speedval").textContent = (+s.speed).toFixed(2) + "×";
     }
     $("phase").textContent = NAMES[s.phase] || s.phase;
+    if (s.learning) {
+      const L = s.learning.images;
+      $("learnsum").textContent = `${s.learning.verdicts} verdicts so far, ${L.length} images learned something.` + (L.length > 20 ? " Showing the 10 highest and 10 lowest." : "");
+      const show = L.length > 20 ? [...L.slice(0, 10), ...L.slice(-10)] : L;
+      $("learned").innerHTML = show.length ? "<tr><td>image</td><td>category</td><td>learned bias</td><td>verdicts</td></tr>" +
+        show.map((x) => `<tr><td>${x.title}</td><td>${x.category}</td><td>${x.bias > 0 ? "+" : ""}${x.bias}</td><td>${x.verdicts}</td></tr>`).join("") : "";
+    }
     $("lists").innerHTML = "<tr><td></td><td>ranked</td><td>hovering</td><td>waiting</td></tr>" +
       s.lists.map((l) => `<tr><td>${l.label}${l.active ? " (running)" : ""}</td><td>${l.ranked}</td><td>${l.hovering}</td><td>${l.waiting}</td></tr>`).join("");
   } catch {

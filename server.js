@@ -65,6 +65,14 @@ const ENTRIES_PER_SCREEN = 20;
 const VOTE_WEIGHT = 0.15; // how much one vote changes the mood (the mood goes from -1 calm to +1 restless)
 const MOOD_HALF_LIFE_MS = 90000; // after 90 s, half of the effect is gone
 const VOTE_COOLDOWN_MS = 15000; // one phone can vote for the same list at most every 15 s
+// The brain also really learns from every verdict, per image: a "good" verdict on a list gives everything
+// that was high in the voter's list a tiny plus and everything low a tiny minus ("this order was right").
+// "bad" does the opposite. What it learned stays with the image across all rounds and both sequences,
+// until the server restarts (Render: redeploy or sleep). It nudges where a new entry lands and
+// whether its moves tend to go up or down.
+const LEARN_RATE = 1.5; // points one verdict adds or removes (for the very top and very bottom; the middle gets less)
+const LEARN_MAX = 15; // the most an image can ever learn, up or down (one tier = 20 points)
+const LEARN_TILT = 0.25; // at the maximum, moves go the learned way this much more often (0.25 = 75 % instead of 50 %)
 
 // ── Headlines on top of the screens. Edited live on /admin.html (one list per mode).
 //    {n} becomes the number of entries on that screen (shown underlined).
@@ -138,6 +146,9 @@ let headlines = loadHeadlines();
 let titles = {}; // screen → the headline it shows right now
 let rotateTimer = null;
 const voteSeen = new Map(); // phone + list → time of its last vote
+const learned = new Map(); // image → { bias, verdicts }  (in memory: forgotten when the server restarts)
+let verdictCount = 0;
+const biasOf = (e) => (e && learned.get(e.image)?.bias) || 0;
 let phaseEndsAt = null;
 let phaseTimer = null;
 let seq = 0;
@@ -375,7 +386,7 @@ function hover(list) {
   const id = list.queue.shift();
   const e = list.items.get(id);
   if (!e) return false;
-  e.score = rollScore();
+  e.score = clamp(rollScore() + biasOf(e)); // what it learned from the verdicts shifts the landing spot a little
   const used = new Set([...list.hovering.values()].map((h) => h.slot));
   let slot = 0;
   while (used.has(slot)) slot++;
@@ -423,7 +434,8 @@ function drift(list) {
     const big = Math.random() < BIG_JUMP_CHANCE * w;
     const restless = 1 + 0.5 * Math.max(0, moodOf(list)); // after "bad" votes the moves get bigger
     const size = big ? 25 + Math.random() * (BIG_JUMP_MAX - 25) : 1 + Math.random() * DRIFT_MAX * w * restless;
-    const delta = Math.round(size) * (Math.random() < 0.5 ? -1 : 1);
+    const up = 0.5 + LEARN_TILT * (biasOf(e) / LEARN_MAX); // learned images tend to move their learned way
+    const delta = Math.round(size) * (Math.random() < up ? 1 : -1);
     const old = e.score;
     e.score = bounce(e.score + delta);
     const after = entriesOf(list);
@@ -448,6 +460,33 @@ function drift(list) {
     return true;
   }
   return false;
+}
+
+// learning from one verdict. order = the voter's list as image paths, best first.
+// Returns a few of the biggest lessons for the brain view.
+function learn(order, vote) {
+  const known = new Set(Object.entries(files).flatMap(([c, fs]) => fs.map((f) => `/images/${c}/${encodeURIComponent(f)}`)));
+  const imgs = (Array.isArray(order) ? order : [])
+    .slice(0, 200)
+    .map((x) => String(x || "").replace(/^.*?(\/images\/)/, "$1"))
+    .filter((x, i, a) => known.has(x) && a.indexOf(x) === i);
+  const n = imgs.length;
+  if (n < 2) return [];
+  verdictCount++;
+  const sign = vote === "good" ? 1 : -1;
+  const out = [];
+  imgs.forEach((img, i) => {
+    const w = (n - 1 - 2 * i) / (n - 1); // +1 for the first, 0 in the middle, -1 for the last
+    const l = learned.get(img) || { bias: 0, verdicts: 0 };
+    const delta = sign * LEARN_RATE * w;
+    l.bias = Math.max(-LEARN_MAX, Math.min(LEARN_MAX, l.bias + delta));
+    l.verdicts++;
+    learned.set(img, l);
+    const file = decodeURIComponent(img.split("/").pop());
+    out.push({ title: titleFromFile(file), image: img, delta, bias: l.bias, verdicts: l.verdicts });
+  });
+  return [out[0], out[1], out[n - 2], out[n - 1]].filter((x, i, a) => x && a.indexOf(x) === i)
+    .map((x) => ({ ...x, delta: +x.delta.toFixed(2), bias: +x.bias.toFixed(2) }));
 }
 
 // ════════════════ THE TWO SEQUENCES ════════════════
@@ -621,6 +660,13 @@ function status() {
     phaseEndsAt,
     minutes: { separate: lengths.separate / 60000, mix: lengths.mix / 60000 },
     autoMixAt,
+    learning: {
+      verdicts: verdictCount,
+      images: [...learned.entries()]
+        .map(([img, l]) => ({ title: titleFromFile(decodeURIComponent(img.split("/").pop())), category: img.split("/")[2],
+                              bias: +l.bias.toFixed(2), verdicts: l.verdicts }))
+        .sort((a, b) => b.bias - a.bias),
+    },
     lists: allLists().map((l) => ({
       name: l.id,
       label: l.virtual ? `Mix on the ${lists[l.screen].label} screen` : l.label,
@@ -663,7 +709,7 @@ const server = http.createServer((req, res) => {
     let body = "";
     req.on("data", (d) => {
       body += d;
-      if (body.length > 2000) req.destroy();
+      if (body.length > 30000) req.destroy();
     });
     req.on("end", () => {
       let msg = {};
@@ -681,7 +727,9 @@ const server = http.createServer((req, res) => {
       list.moodAt = Date.now();
       list.votes.push(msg.vote);
       if (list.votes.length > 500) list.votes.shift();
-      broadcast({ type: "vote", now: Date.now(), category: list.id, vote: msg.vote, votes: list.votes, mood: m });
+      const lessons = learn(msg.order, msg.vote);
+      broadcast({ type: "vote", now: Date.now(), category: list.id, vote: msg.vote, votes: list.votes, mood: m,
+                  lessons, verdicts: verdictCount, learnedImages: learned.size });
       console.log(`Vote ${msg.vote} for ${list.id} → mood ${m.toFixed(2)}`);
       json(res, 200, { ok: true, votes: list.votes.length });
     });
@@ -719,6 +767,12 @@ const server = http.createServer((req, res) => {
         lengths[msg.phase] = Math.round(m * 60000);
         if (phase === msg.phase) armPhaseTimer();
         console.log(`Timer ${msg.phase} → ${m} min`);
+        return json(res, 200, { ok: true, ...status() });
+      }
+      if (msg.action === "forget") {
+        learned.clear();
+        verdictCount = 0;
+        console.log("Learning forgotten");
         return json(res, 200, { ok: true, ...status() });
       }
       if (msg.action === "speed") {

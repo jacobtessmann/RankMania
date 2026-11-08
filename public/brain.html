@@ -246,6 +246,11 @@ connectDisplay({
     const T = tagOf(ev.category);
     print(`[${clock()}] ${T} FEEDBACK  verdict "${ev.vote}"   good ${good} · bad ${bad}   weight ${(0.15).toFixed(3)}   mood ${ev.mood >= 0 ? "+" : ""}${ev.mood.toFixed(2)}`);
     print(`           ${T}   ${ev.vote === "bad" ? "reconsidering … learning from human taste" : "confirmed … learning from human taste"}`, "dim");
+    for (const l of ev.lessons || []) {
+      const sg = (v) => (v >= 0 ? "+" : "") + v.toFixed(2);
+      print(`           ${T} LEARNED  ${l.title.padEnd(26).slice(0, 26)} ${sg(l.delta)}   bias ${sg(l.bias)}   (${l.verdicts} verdict${l.verdicts === 1 ? "" : "s"})`);
+    }
+    if (ev.verdicts) print(`           ${T}   model updated · ${ev.verdicts} verdicts · ${ev.learnedImages} weights`, "dim");
   },
   onRoster(ev) {
     lists[ev.category] = ev.entries;
