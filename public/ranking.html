@@ -13,7 +13,8 @@
 */
 :root {
   --ink: #000; --paper: #fff;
-  --grad-top: #ffffff; --grad-bottom: #6b6b6b;   /* background behind the tiers */
+  --shade: #d6d6d6;                                /* the grey band that slowly runs down the background */
+  --render-time: 14s;                              /* how long one pass of the band takes */
   --name: #ffff00;                                 /* color of the names on the pictures */
   --vig-undecided: transparent;                    /* vignette while an entry is still hovering (transparent = none) */
   --vig-up: #00ff00;                               /* vignette after moving up */
@@ -35,8 +36,16 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
            calc(var(--frame) + env(safe-area-inset-bottom, 0px)) calc(var(--frame) + env(safe-area-inset-left, 0px));
 }
 #stage { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; position: relative;
-         background: linear-gradient(90deg, var(--paper) 0 var(--label-w), transparent var(--label-w)),
-                     linear-gradient(var(--grad-top), var(--grad-bottom)); }
+         background: var(--paper); overflow: hidden; isolation: isolate; }
+/* the background "renders": mostly white, a soft grey band slowly runs from top to bottom, again and again */
+#stage::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -100%; height: 200%; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--paper) 0 var(--label-w), transparent var(--label-w)),
+    repeating-linear-gradient(180deg, var(--paper) 0%, var(--paper) 22%, var(--shade) 40%, var(--paper) 58%, var(--paper) 100%) 0 0 / 100% 50%;
+  animation: render var(--render-time) linear infinite;
+}
+@keyframes render { from { transform: translateY(0); } to { transform: translateY(50%); } }
 
 /* ═══ Title ═══ */
 #title {
