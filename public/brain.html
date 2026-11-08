@@ -35,11 +35,61 @@ const VARS = {
   konzerne: ["brand_gravity", "lobby_mass", "logo_symmetry", "apology_frequency", "shareholder_mood", "greenwashing_index"],
 };
 const TAG = { students: "STU", inventions: "INV", konzerne: "KON" };
+const REEVAL_CHANCE = 0.35;               // share of moves shown as a full re-evaluation
+const ART_EVERY_MS = [40000, 90000];      // ASCII art appears every 40–90 s
+
+// ── ASCII art, printed now and then (add your own; plain characters only) ──
+const ART = [
+`        /\\
+       /S \\
+      / A  \\
+     /  B   \\
+    /   C    \\
+   /    D     \\
+  /_____F______\\
+  THE ORDER OF THINGS`,
+`      .-"""""-.
+    .'  _____  '.
+   /   /  _  \\   \\
+  |   |  (o)  |   |
+   \\   \\_____/   /
+    '.         .'
+      '-.....-'
+  THE MACHINE IS LOOKING`,
+`  +-------------------------------+
+  |  R  A  N  K  M  A  N  I  A    |
+  +-------------------------------+
+  | who ranks what, based on what |
+  +-------------------------------+`,
+`              |
+      ________|________
+     |        |        |
+    / \\       |       / \\
+   /___\\      |      /___\\
+   TASTE      |     MACHINE
+          ____|____`,
+`   ___________________________
+  |                           |
+  |   REASON:  [REDACTED]     |
+  |   APPEAL:  NOT ACCEPTED   |
+  |___________________________|`,
+`  YOU  ------ taste ----->  [ MACHINE ]
+  you  <----- ranking ----  [ MACHINE ]`,
+`  [ ? ] [ ? ] [ ? ] [ ? ]
+     \\     |     |     /
+      \\____|_____|____/
+            |
+     [ S ] [ A ] ... [ F ]`,
+`  thinking  [##########----------]  50%
+  thinking  [################----]  80%
+  thinking  [####################] 100%
+  conclusion: unchanged`,
+];
 
 const log = document.getElementById("log");
 const bar = document.getElementById("bar");
 const lists = {};          // list id → entries (for cross-references)
-let phase = "separate", speed = 1, started = Date.now(), connected = "connecting";
+let phase = "separate", speed = 1, started = Date.now(), connected = "connecting", endsAt = null;
 
 // same text → same number between 0 and 1
 function h01(s) {
@@ -113,7 +163,37 @@ function result(ev) {
   print(`[${clock()}] ${T} RESULT    ${e.title} → TIER ${e.tier}   #${e.rank}/${ev.entries ? ev.entries.length : "?"}   committed`);
 }
 
+// ── a full re-evaluation of an entry that is already ranked (the same variables, shifted) ──
+const busy = new Set();
+function reevaluate(ev) {
+  const list = ev.category, T = tagOf(list);
+  busy.add(list);
+  const vars = variablesFor(list, ev.after);
+  print("");
+  print(`[${clock()}] ${T} REEVALUATE ${ev.after.title}   (was #${ev.before.rank}, tier ${ev.before.tier})`);
+  const shift = ev.change / 100;
+  const total = 2600 / Math.max(0.25, speed);
+  vars.forEach((v, i) => setTimeout(() => {
+    const nv = Math.max(0, Math.min(1, v.value + shift * (0.4 + h01(v.name + ev.seq) * 1.2)));
+    print(`           ${T}   ${dots(v.name)}${fmt(v.value, v.name)} → ${fmt(nv, v.name)}`);
+  }, (total * i) / (vars.length + 1)));
+  setTimeout(() => {
+    const tier = ev.before.tier === ev.after.tier ? `TIER ${ev.after.tier}` : `TIER ${ev.before.tier}→${ev.after.tier}`;
+    print(`[${clock()}] ${T} RESULT    ${ev.after.title} → ${tier}   #${ev.before.rank}→#${ev.after.rank}   score ${ev.before.score}→${ev.after.score}`);
+    busy.delete(list);
+  }, total);
+}
+
+function art() {
+  print("");
+  pick(ART).split("\n").forEach((l) => print(l));
+  print("");
+  setTimeout(art, ART_EVERY_MS[0] + Math.random() * (ART_EVERY_MS[1] - ART_EVERY_MS[0]));
+}
+setTimeout(art, 15000);
+
 function recalc(ev) {
+  if (!busy.has(ev.category) && Math.random() < REEVAL_CHANCE) return reevaluate(ev);
   const cat = catOf(ev.category, ev.id);
   const pool = [...VARS._any, ...(VARS[cat] || [])];
   const v = pool[Math.floor(Math.random() * pool.length)];
@@ -127,7 +207,12 @@ function status() {
   const t = `${String(Math.floor(up / 60)).padStart(2, "0")}:${String(up % 60).padStart(2, "0")}`;
   const name = phase === "mix" ? "SEQUENCE 2 · MIX" : phase === "clearing" ? "CLEARING" : "SEQUENCE 1 · SEPARATE";
   const counts = Object.entries(lists).filter(([, v]) => v.length).map(([k, v]) => `${tagOf(k).trim()}:${v.length}`).join(" ");
-  bar.textContent = `rankmania brain   ${name}   speed ${(+speed).toFixed(2)}x   up ${t}   ${counts}   [${connected}]`;
+  let timer = "";
+  if (endsAt && phase !== "clearing") {
+    const left = Math.max(0, Math.round((endsAt - serverNow()) / 1000));
+    timer = `   next sequence in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+  }
+  bar.textContent = `rankmania brain   ${name}${timer}   speed ${(+speed).toFixed(2)}x   up ${t}   ${counts}   [${connected}]`;
 }
 setInterval(status, 1000);
 
@@ -141,7 +226,7 @@ connectDisplay({
     active.forEach((c) => print(`  ${tagOf(c.name)} ${c.entries.length} ranked, ${c.hovering.length} evaluating, ${c.pool.length} waiting`, "dim"));
     print("question: [REDACTED]   criteria: [REDACTED]", "dim");
     snap.categories.forEach((c) => c.hovering.forEach((hv) => evaluate({ ...hv, category: c.name })));
-    fetch(RANK_BASE + "/api/status").then((r) => r.json()).then((s) => { speed = s.speed ?? 1; }).catch(() => {});
+    fetch(RANK_BASE + "/api/status").then((r) => r.json()).then((s) => { speed = s.speed ?? 1; endsAt = s.phaseEndsAt; }).catch(() => {});
     status();
   },
   onHover: evaluate,
@@ -177,7 +262,7 @@ connectDisplay({
 });
 
 // keep the speed in the status bar up to date
-setInterval(() => fetch(RANK_BASE + "/api/status").then((r) => r.json()).then((s) => { speed = s.speed ?? speed; }).catch(() => {}), 5000);
+setInterval(() => fetch(RANK_BASE + "/api/status").then((r) => r.json()).then((s) => { speed = s.speed ?? speed; endsAt = s.phaseEndsAt; }).catch(() => {}), 5000);
 </script>
 </body>
 </html>

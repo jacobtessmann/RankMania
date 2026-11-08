@@ -16,6 +16,16 @@ All screens clear and every category starts again from empty.</p>
 <p><label for="speed">Brain speed: <output id="speedval">1×</output></label><br>
 <input id="speed" type="range" min="0.25" max="3" step="0.05" value="1"><br>
 Slower to the left, faster to the right. Changes the tempo of all screens at once.</p>
+<h2>Timers</h2>
+<p><label for="t-separate">Sequence 1 (separate):</label>
+<input id="t-separate" type="number" min="0" max="600" step="0.5" size="5"> minutes
+<button type="button" data-timer="separate">Set</button></p>
+<p><label for="t-mix">Sequence 2 (mix):</label>
+<input id="t-mix" type="number" min="0" max="600" step="0.5" size="5"> minutes
+<button type="button" data-timer="mix">Set</button></p>
+<p>0 = no timer, you switch by hand. When sequence 1 ends, the mix starts. When the mix ends, sequence 1 starts again.
+A timer counts from the start of its sequence.</p>
+<h2 id="countdown">…</h2>
 <p id="msg"></p>
 <h2 id="phase">…</h2>
 <table id="lists" border="1" cellpadding="4"></table>
@@ -69,10 +79,52 @@ $("speed").onchange = async () => {
   poll();
 };
 
+// timers for the length of each sequence
+document.querySelectorAll("button[data-timer]").forEach((b) => (b.onclick = async () => {
+  const key = $("key").value;
+  try { localStorage.setItem("rankKey", key); } catch {}
+  const which = b.dataset.timer;
+  try {
+    const r = await fetch(base + "/api/control", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, action: "timer", phase: which, minutes: +$("t-" + which).value || 0 }),
+    });
+    const j = await r.json();
+    $("msg").textContent = j.ok ? `Timer for ${which === "mix" ? "sequence 2" : "sequence 1"} set.` : j.error;
+    if (j.ok) applyStatus(j);
+  } catch {
+    $("msg").textContent = "Server not reachable.";
+  }
+}));
+
+// live countdown
+let st = null;
+const mmss = (ms) => {
+  const t = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+};
+setInterval(() => {
+  if (!st) return;
+  const now = Date.now() + offset;
+  const name = st.phase === "mix" ? "Sequence 2 (mix)" : st.phase === "separate" ? "Sequence 1 (separate)" : "Clearing";
+  if (st.phase === "clearing") $("countdown").textContent = "Clearing…";
+  else if (st.phaseEndsAt) $("countdown").textContent = `${name}: ${mmss(st.phaseEndsAt - now)} left, then ${st.phase === "mix" ? "sequence 1" : "the mix"}`;
+  else $("countdown").textContent = `${name}: running for ${mmss(now - st.phaseStartedAt)}, no timer`;
+}, 250);
+
+function applyStatus(s) {
+  st = s;
+  offset = s.now - Date.now();
+  for (const k of ["separate", "mix"]) {
+    const inp = $("t-" + k);
+    if (s.minutes && document.activeElement !== inp) inp.value = s.minutes[k];
+  }
+}
+
 async function poll() {
   try {
     const s = await (await fetch(base + "/api/status", { cache: "no-store" })).json();
-    offset = s.now - Date.now();
+    applyStatus(s);
     autoAt = s.autoMixAt;
     if (!dragging && s.speed != null) {
       $("speed").value = s.speed;

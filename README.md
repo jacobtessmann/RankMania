@@ -117,7 +117,7 @@ Every start of the server begins with **empty tiers**.
 
 **Sequence 2 · Mix** (only by hand): all pictures fall off every screen, then every image of all three categories is dealt to exactly one of the three screens at random (about a third of every category each), and all three screens fill up again with a mix.
 
-**Show control** on **/admin.html**: the buttons "Start sequence 2" and "Restart sequence 1", and a **speed slider** for the whole brain (0.25× to 3×, live on all screens). The admin password is `rankbrain` unless you set `ADMIN_KEY` on Render (your service → **Environment**). Set it, otherwise anyone who finds the page can control your show.
+**Show control** on **/admin.html**: the buttons "Start sequence 2" and "Restart sequence 1", a **speed slider** for the whole brain (0.25× to 3×, live on all screens), and **timers** for the length of each sequence with a live countdown. When sequence 1 runs out, the mix starts; when the mix runs out, sequence 1 starts again. 0 = no timer. The admin password is `rankbrain` unless you set `ADMIN_KEY` on Render (your service → **Environment**). Set it, otherwise anyone who finds the page can control your show.
 
 Settings at the top of `server.js`:
 
@@ -133,16 +133,19 @@ Settings at the top of `server.js`:
 | `BIG_JUMP_CHANCE`, `BIG_JUMP_MAX` | how often a move jumps 2–3 tiers, and how far |
 | `WILDER_AFTER_MS`, `WILDER_FACTOR` | moves get this much bigger over this time (`1` = stays the same) |
 | `CLEAR_MS` | how long the clearing between the sequences takes |
+| `SEPARATE_MINUTES`, `MIX_MINUTES` | length of each sequence at server start (0 = by hand); the timers on /admin.html change them live |
 | `AUTO_MIX_AFTER_MS` | `null` = mix only by hand; a time in ms = automatic after all lists are full |
 | `TIERS` | score borders of S A B C D F |
 
 ## 6. The tierlist screen (ranking.html)
 
-Looks like TierMaker: title bar, tiers S–F, source line, the "…" row with the images still waiting, and the hover track on the right. The icon size is chosen once and never changes during a sequence.
+Looks like TierMaker: title bar, tiers S–F, source line, the "…" row with the images still waiting, and the hover track on the right.
 
-**Hidden icon size slider:** press **S** on the keyboard (or double-click the title) on a screen. Drag to set the size, "Auto" to go back. It is saved in that browser, separately for each screen. The icons can't get taller than a tier row.
+**One icon size, rows that grow.** All icons (in the tiers, on the hover track) have the same size, and it never changes during a sequence. When a tier is full, its row gets another line, like on TierMaker. The size is chosen once, as big as possible while the whole list is guaranteed to fit on the screen however the entries spread over the tiers.
 
-Settings near the top of the script: `TILE_SIZE` (fixed size in px, 0 = automatic), `TIER_SHARE` (automatic size: one tier can hold this share of all entries), `STEP_MS`, `SWING`, `SETTLE` (how nervous the hovering looks), `MARK_MS` (how long the colored outline stays). Colors and fonts are at the top of the `<style>` part.
+**Hidden icon size slider:** press **S** on the keyboard (or double-click the title) on a screen. Drag to set the size, "Auto" to go back. It is saved in that browser, separately for each screen. With a big manual size, very full tiers can run off the bottom of the screen.
+
+Settings near the top of the script: `TILE_SIZE` (fixed size in px for all screens, 0 = automatic), `POOL_SCALE` (size of the "…" icons compared to the others), `STEP_MS`, `SWING`, `SETTLE` (how nervous the hovering looks), `MARK_MS` (how long the colored outline stays). Colors and fonts are at the top of the `<style>` part.
 
 ## 7. The phone feed (feed.html)
 
@@ -154,4 +157,4 @@ RankFeed is a **personal snapshot**. The moment someone opens it, it loads the r
 
 ## 8. The brain view (brain.html)
 
-A plain black-and-white terminal that shows the brain working, live: every evaluation with its variables, the result, every recalculation, and the sequence changes. The variable names and values are invented (always the same values for the same entity); the scores, tiers and places are the real ones. The bar at the top shows the sequence, speed and counts.
+A plain black-and-white terminal that shows the brain working, live: every evaluation with its variables, the result, every recalculation, and the sequence changes. The variable names and values are invented (always the same values for the same entity); the scores, tiers and places are the real ones. About a third of the moves are shown as a full re-evaluation with old → new values, and every 40–90 s some ASCII art appears (add your own in `ART`). The bar at the top shows the sequence, the timer, speed and counts. Settings: `REEVAL_CHANCE`, `ART_EVERY_MS`, `VARS`, `ART`.

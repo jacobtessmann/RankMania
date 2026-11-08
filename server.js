@@ -89,6 +89,10 @@ const BIG_JUMP_MAX = 55; // … of up to this many points (= up to 2–3 tiers a
 const WILDER_AFTER_MS = 180000; // over the first 3 minutes of a sequence the moves get bigger, up to …
 const WILDER_FACTOR = 1.5; // … 1.5× bigger moves and 1.5× more big jumps (1 = always the same)
 const CLEAR_MS = 2500; // how long the screens take to clear between the sequences
+// Length of each sequence in minutes (also set live on /admin.html). 0 = until you switch by hand.
+// When sequence 1 ends, the mix starts; when the mix ends, sequence 1 starts again.
+const SEPARATE_MINUTES = 0;
+const MIX_MINUTES = 0;
 const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.html (or a time in ms after all lists are full)
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
@@ -98,6 +102,10 @@ const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
 // ════════════════ STATE ════════════════
 let phase = "separate"; // separate | clearing | mix
 let speed = START_SPEED; // changed live by the slider on /admin.html
+const lengths = { separate: SEPARATE_MINUTES * 60000, mix: MIX_MINUTES * 60000 }; // changed live on /admin.html
+let phaseStartedAt = Date.now();
+let phaseEndsAt = null;
+let phaseTimer = null;
 let seq = 0;
 let autoMixTimer = null;
 let autoMixAt = null;
@@ -384,9 +392,22 @@ function checkAutoMix() {
 
 const pickTwo = (arr) => shuffle([...arr]).slice(0, 2);
 
+// the timer of the running sequence: when it runs out, the other sequence starts
+function armPhaseTimer() {
+  clearTimeout(phaseTimer);
+  phaseTimer = null;
+  phaseEndsAt = null;
+  const len = lengths[phase];
+  if (!len) return;
+  phaseEndsAt = Math.max(Date.now() + 5000, phaseStartedAt + len);
+  phaseTimer = setTimeout(() => switchTo(phase === "separate" ? "mix" : "separate"), phaseEndsAt - Date.now());
+}
+
 // clear everything fast, then start the next sequence
 function switchTo(next) {
   if (phase === "clearing") return false;
+  clearTimeout(phaseTimer);
+  phaseTimer = phaseEndsAt = null;
   clearTimeout(autoMixTimer);
   autoMixTimer = autoMixAt = null;
 
@@ -399,6 +420,8 @@ function switchTo(next) {
 
   setTimeout(() => {
     phase = next;
+    phaseStartedAt = Date.now();
+    armPhaseTimer();
     if (next === "mix") dealMix();
     allLists().forEach(reset);
     const run = next === "mix" ? mixLists() : CATEGORIES.map((c) => lists[c.id]);
@@ -484,6 +507,9 @@ function status() {
     phase,
     speed,
     now: Date.now(),
+    phaseStartedAt,
+    phaseEndsAt,
+    minutes: { separate: lengths.separate / 60000, mix: lengths.mix / 60000 },
     autoMixAt,
     lists: allLists().map((l) => ({
       name: l.id,
@@ -534,6 +560,16 @@ const server = http.createServer((req, res) => {
         msg = JSON.parse(body || "{}");
       } catch {}
       if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
+      if (msg.action === "timer") {
+        const m = Number(msg.minutes);
+        if (!["separate", "mix"].includes(msg.phase) || !(m >= 0 && m <= 600)) {
+          return json(res, 400, { ok: false, error: "minutes must be between 0 and 600" });
+        }
+        lengths[msg.phase] = Math.round(m * 60000);
+        if (phase === msg.phase) armPhaseTimer();
+        console.log(`Timer ${msg.phase} → ${m} min`);
+        return json(res, 200, { ok: true, ...status() });
+      }
       if (msg.action === "speed") {
         const v = Number(msg.value);
         if (!(v >= 0.1 && v <= 5)) return json(res, 400, { ok: false, error: "speed must be between 0.1 and 5" });
@@ -587,6 +623,7 @@ function shuffle(a) {
 readFolders();
 allLists().forEach(reset);
 CATEGORIES.forEach((c) => start(lists[c.id]));
+armPhaseTimer();
 setInterval(rescan, RESCAN_MS);
 
 server.listen(PORT, () => {
