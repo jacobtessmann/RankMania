@@ -54,6 +54,11 @@ const CATEGORIES = [
   },
 ];
 
+// ── How many images each screen ranks per round. Each round picks them at random from the folder
+//    (e.g. 20 out of ~45), so every round has a different line-up. 0 = all images.
+//    In the mix, each screen gets this many, drawn evenly from all three folders.
+const ENTRIES_PER_SCREEN = 20;
+
 // ── Headlines on top of the screens. Edited live on /admin.html (one list per mode).
 //    {n} becomes the number of entries on that screen (shown underlined).
 //    Each screen picks one at the start of every sequence; in the mix the three screens get different ones.
@@ -240,26 +245,33 @@ function wantedItems(list) {
       named: !!c.names,
     }))
   );
-  if (!list.virtual) return items;
-  // the mix: only the images dealt to this screen (new images go to the emptiest screen)
-  for (const it of items) {
-    if (mixAssign.has(it.id)) continue;
-    const load = {};
-    for (const scr of mixAssign.values()) load[scr] = (load[scr] || 0) + 1;
-    const scr = CATEGORIES.map((c) => c.id).sort((a, b) => (load[a] || 0) - (load[b] || 0))[0];
-    mixAssign.set(it.id, scr);
-  }
+  // a single category: only the images picked for this round
+  if (!list.virtual) return list.selection ? items.filter((it) => list.selection.has(it.id)) : items;
+  // the mix: only the images dealt to this screen
   return items.filter((it) => mixAssign.get(it.id) === list.screen);
 }
 
-// deal every image to one screen: each category is shuffled and dealt round the three screens
+// pick this round's images for one category screen
+function pickSelection(list) {
+  const all = shuffle([...(files[list.id] || [])]);
+  list.selection = new Set(ENTRIES_PER_SCREEN ? all.slice(0, ENTRIES_PER_SCREEN) : all);
+}
+
+// the mix: every screen gets ENTRIES_PER_SCREEN images, taken in turn from the three folders
 function dealMix() {
   mixAssign.clear();
   const screens = CATEGORIES.map((c) => c.id);
-  let k = Math.floor(Math.random() * screens.length);
-  for (const c of CATEGORIES) {
-    for (const f of shuffle([...(files[c.id] || [])])) mixAssign.set(`${c.id}/${f}`, screens[k++ % screens.length]);
-  }
+  const piles = CATEGORIES.map((c) => shuffle([...(files[c.id] || [])]).map((f) => `${c.id}/${f}`));
+  const total = piles.reduce((n, p) => n + p.length, 0);
+  const per = ENTRIES_PER_SCREEN || Math.ceil(total / screens.length);
+  screens.forEach((scr, si) => {
+    for (let j = 0, got = 0; got < per && piles.some((p) => p.length); j++) {
+      const pile = piles[(j + si) % piles.length]; // each screen starts with a different folder
+      if (!pile.length) continue;
+      mixAssign.set(pile.shift(), scr);
+      got++;
+    }
+  });
 }
 
 function readFolders() {
@@ -309,6 +321,7 @@ function rescan() {
 // empty tiers, every image waiting
 function reset(list) {
   stop(list);
+  if (!list.virtual) pickSelection(list);
   list.items = new Map(wantedItems(list).map((w) => [w.id, { ...w, score: 0, ranked: false }]));
   list.hovering = new Map();
   list.queue = shuffle([...list.items.keys()]);

@@ -22,6 +22,7 @@ public/images/konzerne/     ← company logos/photos
 ```
 
 - **All images are squares** (e.g. 600 × 600 px). Use the script below to square them all at once.
+- **About 45 images per folder, 20 per round:** every round, each screen ranks 20 images picked at random from its folder, so each round has a different line-up. In the mix, each screen gets 20 drawn evenly from all three folders. Change the number with `ENTRIES_PER_SCREEN` in `server.js` (0 = all images).
 - One image = one entry. Allowed: `.jpg .jpeg .png .webp .gif .avif .svg`
 - **The file name becomes the displayed name** (on the tierlist pictures and in the feed headlines): `anna_mueller.jpg` → "Anna Mueller", `IBM.png` → "IBM", `Hans-Peter_Müller.jpg` → "Hans-Peter Müller" (underscore = space, hyphens stay)
 - Keep images small (e.g. max 600 px, under 200 KB) so phones load fast.
