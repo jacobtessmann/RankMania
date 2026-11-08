@@ -141,7 +141,7 @@ Settings at the top of `server.js`:
 
 Black title block with the number underlined, black tier letters on a white-to-grey gradient, the "…" row with the images still waiting, the hover track on the right behind a white line, and a white side strip with three vertical texts: the website (`SITE_TEXT`), the source line (`source` in server.js) and the countdown of the sequence timer (`TIMER_TEXT`, only while a timer runs). Every picture has a vignette and its name in yellow Helvetica. The vignette's color shows the state: white = ranked, no vignette = still undecided (hovering), green = just moved up, red = just moved down.
 
-Look settings at the top of the `<style>` part: `--grad-top`, `--grad-bottom` (background), `--name` (name color), `--vig-undecided`, `--vig-up`, `--vig-down` (vignette colors), `--frame` (white frame), `--label-w` (width of the letter boxes), `--side-w` (side strip). The vignette strength is in `.face::after` (`.185` = blur, `.08` = spread, both relative to the icon size).
+Look settings at the top of the `<style>` part: `--grad-top`, `--grad-bottom` (background), `--name` (name color), `--vig-undecided`, `--vig-up`, `--vig-down` (vignette colors), `--frame` (white frame), `--label-w` (width of the letter boxes), `--side-w` (side strip). The vignette strength is in `.face::after` (`.14` = blur, `.1` = spread, both relative to the icon size).
 
 **One icon size, rows that grow.** All icons (in the tiers, on the hover track) have the same size, and it never changes during a sequence. When a tier is full, its row gets another line, like on TierMaker. The size is chosen once, as big as possible while the whole list is guaranteed to fit on the screen however the entries spread over the tiers.
 
