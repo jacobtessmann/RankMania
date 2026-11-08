@@ -26,6 +26,23 @@ Slower to the left, faster to the right. Changes the tempo of all screens at onc
 <p>0 = no timer, you switch by hand. When sequence 1 ends, the mix starts. When the mix ends, sequence 1 starts again.
 A timer counts from the start of its sequence.</p>
 <h2 id="countdown">…</h2>
+<h2>Headlines</h2>
+<p>One headline per line. <code>{n}</code> becomes the number of entries on that screen (underlined).
+Each screen picks one at the start of every sequence. In the mix, the three screens always show different ones.</p>
+<p><label for="h-students">Students screen</label><br>
+<textarea id="h-students" rows="5" cols="60"></textarea></p>
+<p><label for="h-inventions">Inventions screen</label><br>
+<textarea id="h-inventions" rows="5" cols="60"></textarea></p>
+<p><label for="h-konzerne">Konzerne screen</label><br>
+<textarea id="h-konzerne" rows="5" cols="60"></textarea></p>
+<p><label for="h-mix">Mix (all three screens, each a different one)</label><br>
+<textarea id="h-mix" rows="5" cols="60"></textarea></p>
+<p><label for="h-rotate">Switch to another headline every</label>
+<input id="h-rotate" type="number" min="0" max="3600" step="1" size="5"> seconds (0 = one per sequence)</p>
+<p><button type="button" id="h-save">Save headlines</button>
+<button type="button" id="h-copy">Copy all</button></p>
+<p>Showing now: <span id="h-now">…</span></p>
+<p>Saved headlines stay until the server is redeployed. To keep them for good, press "Copy all" and send them to Claude to put into the project.</p>
 <p id="msg"></p>
 <h2 id="phase">…</h2>
 <table id="lists" border="1" cellpadding="4"></table>
@@ -114,12 +131,49 @@ setInterval(() => {
 
 function applyStatus(s) {
   st = s;
+  if (s.headlines && !headlinesLoaded) fillHeadlines(s.headlines);
+  if (s.titles) $("h-now").textContent = Object.entries(s.titles).map(([k, v]) => `${k}: "${v || "–"}"`).join(" · ");
   offset = s.now - Date.now();
   for (const k of ["separate", "mix"]) {
     const inp = $("t-" + k);
     if (s.minutes && document.activeElement !== inp) inp.value = s.minutes[k];
   }
 }
+
+// headlines
+const H_KEYS = ["students", "inventions", "konzerne", "mix"];
+let headlinesLoaded = false;
+function fillHeadlines(h) {
+  H_KEYS.forEach((k) => ($("h-" + k).value = (h[k] || []).join("\n")));
+  $("h-rotate").value = h.rotateSec || 0;
+  headlinesLoaded = true;
+}
+function readHeadlines() {
+  const lists = {};
+  H_KEYS.forEach((k) => (lists[k] = $("h-" + k).value.split("\n").map((x) => x.trim()).filter(Boolean)));
+  return { lists, rotateSec: +$("h-rotate").value || 0 };
+}
+$("h-save").onclick = async () => {
+  const key = $("key").value;
+  try { localStorage.setItem("rankKey", key); } catch {}
+  try {
+    const r = await fetch(base + "/api/control", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, action: "headlines", ...readHeadlines() }),
+    });
+    const j = await r.json();
+    $("msg").textContent = j.ok ? "Headlines saved. The screens show new ones now." : j.error;
+    if (j.ok) { applyStatus(j); fillHeadlines(j.headlines); }
+  } catch {
+    $("msg").textContent = "Server not reachable.";
+  }
+};
+$("h-copy").onclick = async () => {
+  const h = readHeadlines();
+  const text = JSON.stringify({ ...h.lists, rotateSec: h.rotateSec }, null, 2);
+  try { await navigator.clipboard.writeText(text); $("msg").textContent = "Copied."; }
+  catch { $("msg").textContent = "Copy didn't work. Select the text fields and copy them by hand."; }
+};
 
 async function poll() {
   try {

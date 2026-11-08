@@ -42,7 +42,10 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   flex: 0 0 auto; background: var(--ink); color: var(--paper); text-align: left;
   font-family: var(--f-type); font-weight: 400; font-size: min(6.4vh, 7.6vw); line-height: 1.02;
   letter-spacing: -.01em; padding: .3em .5em .35em; overflow: hidden;
+  height: calc(min(6.4vh, 7.6vw) * 2.69); /* always room for two lines, so the icon size never changes */
+  display: flex; align-items: center;
 }
+#title .t { display: block; }
 #title .n { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; }
 
 /* ═══ Tier rows ═══ */
@@ -188,7 +191,8 @@ let parallel = 3;
 const lists = {};        // list id → { label, title, source, virtual, entries[], pool[], hovering[] }
 const cards = new Map(); // entry id → { el, shown }   (ranked + waiting)
 const hovers = new Map();// entry id → { el, slot, start, land, score, prov, timer }
-let screens = [];        // the real categories (one screen each)
+let screens = [];
+let titles = {};         // screen → headline, chosen by the server        // the real categories (one screen each)
 let screen = null;       // which screen this is
 const qs = new URLSearchParams(location.search);
 if (qs.get("kiosk")) document.body.classList.add("kiosk");
@@ -273,13 +277,22 @@ function renderHeader() {
   const L = shown();
   const own = lists[screen] || {};
   const n = L ? L.entries.length + L.pool.length + L.hovering.length : 0;
-  const parts = ((L || own).title || own.label || "").split("{n}");
-  const t = $("title");
-  t.textContent = "";
+  // the headline the brain picked for this screen (edited on /admin.html); otherwise the list's title
+  const parts = (titles[screen] || (L || own).title || own.label || "").split("{n}");
+  const box = $("title");
+  box.textContent = "";
+  const t = document.createElement("span");
+  t.className = "t";
+  box.append(t);
   parts.forEach((p, i) => {
     if (i) { const s = document.createElement("span"); s.className = "n"; s.textContent = n; t.append(s); }
     t.append(p);
   });
+  // a headline longer than two lines gets smaller, the block keeps its height
+  t.style.fontSize = "";
+  for (let k = 0; k < 12 && t.offsetHeight > box.clientHeight - 4; k++) {
+    t.style.fontSize = parseFloat(getComputedStyle(t).fontSize) * 0.92 + "px";
+  }
   const src = (L || own).source || "";
   if ($("side-source").textContent !== src) $("side-source").textContent = src;
   if ($("side-url").textContent !== SITE_TEXT) $("side-url").textContent = SITE_TEXT;
@@ -606,6 +619,7 @@ connectDisplay({
     parallel = snap.parallel || 3;
     const before = shownId();
     phase = snap.phase;
+    titles = snap.titles || {};
     snap.categories.forEach((c) => {
       lists[c.name] = { label: c.label, title: c.title, source: c.source, virtual: c.virtual,
                         entries: c.entries, pool: c.pool, hovering: c.hovering };
@@ -658,6 +672,10 @@ connectDisplay({
     if (ev.replay || ev.phase !== "clearing") return;
     phase = "clearing";
     fallOff();
+    renderHeader();
+  },
+  onTitles(ev) {
+    titles = ev.titles || {};
     renderHeader();
   },
   onStatus(s) {

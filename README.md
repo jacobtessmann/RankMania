@@ -143,6 +143,8 @@ Black title block with the number underlined, black tier letters on a white-to-g
 
 Look settings at the top of the `<style>` part: `--grad-top`, `--grad-bottom` (background), `--name` (name color), `--vig-undecided`, `--vig-up`, `--vig-down` (vignette colors), `--frame` (white frame), `--label-w` (width of the letter boxes), `--side-w` (side strip). The vignette strength is in `.face::after` (`.14` = blur, `.1` = spread, both relative to the icon size).
 
+**Headlines** come from the lists on **/admin.html** (one list per mode: students, inventions, Konzerne, mix). Each screen picks one at the start of every sequence; in the mix the three screens always show different ones. Optional: switch to another headline every N seconds. `{n}` becomes the live number of entries (underlined). Headlines saved on the admin page last until the next redeploy; to keep them for good, put them into `DEFAULT_HEADLINES` in `server.js` (or a `headlines.json` file next to it). The title block always has room for two lines, so a longer or shorter headline never changes the icon size.
+
 **One icon size, rows that grow.** All icons (in the tiers, on the hover track) have the same size, and it never changes during a sequence. When a tier is full, its row gets another line, like on TierMaker. The size is chosen once, as big as possible while the whole list is guaranteed to fit on the screen however the entries spread over the tiers.
 
 **Hidden icon size slider:** press **S** on the keyboard (or double-click the title) on a screen. Drag to set the size, "Auto" to go back. It is saved in that browser, separately for each screen. With a big manual size, very full tiers can run off the bottom of the screen.

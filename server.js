@@ -54,6 +54,18 @@ const CATEGORIES = [
   },
 ];
 
+// ── Headlines on top of the screens. Edited live on /admin.html (one list per mode).
+//    {n} becomes the number of entries on that screen (shown underlined).
+//    Each screen picks one at the start of every sequence; in the mix the three screens get different ones.
+const HEADLINES_FILE = path.join(__dirname, "headlines.json"); // saved here when edited on /admin.html
+const DEFAULT_HEADLINES = {
+  students: ["The Official Top {n} Students of VC ZHdK", "Ranking {n} Students of VisCom"],
+  inventions: ["The All-Time Top {n} Things", "The {n} Greatest Inventions"],
+  konzerne: ["The {n} Hottest Brands", "The {n} Best Corporations", "{n} Most Influential Businesses"],
+  mix: ["The Index of Everything", "The Best of Everything", "Everything, Ranked"],
+  rotateSec: 0, // 0 = one headline per sequence; otherwise switch to another one every N seconds
+};
+
 // ── Sequence 2: everything mixed. Every image goes to exactly one of the three screens;
 //    each screen gets a random third of every category. Same settings for all three screens.
 const MIX = {
@@ -110,6 +122,9 @@ let phase = "separate"; // separate | clearing | mix
 let speed = START_SPEED; // changed live by the slider on /admin.html
 const lengths = { separate: SEPARATE_MINUTES * 60000, mix: MIX_MINUTES * 60000 }; // changed live on /admin.html
 let phaseStartedAt = Date.now();
+let headlines = loadHeadlines();
+let titles = {}; // screen → the headline it shows right now
+let rotateTimer = null;
 let phaseEndsAt = null;
 let phaseTimer = null;
 let seq = 0;
@@ -195,6 +210,7 @@ function snapshot() {
     seq,
     phase,
     parallel: 1,
+    titles,
     tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
     categories: allLists().map((l) => ({
       name: l.id,
@@ -434,6 +450,7 @@ function switchTo(next) {
   setTimeout(() => {
     phase = next;
     phaseStartedAt = Date.now();
+    pickTitles(next, false);
     armPhaseTimer();
     if (next === "mix") dealMix();
     allLists().forEach(reset);
@@ -456,6 +473,42 @@ function switchTo(next) {
   return true;
 }
 
+// ════════════════ HEADLINES ════════════════
+function loadHeadlines() {
+  try {
+    return { ...DEFAULT_HEADLINES, ...JSON.parse(fs.readFileSync(HEADLINES_FILE, "utf8")) };
+  } catch {
+    return { ...DEFAULT_HEADLINES };
+  }
+}
+
+// choose a headline for every screen: from its own list, or in the mix three different ones
+function pickTitles(forPhase = phase, send = true) {
+  const screens = CATEGORIES.map((c) => c.id);
+  const t = {};
+  if (forPhase === "mix") {
+    const pool = shuffle([...(headlines.mix || [])]);
+    screens.forEach((scr, i) => (t[scr] = pool.length ? pool[i % pool.length] : null));
+  } else {
+    for (const scr of screens) {
+      const all = headlines[scr] || [];
+      const fresh = all.filter((x) => x !== titles[scr]); // not the same one twice in a row
+      const from = fresh.length ? fresh : all;
+      t[scr] = from.length ? from[Math.floor(Math.random() * from.length)] : null;
+    }
+  }
+  titles = t;
+  if (send) broadcast({ type: "titles", titles });
+}
+
+function armRotate() {
+  clearInterval(rotateTimer);
+  rotateTimer = null;
+  if (headlines.rotateSec > 0) {
+    rotateTimer = setInterval(() => phase !== "clearing" && pickTitles(), headlines.rotateSec * 1000);
+  }
+}
+
 // ════════════════ LIVE STREAM (SSE) ════════════════
 function record(ev) {
   ev.seq = ++seq;
@@ -468,7 +521,7 @@ function record(ev) {
 
 // phones ("lite") only get what the feed needs: no full lists, no hover/roster events
 function liteVersion(msg) {
-  if (msg.type === "hover" || msg.type === "roster") return null;
+  if (msg.type === "hover" || msg.type === "roster" || msg.type === "titles") return null;
   if (msg.type === "snapshot") {
     return {
       ...msg,
@@ -519,6 +572,8 @@ function status() {
   return {
     phase,
     speed,
+    titles,
+    headlines,
     now: Date.now(),
     phaseStartedAt,
     phaseEndsAt,
@@ -573,6 +628,17 @@ const server = http.createServer((req, res) => {
         msg = JSON.parse(body || "{}");
       } catch {}
       if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
+      if (msg.action === "headlines") {
+        const clean = (a) => (Array.isArray(a) ? a : []).map((x) => String(x).trim().slice(0, 200)).filter(Boolean).slice(0, 100);
+        const next = { rotateSec: Math.max(0, Math.min(3600, Number(msg.rotateSec) || 0)) };
+        for (const k of ["students", "inventions", "konzerne", "mix"]) next[k] = clean(msg.lists && msg.lists[k]);
+        headlines = next;
+        fs.writeFile(HEADLINES_FILE, JSON.stringify(headlines, null, 2), () => {});
+        pickTitles(phase === "clearing" ? "separate" : phase, true);
+        armRotate();
+        console.log("Headlines updated");
+        return json(res, 200, { ok: true, ...status() });
+      }
       if (msg.action === "timer") {
         const m = Number(msg.minutes);
         if (!["separate", "mix"].includes(msg.phase) || !(m >= 0 && m <= 600)) {
@@ -637,6 +703,8 @@ readFolders();
 allLists().forEach(reset);
 CATEGORIES.forEach((c) => start(lists[c.id]));
 armPhaseTimer();
+pickTitles("separate", false);
+armRotate();
 setInterval(rescan, RESCAN_MS);
 
 server.listen(PORT, () => {
