@@ -81,7 +81,13 @@ const HOVER_MAX_MS = 6000;
 const PAUSE_MIN_MS = 2500; // pause after every action before the next one (2.5–5 s)
 const PAUSE_MAX_MS = 5000;
 const START_SPEED = 1; // tempo of the whole brain: 2 = twice as fast, 0.5 = half (also a slider on /admin.html)
-const INTRO_CHANCE = 0.65; // while images are still waiting: chance the next action is a new entry (else a move)
+// While images are still waiting, each action is either a new entry or a rearrangement (a move).
+// The chance of a move grows as the list fills: +10 % after every 6 placements.
+const MOVE_CHANCE_START = 0.35; // chance of a move at the start (35 %)
+const MOVE_CHANCE_STEP = 0.1; // … plus this much (10 %) …
+const MOVE_STEP_EVERY = 6; // … after every 6 placed entries
+const MOVE_CHANCE_MAX = 0.9; // never more than 90 %, so new entries keep coming
+// (once every image is placed, every action is a move)
 // Moves of ranked entries. One tier = 20 score points.
 const DRIFT_MAX = 15; // normal move: up to 15 points (mostly within a tier or into the next)
 const BIG_JUMP_CHANCE = 0.08; // chance that a move is a big jump …
@@ -301,10 +307,15 @@ function start(list) {
 const pause = () => rand(PAUSE_MIN_MS, PAUSE_MAX_MS) / speed;
 
 // the one action loop of a list: a new entry OR a move, then a pause, then the next
+function moveChance(list) {
+  const placed = ranking(list).length;
+  return Math.min(MOVE_CHANCE_MAX, MOVE_CHANCE_START + MOVE_CHANCE_STEP * Math.floor(placed / MOVE_STEP_EVERY));
+}
+
 function act(list) {
   const canIntro = list.queue.length > 0;
   const canMove = ranking(list).length > 1;
-  if (canIntro && (!canMove || Math.random() < INTRO_CHANCE)) {
+  if (canIntro && (!canMove || Math.random() >= moveChance(list))) {
     if (hover(list)) return; // land() continues the loop after the entry has landed
   } else if (canMove) {
     drift(list);

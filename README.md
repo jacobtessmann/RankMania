@@ -128,7 +128,7 @@ Settings at the top of `server.js`:
 | `START_SPEED` | tempo when the server starts (1); the admin slider changes it live |
 | `HOVER_MIN_MS/MAX_MS` | how long a new entry hovers before it lands |
 | `PAUSE_MIN_MS/MAX_MS` | pause after every action |
-| `INTRO_CHANCE` | while images are waiting: chance the next action is a new entry instead of a move |
+| `MOVE_CHANCE_START`, `MOVE_CHANCE_STEP`, `MOVE_STEP_EVERY`, `MOVE_CHANCE_MAX` | while images are waiting: chance that the next action is a move instead of a new entry. Starts at 35 %, +10 % after every 6 placements, at most 90 % |
 | `DRIFT_MAX` | size of a normal move (one tier = 20 points) |
 | `BIG_JUMP_CHANCE`, `BIG_JUMP_MAX` | how often a move jumps 2–3 tiers, and how far |
 | `WILDER_AFTER_MS`, `WILDER_FACTOR` | moves get this much bigger over this time (`1` = stays the same) |
