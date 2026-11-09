@@ -14,8 +14,9 @@
   const VW = 197.01, VH = 255.58;
   const BOX = { x: 9.72, y: 11.15, w: 175.48, h: 233.28 }; // the six tier bands (each 38.88 high)
   const FRAME = 0.94; // thin outline of the card (to cut along), 0 = none
-  const STROKE = 17; // line width
-  const COLORS = { S: "#ff3b3b", A: "#ffc400", B: "#22d34a", C: "#14c4e8", D: "#ff4fd8", F: "#8c3cff" };
+  const STROKE = 26; // line width
+  // the tier colors of the tierlist (the same as the tier chips in feed.html)
+  const COLORS = { S: "#ff7f7f", A: "#ffff7f", B: "#7fff7f", C: "#7fffff", D: "#ff7fff", F: "#9b30ff" };
   const INK = "#000";
   const FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';
   const FONT_SIZE = 23.2; // as in the reference (capitals 16.7 high)
