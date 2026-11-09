@@ -545,7 +545,7 @@ function archiveTracks(list) {
 // GET /api/track?list=students&image=/images/students/x.jpg  → the path of one entry this round.
 // If the list has moved on (new sequence), the entry is looked up by its image in the running lists,
 // and if it is not running anymore, its track from the last round it was in is used (as it was then).
-function trackOf(listId, image) {
+function trackOf(listId, image, at) {
   const img = String(image || "").replace(/^.*?(\/images\/)/, "$1");
   const find = (l) => l && [...l.items.values()].find((e) => e.image === img);
   let list = lists[listId];
@@ -554,7 +554,9 @@ function trackOf(listId, image) {
     list = allLists().find((l) => l.active && find(l) && l.tracks.has(find(l).id));
     e = find(list);
   }
-  if (!e) return archive.get(img) || null;
+  const old = archive.get(img);
+  // the moment asked for is before this round: the entry's last round is the one that was meant
+  if (!e || (at && list.startedAt > at)) return old && (!at || old.startedAt <= at) ? old : null;
   const entries = entriesOf(list);
   const cur = entries.find((x) => x.id === e.id) || null;
   return {
@@ -566,6 +568,22 @@ function trackOf(listId, image) {
     now: Date.now(),
     tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
     track: list.tracks.get(e.id) || [],
+  };
+}
+
+// the track as it was at an earlier moment (when a RankFeed edition was written): the history up to then,
+// and the place the feed showed. snap = { rank, tier, of } from the feed (checked), else taken from the track.
+function trackAt(data, at, snap) {
+  if (!data || !(at > 0) || at >= data.now) return data;
+  const track = data.track.filter((p) => p.t <= at);
+  if (!track.length) return null; // it had no place yet at that moment
+  const last = [...track].reverse().find((p) => p.rank);
+  const ok = snap && Number.isInteger(snap.rank) && snap.rank > 0 && TIERS.some((t) => t.id === snap.tier);
+  return {
+    ...data,
+    now: at,
+    track,
+    current: ok ? { rank: snap.rank, tier: snap.tier, of: Number(snap.of) || null } : last ? { rank: last.rank, tier: last.tier, of: last.n } : null,
   };
 }
 
@@ -840,7 +858,9 @@ const server = http.createServer((req, res) => {
       }
       const who = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
       if (Date.now() - (printSeen.get(who) || 0) < PRINT_COOLDOWN_MS) return json(res, 429, { ok: false, error: "too fast" });
-      const data = trackOf(msg.list, msg.image);
+      // the print shows the entry as the visitor's RankFeed edition showed it (msg.at = when it was written)
+      const at = Number(msg.at) || 0;
+      const data = trackAt(trackOf(msg.list, msg.image, at), at, { rank: msg.rank, tier: msg.tier, of: msg.of });
       if (!data) return json(res, 404, { ok: false, error: "no path for this entry" });
       if (printQueue.length >= PRINT_QUEUE_MAX) return json(res, 503, { ok: false, error: "too many prints waiting" });
       printSeen.set(who, Date.now());

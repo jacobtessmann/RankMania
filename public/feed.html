@@ -423,15 +423,17 @@ function setupVerdict(a) {
 //   entry   = { id, title, image, tier, rank, line }
 //   article = { slug, list, cat, title, entries }   (slug = students | inventions | konzerne)
 // Sends a print job to the brain; the print station (print-station.html) prints it on the printer in the room.
+// The print shows the entry as this edition shows it: its place here, and its path only up to this edition.
 // (print.html?list=…&image=… still shows the print on the screen, with the normal print dialog.)
 async function printEntry(entry, article) {
   const note = $("printnote"), button = $("print");
   button.disabled = true;
   note.textContent = "Sending…";
   try {
+    const at = edition.at + (serverNow() - Date.now()); // when this edition was written, on the server's clock
     const r = await fetch(RANK_BASE + "/api/print", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ list: article.list, image: entry.image }),
+      body: JSON.stringify({ list: article.list, image: entry.image, at, rank: entry.rank, tier: entry.tier, of: article.entries.length }),
     });
     note.textContent = r.ok ? "Sent to the printer. Pick it up there."
       : r.status === 429 ? "One print at a time. Try again in a few seconds."
