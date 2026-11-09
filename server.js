@@ -134,6 +134,7 @@ const MIX_MINUTES = 0;
 const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.html (or a time in ms after all lists are full)
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
+const TRACK_MAX = 2000; // the most points kept per entry for the print (its path through the tiers this round)
 
 const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
 
@@ -167,7 +168,7 @@ const allLists = () => Object.values(lists);
 
 function newList(c) {
   return { ...c, items: new Map(), queue: [], hovering: new Map(), active: false, timers: new Set(),
-           votes: [], mood: 0, moodAt: Date.now() };
+           votes: [], mood: 0, moodAt: Date.now(), tracks: new Map() };
 }
 
 const clamp = (v) => Math.max(1, Math.min(100, Math.round(v)));
@@ -347,6 +348,7 @@ function reset(list) {
   list.hovering = new Map();
   list.votes = [];
   list.mood = 0;
+  list.tracks = new Map();
   list.queue = shuffle([...list.items.keys()]);
 }
 
@@ -393,6 +395,7 @@ function hover(list) {
   const now = Date.now();
   const h = { id, slot, startedAt: now, landAt: Math.round(now + rand(HOVER_MIN_MS, HOVER_MAX_MS) / speed) };
   list.hovering.set(id, h);
+  trackPoint(list, id, { t: now, score: e.score, tier: tierOf(e.score), rank: null, hover: true });
   broadcast({ type: "hover", now, category: list.id, ...hoverPublic(list, h), waiting: list.queue.length });
   later(list, () => land(list, id), h.landAt - now);
   return true;
@@ -487,6 +490,54 @@ function learn(order, vote) {
   });
   return [out[0], out[1], out[n - 2], out[n - 1]].filter((x, i, a) => x && a.indexOf(x) === i)
     .map((x) => ({ ...x, delta: +x.delta.toFixed(2), bias: +x.bias.toFixed(2) }));
+}
+
+// ════════════════ TRACKS (for the print) ════════════════
+// Every entry remembers its path through this round: a point whenever its score or place changes,
+// also when another entry pushes it down. Cleared at every new round (reset).
+function trackPoint(list, id, p) {
+  let tr = list.tracks.get(id);
+  if (!tr) list.tracks.set(id, (tr = []));
+  tr.push(p);
+  if (tr.length > TRACK_MAX) tr.splice(1, 1); // keep the very first point
+}
+// pos/of = its place inside its tier row (0 = first), so the print can follow the list as it is shown
+function trackAll(list, entries, t) {
+  const of = {}, seen = {};
+  for (const e of entries) of[e.tier] = (of[e.tier] || 0) + 1;
+  for (const e of entries) {
+    const pos = (seen[e.tier] = (seen[e.tier] ?? -1) + 1);
+    const tr = list.tracks.get(e.id);
+    const last = tr && tr[tr.length - 1];
+    if (last && last.rank === e.rank && last.score === e.score && last.pos === pos && last.of === of[e.tier]) continue;
+    trackPoint(list, e.id, { t, score: e.score, tier: e.tier, rank: e.rank, n: entries.length, pos, of: of[e.tier] });
+  }
+}
+
+// GET /api/track?list=students&image=/images/students/x.jpg  → the path of one entry this round.
+// If the list has moved on (new sequence), the entry is looked up by its image in the running lists.
+function trackOf(listId, image) {
+  const img = String(image || "").replace(/^.*?(\/images\/)/, "$1");
+  const find = (l) => l && [...l.items.values()].find((e) => e.image === img);
+  let list = lists[listId];
+  let e = find(list);
+  if (!e || !list.tracks.has(e.id)) {
+    list = allLists().find((l) => l.active && find(l) && l.tracks.has(find(l).id));
+    e = find(list);
+  }
+  if (!e) return null;
+  const entries = entriesOf(list);
+  const cur = entries.find((x) => x.id === e.id) || null;
+  return {
+    list: list.id,
+    label: list.label,
+    entry: brief(e),
+    current: cur && { rank: cur.rank, tier: cur.tier, score: cur.score, of: entries.length },
+    startedAt: list.startedAt,
+    now: Date.now(),
+    tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
+    track: list.tracks.get(e.id) || [],
+  };
 }
 
 // ════════════════ THE TWO SEQUENCES ════════════════
@@ -594,6 +645,7 @@ function armRotate() {
 function record(ev) {
   ev.seq = ++seq;
   ev.t = Date.now();
+  if (ev.entries && lists[ev.category]) trackAll(lists[ev.category], ev.entries, ev.t);
   const { entries, pool, ...light } = ev; // history stays small: no full lists
   history.push(light);
   while (history.length > HISTORY) history.shift();
@@ -702,6 +754,10 @@ const server = http.createServer((req, res) => {
 
   if (url.pathname === "/api/state") return json(res, 200, snapshot());
   if (url.pathname === "/api/status") return json(res, 200, status());
+  if (url.pathname === "/api/track") {
+    const tr = trackOf(url.searchParams.get("list"), url.searchParams.get("image"));
+    return tr ? json(res, 200, tr) : json(res, 404, { ok: false, error: "not in this round" });
+  }
 
   // admin: POST /api/control  {"key": "...", "action": "mix" | "separate"}
   // a verdict from RankFeed: POST /api/vote  {"list": "students", "vote": "good" | "bad"}

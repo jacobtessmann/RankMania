@@ -419,14 +419,14 @@ function setupVerdict(a) {
   }));
 }
 
-// ════════ PRINT — to be connected later ════════
+// ════════ PRINT ════════
 // Called when a visitor presses "Print" on an entry.
 //   entry   = { id, title, image, tier, rank, line }
-//   article = { slug, cat, title, entries }   (slug = students | inventions | konzerne)
-// Put the real printing here later, e.g. fetch(RANK_BASE + "/api/print", { method: "POST", body: … }).
+//   article = { slug, list, cat, title, entries }   (slug = students | inventions | konzerne)
+// Opens print.html: it draws the entry's path through this round (print.js) and opens the print dialog.
 function printEntry(entry, article) {
-  console.log("PRINT", { entry, category: article.slug, at: new Date().toISOString() });
-  $("printnote").textContent = "Printing isn't connected yet.";
+  const url = "print.html?" + new URLSearchParams({ list: article.list, image: entry.image, title: entry.title, auto: 1 });
+  if (!window.open(url, "_blank")) location.href = url;
 }
 
 // ════════ Routing: #/students and #/students/<entry id> ════════
