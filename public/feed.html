@@ -231,7 +231,6 @@ const VERDICT = {
 };
 const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
-const SNAPSHOT_KEY = "rankfeed-edition-v3";
 const $ = (id) => document.getElementById(id);
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -458,18 +457,12 @@ $("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) his
 
 // ════════ Start: load once, write once ════════
 (async function start() {
-  try { edition = JSON.parse(sessionStorage.getItem(SNAPSHOT_KEY)); } catch { edition = null; }
-  if (!edition) {
-    try {
-      edition = writeEdition(await fetchRankState());
-      // only keep editions that have something to read; otherwise a reload tries again
-      if (edition.articles.some((x) => x.ready)) {
-        try { sessionStorage.setItem(SNAPSHOT_KEY, JSON.stringify(edition)); } catch {}
-      }
-    } catch {
-      $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking machine can't be reached right now. Try again in a moment.</p>`;
-      return;
-    }
+  // every page load (also a manual refresh) writes a new edition from the ranking at that moment
+  try {
+    edition = writeEdition(await fetchRankState());
+  } catch {
+    $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking machine can't be reached right now. Try again in a moment.</p>`;
+    return;
   }
   route();
 })();

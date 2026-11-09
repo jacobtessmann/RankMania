@@ -7,8 +7,6 @@
 </head>
 <body>
 <h1>Rankmania · Show control</h1>
-<p><label for="key">Password</label><br>
-<input id="key" type="password" autocomplete="current-password" placeholder="ADMIN_KEY"></p>
 <p><button data-action="mix">Start sequence 2 (mix)</button><br>
 All screens clear, then every screen fills with a random mix of all three categories.</p>
 <p><button data-action="separate">Restart sequence 1 (separate)</button><br>
@@ -59,16 +57,13 @@ const $ = (id) => document.getElementById(id);
 const NAMES = { separate: "Sequence 1 · Separate", mix: "Sequence 2 · Mix", clearing: "Clearing…" };
 let autoAt = null, offset = 0;
 
-try { $("key").value = localStorage.getItem("rankKey") || ""; } catch {}
 
 document.querySelectorAll("button[data-action]").forEach((b) => (b.onclick = async () => {
-  const key = $("key").value;
-  try { localStorage.setItem("rankKey", key); } catch {}
   document.querySelectorAll("button").forEach((x) => (x.disabled = true));
   try {
     const r = await fetch(base + "/api/control", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, action: b.dataset.action }),
+      body: JSON.stringify({ action: b.dataset.action }),
     });
     const j = await r.json();
     $("msg").className = j.ok ? "ok" : "err";
@@ -83,11 +78,10 @@ document.querySelectorAll("button[data-action]").forEach((b) => (b.onclick = asy
 
 $("forget").onclick = async () => {
   if (!confirm("Forget everything the brain learned from the verdicts?")) return;
-  const key = $("key").value;
   try {
     const r = await fetch(base + "/api/control", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, action: "forget" }),
+      body: JSON.stringify({ action: "forget" }),
     });
     const j = await r.json();
     $("msg").textContent = j.ok ? "The brain forgot what it learned." : j.error;
@@ -101,12 +95,10 @@ $("forget").onclick = async () => {
 let dragging = false;
 $("speed").oninput = () => { dragging = true; $("speedval").textContent = (+$("speed").value).toFixed(2) + "×"; };
 $("speed").onchange = async () => {
-  const key = $("key").value;
-  try { localStorage.setItem("rankKey", key); } catch {}
   try {
     const r = await fetch(base + "/api/control", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, action: "speed", value: +$("speed").value }),
+      body: JSON.stringify({ action: "speed", value: +$("speed").value }),
     });
     const j = await r.json();
     $("msg").textContent = j.ok ? `Speed set to ${j.speed}×.` : j.error;
@@ -119,13 +111,11 @@ $("speed").onchange = async () => {
 
 // timers for the length of each sequence
 document.querySelectorAll("button[data-timer]").forEach((b) => (b.onclick = async () => {
-  const key = $("key").value;
-  try { localStorage.setItem("rankKey", key); } catch {}
   const which = b.dataset.timer;
   try {
     const r = await fetch(base + "/api/control", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, action: "timer", phase: which, minutes: +$("t-" + which).value || 0 }),
+      body: JSON.stringify({ action: "timer", phase: which, minutes: +$("t-" + which).value || 0 }),
     });
     const j = await r.json();
     $("msg").textContent = j.ok ? `Timer for ${which === "mix" ? "sequence 2" : "sequence 1"} set.` : j.error;
@@ -175,12 +165,10 @@ function readHeadlines() {
   return { lists, rotateSec: +$("h-rotate").value || 0 };
 }
 $("h-save").onclick = async () => {
-  const key = $("key").value;
-  try { localStorage.setItem("rankKey", key); } catch {}
   try {
     const r = await fetch(base + "/api/control", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, action: "headlines", ...readHeadlines() }),
+      body: JSON.stringify({ action: "headlines", ...readHeadlines() }),
     });
     const j = await r.json();
     $("msg").textContent = j.ok ? "Headlines saved. The screens show new ones now." : j.error;

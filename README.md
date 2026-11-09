@@ -118,7 +118,7 @@ Every start of the server begins with **empty tiers**.
 
 **Sequence 2 · Mix** (only by hand): all pictures fall off every screen, then every image of all three categories is dealt to exactly one of the three screens at random (about a third of every category each), and all three screens fill up again with a mix.
 
-**Show control** on **/admin.html**: the buttons "Start sequence 2" and "Restart sequence 1", a **speed slider** for the whole brain (0.25× to 3×, live on all screens), and **timers** for the length of each sequence with a live countdown. When sequence 1 runs out, the mix starts; when the mix runs out, sequence 1 starts again. 0 = no timer. The admin password is `rankbrain` unless you set `ADMIN_KEY` on Render (your service → **Environment**). Set it, otherwise anyone who finds the page can control your show.
+**Show control** on **/admin.html**: the buttons "Start sequence 2" and "Restart sequence 1", a **speed slider** for the whole brain (0.25× to 3×, live on all screens), and **timers** for the length of each sequence with a live countdown. When sequence 1 runs out, the mix starts; when the mix runs out, sequence 1 starts again. 0 = no timer. The page has no password: anyone who knows the address can control the show, so don't share the link.
 
 Settings at the top of `server.js`:
 
@@ -156,7 +156,7 @@ Settings near the top of the script: `TILE_SIZE` (fixed size in px for all scree
 
 ## 7. The phone feed (feed.html)
 
-RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes after that; a reload in the same tab keeps the same edition.
+RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
 - The home page shows the three articles. Tapping one opens the full list, entries under each other with place, tier, picture, name and a short line.
 - Tapping an entry opens it large with a **Print** button. Printing is not connected yet: put the real code into `printEntry(entry, article)` in `feed.html`.

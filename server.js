@@ -18,7 +18,7 @@ const fs = require("fs");
 const path = require("path");
 
 const PORT = process.env.PORT || 3000;
-const ADMIN_KEY = process.env.ADMIN_KEY || "rankbrain"; // password for /admin.html — change it on Render!
+const ADMIN_KEY = process.env.ADMIN_KEY || "rankbrain"; // password for the printer queue (/api/print/next); /admin.html needs none
 const PUBLIC = path.join(__dirname, "public");
 const IMAGES = path.join(PUBLIC, "images");
 
@@ -863,7 +863,7 @@ const server = http.createServer((req, res) => {
       try {
         msg = JSON.parse(body || "{}");
       } catch {}
-      if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
+      // no password for the show control (the print queue below still uses ADMIN_KEY)
       if (msg.action === "headlines") {
         const clean = (a) => (Array.isArray(a) ? a : []).map((x) => String(x).trim().slice(0, 200)).filter(Boolean).slice(0, 100);
         const next = { rotateSec: Math.max(0, Math.min(3600, Number(msg.rotateSec) || 0)) };
