@@ -51,13 +51,16 @@ $("print").onclick = () => window.print();
     const r = await fetch(RANK_BASE + "/api/track?" + new URLSearchParams({ list: qs.get("list") || "", image: qs.get("image") || "" }),
                           { cache: "no-store" });
     if (r.status === 404) {
-      $("note").textContent = `${qs.get("title") || "This entry"} is not in the running round anymore. Its path is gone.`;
+      $("note").textContent = `${qs.get("title") || "This entry"} has no path yet. The machine has not ranked it since it started.`;
       return;
     }
     if (!r.ok) throw new Error();
     const data = await r.json();
     $("sheet").innerHTML = drawRankPrint(data);
-    $("note").textContent = `${data.entry.title}, its path through this round, as of ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`;
+    const at = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    $("note").textContent = data.ended
+      ? `${data.entry.title} is out of the running round. This is its path through the last round it was in, as it ended at ${at(data.now)}.`
+      : `${data.entry.title}, its path through this round, as of ${at(Date.now())}.`;
     $("print").disabled = false;
     if (qs.get("auto")) setTimeout(() => window.print(), 300);
   } catch {

@@ -150,6 +150,7 @@ const voteSeen = new Map(); // phone + list → time of its last vote
 const learned = new Map(); // image → { bias, verdicts }  (in memory: forgotten when the server restarts)
 let verdictCount = 0;
 const biasOf = (e) => (e && learned.get(e.image)?.bias) || 0;
+const archive = new Map(); // image → its track from the last round it was in, so it can still be printed (in memory)
 let phaseEndsAt = null;
 let phaseTimer = null;
 let seq = 0;
@@ -343,6 +344,7 @@ function rescan() {
 // empty tiers, every image waiting
 function reset(list) {
   stop(list);
+  archiveTracks(list); // before the images of the new round replace the old ones
   if (!list.virtual) pickSelection(list);
   list.items = new Map(wantedItems(list).map((w) => [w.id, { ...w, score: 0, ranked: false }]));
   list.hovering = new Map();
@@ -514,8 +516,30 @@ function trackAll(list, entries, t) {
   }
 }
 
+// when a round ends, every entry keeps its track and its last place, so it can still be printed
+function archiveTracks(list) {
+  const now = Date.now();
+  for (const [id, track] of list.tracks) {
+    const e = list.items.get(id);
+    if (!e || !track.length) continue;
+    const last = [...track].reverse().find((p) => p.rank);
+    archive.set(e.image, {
+      list: list.id,
+      label: list.label,
+      entry: brief(e),
+      current: last ? { rank: last.rank, tier: last.tier, score: last.score, of: last.n } : null,
+      startedAt: list.startedAt,
+      now,
+      ended: true,
+      tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
+      track,
+    });
+  }
+}
+
 // GET /api/track?list=students&image=/images/students/x.jpg  → the path of one entry this round.
-// If the list has moved on (new sequence), the entry is looked up by its image in the running lists.
+// If the list has moved on (new sequence), the entry is looked up by its image in the running lists,
+// and if it is not running anymore, its track from the last round it was in is used (as it was then).
 function trackOf(listId, image) {
   const img = String(image || "").replace(/^.*?(\/images\/)/, "$1");
   const find = (l) => l && [...l.items.values()].find((e) => e.image === img);
@@ -525,7 +549,7 @@ function trackOf(listId, image) {
     list = allLists().find((l) => l.active && find(l) && l.tracks.has(find(l).id));
     e = find(list);
   }
-  if (!e) return null;
+  if (!e) return archive.get(img) || null;
   const entries = entriesOf(list);
   const cur = entries.find((x) => x.id === e.id) || null;
   return {
