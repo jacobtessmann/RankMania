@@ -16,7 +16,9 @@
   const VW = 197.01, VH = 255.58;
   const BOX = { x: 9.72, y: 11.15, w: 175.48, h: 233.28 }; // the six tier bands (each 38.88 high)
   const FRAME = 0.94; // thin outline of the card (to cut along), 0 = none
-  const STROKE = 35; // line width
+  const STROKE = 30; // line width
+  const OUTLINE = 0.9; // fine dark outline around the line (0 = none)
+  const OUTLINE_COLOR = "#181716";
   // the tier colors of the tierlist (the same as the tier chips in feed.html)
   const COLORS = { S: "#ff7f7f", A: "#ffff7f", B: "#7fff7f", C: "#7fffff", D: "#ff7fff", F: "#9b30ff" };
   const INK = "#000";
@@ -164,7 +166,10 @@
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW} ${VH}" width="100%" height="100%">
   <rect x="${FRAME / 2}" y="${FRAME / 2}" width="${VW - FRAME}" height="${VH - FRAME}" fill="#fff"${FRAME ? ` stroke="#181716" stroke-width="${FRAME}"` : ""}/>
-  <g fill="none" stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}" stroke-linecap="round" stroke-linejoin="round">${path}</g>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    ${OUTLINE ? `<g stroke="${OUTLINE_COLOR}" stroke-width="${STROKE + 2 * OUTLINE}">${path}</g>` : ""}
+    <g stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}">${path}</g>
+  </g>
   <g fill="${INK}" font-family='${FONT}' font-size="${f(fs)}" text-anchor="middle" letter-spacing="${f(TRACKING * fs)}">${text}</g>
 </svg>`;
   };
