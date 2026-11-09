@@ -47,55 +47,6 @@ const VARS = {
 };
 const TAG = { students: "STU", inventions: "INV", konzerne: "KON" };
 const REEVAL_CHANCE = 0.35;               // share of moves shown as a full re-evaluation
-const ART_EVERY_MS = [40000, 90000];      // ASCII art appears every 40–90 s
-
-// ── ASCII art, printed now and then (add your own; plain characters only) ──
-const ART = [
-`        /\\
-       /S \\
-      / A  \\
-     /  B   \\
-    /   C    \\
-   /    D     \\
-  /_____F______\\
-  THE ORDER OF THINGS`,
-`      .-"""""-.
-    .'  _____  '.
-   /   /  _  \\   \\
-  |   |  (o)  |   |
-   \\   \\_____/   /
-    '.         .'
-      '-.....-'
-  THE MACHINE IS LOOKING`,
-`  +-------------------------------+
-  |  R  A  N  K  M  A  N  I  A    |
-  +-------------------------------+
-  | who ranks what, based on what |
-  +-------------------------------+`,
-`              |
-      ________|________
-     |        |        |
-    / \\       |       / \\
-   /___\\      |      /___\\
-   TASTE      |     MACHINE
-          ____|____`,
-`   ___________________________
-  |                           |
-  |   REASON:  [REDACTED]     |
-  |   APPEAL:  NOT ACCEPTED   |
-  |___________________________|`,
-`  YOU  ------ taste ----->  [ MACHINE ]
-  you  <----- ranking ----  [ MACHINE ]`,
-`  [ ? ] [ ? ] [ ? ] [ ? ]
-     \\     |     |     /
-      \\____|_____|____/
-            |
-     [ S ] [ A ] ... [ F ]`,
-`  thinking  [##########----------]  50%
-  thinking  [################----]  80%
-  thinking  [####################] 100%
-  conclusion: unchanged`,
-];
 
 const log = document.getElementById("log");
 const bar = document.getElementById("bar");
@@ -194,14 +145,6 @@ function reevaluate(ev) {
     busy.delete(list);
   }, total);
 }
-
-function art() {
-  print("");
-  pick(ART).split("\n").forEach((l) => print(l));
-  print("");
-  setTimeout(art, ART_EVERY_MS[0] + Math.random() * (ART_EVERY_MS[1] - ART_EVERY_MS[0]));
-}
-setTimeout(art, 15000);
 
 function recalc(ev) {
   if (!busy.has(ev.category) && Math.random() < REEVAL_CHANCE) return reevaluate(ev);
