@@ -134,6 +134,8 @@ const MIX_MINUTES = 0;
 const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.html (or a time in ms after all lists are full)
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
+const PRINT_QUEUE_MAX = 100; // print jobs waiting for the print station (print-station.html)
+const PRINT_COOLDOWN_MS = 5000; // one phone can send a print at most every 5 s
 const TRACK_MAX = 2000; // the most points kept per entry for the print (its path through the tiers this round)
 
 const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
@@ -151,6 +153,9 @@ const learned = new Map(); // image → { bias, verdicts }  (in memory: forgotte
 let verdictCount = 0;
 const biasOf = (e) => (e && learned.get(e.image)?.bias) || 0;
 const archive = new Map(); // image → its track from the last round it was in, so it can still be printed (in memory)
+const printQueue = []; // print jobs: { id, at, data }  (data = the track at the moment Print was pressed)
+const printSeen = new Map(); // phone → time of its last print
+let printId = 0;
 let phaseEndsAt = null;
 let phaseTimer = null;
 let seq = 0;
@@ -812,6 +817,37 @@ const server = http.createServer((req, res) => {
                   lessons, verdicts: verdictCount, learnedImages: learned.size });
       console.log(`Vote ${msg.vote} for ${list.id} → mood ${m.toFixed(2)}`);
       json(res, 200, { ok: true, votes: list.votes.length });
+    });
+    return;
+  }
+
+  // a print from RankFeed: POST /api/print  {"list": "students", "image": "/images/students/x.jpg"}
+  // the print station takes the jobs one by one: POST /api/print/next  {"key": "..."}  → { job } or { job: null }
+  if ((url.pathname === "/api/print" || url.pathname === "/api/print/next") && req.method === "POST") {
+    let body = "";
+    req.on("data", (d) => {
+      body += d;
+      if (body.length > 1e4) req.destroy();
+    });
+    req.on("end", () => {
+      let msg = {};
+      try {
+        msg = JSON.parse(body || "{}");
+      } catch {}
+      if (url.pathname === "/api/print/next") {
+        if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
+        return json(res, 200, { ok: true, job: printQueue.shift() || null, waiting: printQueue.length });
+      }
+      const who = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+      if (Date.now() - (printSeen.get(who) || 0) < PRINT_COOLDOWN_MS) return json(res, 429, { ok: false, error: "too fast" });
+      const data = trackOf(msg.list, msg.image);
+      if (!data) return json(res, 404, { ok: false, error: "no path for this entry" });
+      if (printQueue.length >= PRINT_QUEUE_MAX) return json(res, 503, { ok: false, error: "too many prints waiting" });
+      printSeen.set(who, Date.now());
+      const job = { id: ++printId, at: Date.now(), data: { ...data, track: [...data.track] } }; // frozen at this moment
+      printQueue.push(job);
+      console.log(`Print #${job.id}: ${data.entry.title} (${printQueue.length} waiting)`);
+      json(res, 200, { ok: true, id: job.id, waiting: printQueue.length });
     });
     return;
   }

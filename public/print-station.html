@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rankmania · Print station</title>
+<!--
+  The print station: keep this page open on a computer next to the printer.
+  It takes the print jobs from RankFeed one by one and prints each of them.
+
+  To print without a dialog, start Chrome with --kiosk-printing; it then prints straight to the
+  default printer of the computer (set the Brother as the default printer first). On a Mac:
+    open -na "Google Chrome" --args --kiosk-printing --user-data-dir="$HOME/rankmania-print" https://<your-app>.onrender.com/print-station.html
+-->
+<style>
+  /* size of the card on paper (as print_referenz_2.svg) */
+  :root { --print-w: 69.5mm; --print-h: 90.16mm; --ink: #222; --grey: #757575; --red: #ee3322; --green: #1a9e3a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--ink); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 22px; margin: 0 0 16px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  input, button { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 4px; }
+  input { border: 1px solid #ccc; flex: 1; min-width: 160px; }
+  button { border: 0; background: var(--ink); color: #fff; font-weight: 700; cursor: pointer; }
+  #state { font-size: 15px; margin: 16px 0; padding: 10px 12px; background: #f6f6f6; border-left: 6px solid var(--grey); }
+  #state.on { border-color: var(--green); }
+  #state.off { border-color: var(--red); }
+  .wrap { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .sheet { width: 220px; aspect-ratio: 197.01 / 255.58; }
+  .sheet svg { display: block; }
+  ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--grey); flex: 1; min-width: 200px; }
+  ol b { color: var(--ink); font-weight: 600; }
+
+  @page { margin: 10mm; }
+  @media print {
+    main > :not(.wrap), ol { display: none !important; }
+    main { padding: 0; }
+    .sheet { width: var(--print-w); height: var(--print-h); }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Print station</h1>
+  <div class="row">
+    <input id="key" type="password" placeholder="Admin password" autocomplete="current-password">
+    <button id="go" type="button">Start</button>
+  </div>
+  <div id="state">Enter the admin password and press Start.</div>
+  <div class="wrap">
+    <div class="sheet" id="sheet"></div>
+    <ol id="log" reversed></ol>
+  </div>
+</main>
+<script src="shared.js"></script>
+<script src="print.js"></script>
+<script>
+const POLL_MS = 3000; // how often it asks for new jobs
+const AFTER_PRINT_MS = 4000; // pause after each print, so the printer can keep up
+const $ = (id) => document.getElementById(id);
+const time = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+let key = "";
+let running = false;
+
+try { $("key").value = localStorage.getItem("rankmania-print-key") || ""; } catch {}
+
+function state(text, cls) {
+  $("state").textContent = text;
+  $("state").className = cls || "";
+}
+function log(html) {
+  const li = document.createElement("li");
+  li.innerHTML = html;
+  $("log").prepend(li);
+  while ($("log").children.length > 30) $("log").lastChild.remove();
+}
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// print one job and wait until the browser is done with it
+function printJob(job) {
+  $("sheet").innerHTML = drawRankPrint(job.data);
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
+    window.addEventListener("afterprint", finish, { once: true });
+    setTimeout(() => { window.print(); setTimeout(finish, 1500); }, 150); // let the drawing appear first
+  });
+}
+
+async function loop() {
+  while (running) {
+    try {
+      const r = await fetch(RANK_BASE + "/api/print/next", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }), cache: "no-store",
+      });
+      if (r.status === 403) {
+        running = false;
+        state("Wrong password. Enter the admin password and press Start again.", "off");
+        return;
+      }
+      const m = await r.json();
+      if (m.job) {
+        const d = m.job.data, c = d.current;
+        state(`Printing ${d.entry.title}…`, "on");
+        await printJob(m.job);
+        log(`<b>${esc(d.entry.title)}</b> ${c ? `#${c.rank} · ${c.tier}-TIER` : ""} · pressed ${time(m.job.at)}, printed ${time(Date.now())}`);
+        state(`Running. ${m.waiting} more waiting.`, "on");
+        await wait(AFTER_PRINT_MS);
+        continue;
+      }
+      state(`Running. Waiting for prints… (last check ${time(Date.now())})`, "on");
+    } catch {
+      state(`The ranking machine can't be reached. Trying again… (${time(Date.now())})`, "off");
+    }
+    await wait(POLL_MS);
+  }
+}
+
+$("go").onclick = () => {
+  key = $("key").value.trim();
+  if (!key) return state("Enter the admin password first.", "off");
+  try { localStorage.setItem("rankmania-print-key", key); } catch {}
+  if (running) return;
+  running = true;
+  state("Running. Waiting for prints…", "on");
+  loop();
+};
+// started before with a saved password: start again by itself after a reload
+if ($("key").value) $("go").click();
+</script>
+</body>
+</html>
