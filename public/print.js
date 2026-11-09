@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════
 //  print.js — draws the print of one entry: its path through the tiers this round.
 //
-//  drawRankPrint(data) → an SVG string (square). data comes from GET /api/track:
+//  drawRankPrint(data) → an SVG string (69.5 × 90.16 mm, upright). data comes from GET /api/track:
 //    { entry: {title, image}, current: {rank, tier, of}, startedAt, now, tiers[], track[] }
 //    track = [{ t, score, tier, rank }]  (a point whenever its score or place changed)
 //
@@ -10,12 +10,18 @@
 //  The line is noisy on purpose; the longer it stayed somewhere, the more it curls there.
 // ════════════════════════════════════════════════════════════════
 (function () {
-  const SIZE = 1000; // drawing units (the print is scaled to its real size by the page)
-  const MARGIN = 50;
-  const STROKE = 46; // line width
+  // the format of the reference (print_referenz_2.svg): units of the drawing, 197.01 × 255.58 = 69.5 × 90.16 mm
+  const VW = 197.01, VH = 255.58;
+  const BOX = { x: 9.72, y: 11.15, w: 175.48, h: 233.28 }; // the six tier bands (each 38.88 high)
+  const FRAME = 0.94; // thin outline of the card (to cut along), 0 = none
+  const STROKE = 17; // line width
   const COLORS = { S: "#ff3b3b", A: "#ffc400", B: "#22d34a", C: "#14c4e8", D: "#ff4fd8", F: "#8c3cff" };
   const INK = "#000";
   const FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+  const FONT_SIZE = 23.2; // as in the reference (capitals 16.7 high)
+  const LEADING = 0.87; // line distance relative to the font size (tight)
+  const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
+  const TEXT_Y = 0.485; // middle of the text block, relative to the height
   const SAMPLES = 1400; // points along the line
   const NOISE = 0.09; // how wobbly the line is, relative to one tier band
   const MOVE_MS = 0.03; // a move takes this part of the whole width
@@ -43,7 +49,7 @@
 
   window.drawRankPrint = function (data) {
     const tiers = data.tiers && data.tiers.length ? data.tiers : ["S", "A", "B", "C", "D", "F"].map((id, i) => ({ id, min: [90, 70, 50, 30, 10, 0][i] }));
-    const top = MARGIN, W = SIZE - 2 * MARGIN, bandH = (SIZE - 2 * MARGIN) / tiers.length;
+    const left = BOX.x, top = BOX.y, W = BOX.w, bandH = BOX.h / tiers.length;
     const rnd = seeded(data.entry && data.entry.image);
 
     // a point → height: the band of its tier, and inside the band its place in that tier's row
@@ -66,7 +72,7 @@
     const t0 = pts[0].t;
     const t1 = Math.max(data.now || Date.now(), pts[pts.length - 1].t + 1);
     const span = t1 - t0;
-    const X = (t) => MARGIN + ((t - t0) / span) * W;
+    const X = (t) => left + ((t - t0) / span) * W;
 
     // the changes: each one eases from the old height to the new one around its moment
     const changes = [];
@@ -101,15 +107,15 @@
     for (let s = 0; s <= SAMPLES; s++) {
       const u = s / SAMPLES;
       const t = t0 + u * span;
-      let x = MARGIN + u * W + nx(u * 3) * bandH * NOISE * 0.5;
+      let x = left + u * W + nx(u * 3) * bandH * NOISE * 0.5;
       let y = baseY(t) + ny(u * 4) * bandH * NOISE;
       for (const L of loops) {
-        const v = (MARGIN + u * W - L.x) / loopW + 0.5;
+        const v = (left + u * W - L.x) / loopW + 0.5;
         if (v <= 0 || v >= 1) continue;
         x -= L.r * Math.sin(2 * Math.PI * v);
         y += L.dir * L.r * (1 - Math.cos(2 * Math.PI * v));
       }
-      line.push([x, Math.max(top, Math.min(SIZE - MARGIN, y))]);
+      line.push([Math.max(left, Math.min(left + W, x)), Math.max(top, Math.min(top + BOX.h, y))]);
     }
 
     // one color per tier: split the line where it crosses into another band
@@ -124,36 +130,34 @@
         runs.push({ id, pts: [p] });
       }
     }
-    const f = (n) => n.toFixed(1);
+    const f = (n) => n.toFixed(2);
     const paths = runs.map((r) =>
       `<polyline points="${r.pts.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}" stroke="${COLORS[r.id] || INK}"/>`).join("");
 
-    // text: the name and the place right now, in the middle
+    // text, three lines in the middle: the place right now, the name, the tier right now
     const name = String((data.entry && data.entry.title) || "").toUpperCase();
     const cur = data.current;
-    const place = cur ? `#${cur.rank} · ${cur.tier}-TIER` : "UNRANKED";
-    const fit = (s, max) => Math.min(max, (W * 0.92) / Math.max(1, s.length * 0.62));
-    let lines = [name];
-    if (fit(name, 84) < 52 && name.includes(" ")) {
+    const width = (str, size) => str.length * size * (0.64 + TRACKING); // rough width of capitals in Helvetica
+    const fit = (str) => Math.min(FONT_SIZE, (VW - 14) / Math.max(1, str.length * (0.64 + TRACKING)));
+    let names = [name];
+    if (width(name, FONT_SIZE) > VW - 14 && name.includes(" ")) {
+      // too long for one line: break it where the two halves are most even
       const words = name.split(" ");
+      const diff = (k) => Math.abs(words.slice(0, k).join(" ").length - words.slice(k).join(" ").length);
       let best = 1;
-      for (let k = 1; k < words.length; k++) {
-        const d = Math.abs(words.slice(0, k).join(" ").length - words.slice(k).join(" ").length);
-        if (d < Math.abs(words.slice(0, best).join(" ").length - words.slice(best).join(" ").length)) best = k;
-      }
-      lines = [words.slice(0, best).join(" "), words.slice(best).join(" ")];
+      for (let k = 2; k < words.length; k++) if (diff(k) < diff(best)) best = k;
+      names = [words.slice(0, best).join(" "), words.slice(best).join(" ")];
     }
-    const fs = Math.min(...lines.map((l) => fit(l, 84)));
-    const lh = fs * 1.08;
-    const all = [...lines, place];
-    const y1 = SIZE / 2 - ((all.length - 1) * lh) / 2 + fs * 0.36;
-    const text = all.map((l, i) =>
-      `<text x="${SIZE / 2}" y="${f(y1 + i * lh)}" font-size="${f(i === all.length - 1 ? Math.max(fs, 56) : fs)}">${esc(l)}</text>`).join("");
+    const all = [cur ? `#${cur.rank}` : "#–", ...names, cur ? `${cur.tier}-TIER` : "UNRANKED"];
+    const fs = Math.min(...names.map(fit));
+    const lh = fs * LEADING;
+    const y1 = VH * TEXT_Y - ((all.length - 1) * lh) / 2 + fs * 0.36;
+    const text = all.map((l, i) => `<text x="${f(VW / 2)}" y="${f(y1 + i * lh)}">${esc(l)}</text>`).join("");
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="100%">
-  <rect width="${SIZE}" height="${SIZE}" fill="#fff"/>
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW} ${VH}" width="100%" height="100%">
+  <rect x="${FRAME / 2}" y="${FRAME / 2}" width="${VW - FRAME}" height="${VH - FRAME}" fill="#fff"${FRAME ? ` stroke="#181716" stroke-width="${FRAME}"` : ""}/>
   <g fill="none" stroke-width="${STROKE}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
-  <g fill="${INK}" font-family='${FONT}' font-weight="500" text-anchor="middle" letter-spacing="1">${text}</g>
+  <g fill="${INK}" font-family='${FONT}' font-size="${f(fs)}" text-anchor="middle" letter-spacing="${f(TRACKING * fs)}">${text}</g>
 </svg>`;
   };
 })();

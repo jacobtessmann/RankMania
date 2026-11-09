@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RankFeed · Print</title>
 <style>
-  /* PRINT_MM: size of the square on paper */
-  :root { --print-mm: 120mm; --ink: #222; --grey: #757575; --red: #ee3322; }
+  /* size of the card on paper (as print_referenz_2.svg) */
+  :root { --print-w: 69.5mm; --print-h: 90.16mm; --ink: #222; --grey: #757575; --red: #ee3322; }
   * { box-sizing: border-box; }
   body { margin: 0; background: #fff; color: var(--ink); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
-  main { max-width: 520px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 40px; }
-  .sheet { width: 100%; aspect-ratio: 1; border: 1px solid #e8e8e8; }
+  main { max-width: 420px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 40px; }
+  .sheet { width: 100%; aspect-ratio: 197.01 / 255.58; }
   .sheet svg { display: block; }
   .note { font-size: 15px; line-height: 1.45; color: var(--grey); margin: 14px 0; min-height: 1.45em; }
   .row { display: flex; gap: 10px; }
@@ -22,7 +22,7 @@
   @page { margin: 10mm; }
   @media print {
     main { padding: 0; max-width: none; }
-    .sheet { width: var(--print-mm); border: 0; }
+    .sheet { width: var(--print-w); height: var(--print-h); }
     .note, .row { display: none; }
   }
 </style>
