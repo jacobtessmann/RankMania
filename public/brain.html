@@ -26,6 +26,17 @@
 //  for the same entity), the scores, tiers and places are the real ones from the server.
 // ════════════════════════════════════════════════════════════════
 const MAX_LINES = 500;
+// flash of the whole screen on a verdict from RankFeed: color, then fade back to black in this many ms
+const FLASH = {
+  bad: { color: "#ff0000", fadeMs: 2500 },
+  good: { color: "#00ff00", fadeMs: 900 },
+};
+function flash(vote) {
+  const f = FLASH[vote];
+  if (!f || !document.body.animate) return;
+  document.body.animate([{ backgroundColor: f.color }, { backgroundColor: "#000" }],
+                        { duration: f.fadeMs, easing: "ease-out" });
+}
 const VARS = {
   _any: ["attention_yield", "consensus_drift", "taste_conformity", "click_probability", "outrage_elasticity",
          "cultural_half_life", "nostalgia_coeff", "trust_decay", "virality_index", "aesthetic_entropy",
@@ -241,6 +252,7 @@ connectDisplay({
     recalc(ev);
   },
   onVote(ev) {
+    flash(ev.vote);
     const good = (ev.votes || []).filter((v) => v === "good").length;
     const bad = (ev.votes || []).length - good;
     const T = tagOf(ev.category);
