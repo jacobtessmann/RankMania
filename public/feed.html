@@ -95,15 +95,15 @@
   .end { margin-top: 30px; padding-top: 16px; border-top: 4px solid var(--ink); font-size: 15px; line-height: 1.5; }
 
   /* one entry, with the print button */
-  .sheet { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; }
+  .sheet { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.45); display: flex; align-items: center; padding: 16px; }
   .sheet[hidden] { display: none; }
-  .panel { background: #fff; width: 100%; max-width: 680px; margin: 0 auto; max-height: 92vh; overflow: auto;
-           padding: 18px 18px max(22px, env(safe-area-inset-bottom)); border-radius: 14px 14px 0 0; }
-  .panel img, .panel .ph { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
-  .panel h2 { margin: 14px 0 4px; font-size: 28px; font-weight: 900; letter-spacing: -.4px; }
-  .panel .meta { font-size: 15px; margin-bottom: 8px; }
-  .panel p { font-size: 15px; line-height: 1.45; margin: 0 0 16px; }
-  .print { width: 100%; padding: 16px; border: 0; background: var(--ink); color: #fff; font-weight: 900; font-size: 17px; cursor: pointer; }
+  .panel { background: #fff; width: 100%; max-width: 340px; margin: 0 auto; max-height: 86vh; overflow: auto;
+           padding: 16px 16px 10px; border-radius: 14px; }
+  .panel img, .panel .ph { width: 62%; margin: 0 auto; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
+  .panel h2 { margin: 12px 0 4px; font-size: 22px; font-weight: 900; letter-spacing: -.3px; }
+  .panel .meta { font-size: 14px; margin-bottom: 6px; }
+  .panel p { font-size: 14px; line-height: 1.4; margin: 0 0 12px; }
+  .print { width: 100%; padding: 13px; border: 0; background: var(--ink); color: #fff; font-weight: 900; font-size: 16px; cursor: pointer; }
   .close { width: 100%; padding: 12px; border: 0; background: none; color: var(--grey); margin-top: 6px; cursor: pointer; }
   .printnote { font-size: 13px; color: var(--grey); text-align: center; min-height: 1.3em; margin-top: 8px; }
   .ph { display: grid; place-items: center; font-size: 40px; font-weight: 900; color: #bbb; }
