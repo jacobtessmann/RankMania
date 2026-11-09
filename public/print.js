@@ -1,20 +1,22 @@
 // ════════════════════════════════════════════════════════════════
-//  print.js — draws the print of one entry: its path through the tiers this round.
+//  print.js — draws the print of one entry: its path through the tiers this round, as a scribble.
 //
 //  drawRankPrint(data) → an SVG string (69.5 × 90.16 mm, upright). data comes from GET /api/track:
 //    { entry: {title, image}, current: {rank, tier, of}, startedAt, now, tiers[], track[] }
-//    track = [{ t, score, tier, rank }]  (a point whenever its score or place changed)
+//    track = [{ t, score, tier, rank, pos, of }]  (a point whenever its score or place changed)
 //
 //  The six tiers are six bands from S (top) to F (bottom), like the ranking screen.
-//  Time runs from left (when the entry came in) to right (the moment of printing).
-//  The line is noisy on purpose; the longer it stayed somewhere, the more it curls there.
+//  There is no time axis: the line starts at the bottom in the middle and then goes up and down
+//  to every place the entry had, in order, swinging left and right on the way. The heights are the
+//  data; the sideways swings, the wobble and the curls (more where it stayed longer) are noise.
+//  One color: the tier the entry is in right now.
 // ════════════════════════════════════════════════════════════════
 (function () {
   // the format of the reference (print_referenz_2.svg): units of the drawing, 197.01 × 255.58 = 69.5 × 90.16 mm
   const VW = 197.01, VH = 255.58;
   const BOX = { x: 9.72, y: 11.15, w: 175.48, h: 233.28 }; // the six tier bands (each 38.88 high)
   const FRAME = 0.94; // thin outline of the card (to cut along), 0 = none
-  const STROKE = 26; // line width
+  const STROKE = 35; // line width
   // the tier colors of the tierlist (the same as the tier chips in feed.html)
   const COLORS = { S: "#ff7f7f", A: "#ffff7f", B: "#7fff7f", C: "#7fffff", D: "#ff7fff", F: "#9b30ff" };
   const INK = "#000";
@@ -23,13 +25,15 @@
   const LEADING = 0.87; // line distance relative to the font size (tight)
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
   const TEXT_Y = 0.485; // middle of the text block, relative to the height
-  const SAMPLES = 1400; // points along the line
-  const NOISE = 0.09; // how wobbly the line is, relative to one tier band
-  const MOVE_MS = 0.03; // a move takes this part of the whole width
-  const LOOP_EVERY_MS = 20000; // one curl for every 20 s the entry stayed in one place
-  const LOOP_R = 0.17; // curl radius, relative to one tier band
+  const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
+  const SWING_MIN = 0.35, SWING_MAX = 0.75; // how far the line swings sideways per stop, relative to the width
+  const NOISE = 0.1; // how wobbly the line is, relative to one tier band
+  const LOOP_EVERY_MS = 20000; // one curl for every 20 s the entry stayed in one place …
+  const LOOP_MAX = 2; // … but at most this many at one stop
+  const LOOP_R = 0.95; // curl radius, relative to one tier band (bigger than the line, so the hole stays open)
+  const STEPS = 18; // points drawn between two stops
 
-  // a small seeded random, so the same entry gets the same wobble on every print
+  // a small seeded random, so the same entry gets the same scribble on every print
   function seeded(str) {
     let h = 2166136261;
     for (const c of String(str)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
@@ -45,7 +49,19 @@
     const sum = parts.reduce((n, w) => n + w.a, 0);
     return (u) => parts.reduce((n, w) => n + w.a * Math.sin(u * 6.283 * w.f + w.p), 0) / sum;
   }
-  const smooth = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+  // a smooth curve through the points (Catmull-Rom)
+  function spline(p, steps) {
+    const out = [];
+    for (let i = 0; i < p.length - 1; i++) {
+      const a = p[i - 1] || p[i], b = p[i], c = p[i + 1], d = p[i + 2] || c;
+      for (let s = 0; s < steps; s++) {
+        const t = s / steps, t2 = t * t, t3 = t2 * t;
+        out.push([0, 1].map((k) => 0.5 * (2 * b[k] + (c[k] - a[k]) * t + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t2 + (3 * b[k] - a[k] - 3 * c[k] + d[k]) * t3)));
+      }
+    }
+    out.push(p[p.length - 1]);
+    return out;
+  }
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   window.drawRankPrint = function (data) {
@@ -68,72 +84,63 @@
       return top + (i + Math.max(0.12, Math.min(0.88, f))) * bandH;
     }
 
+    // the stops: every tier it was in, in order (staying in the same tier counts once, with all its time;
+    // the height inside the band is where it was when it arrived there)
     const pts = (data.track || []).filter((p) => p && Number.isFinite(p.score)).sort((a, b) => a.t - b.t);
     if (!pts.length) pts.push({ t: data.now || Date.now(), score: 50 });
-    const t0 = pts[0].t;
-    const t1 = Math.max(data.now || Date.now(), pts[pts.length - 1].t + 1);
-    const span = t1 - t0;
-    const X = (t) => left + ((t - t0) / span) * W;
-
-    // the changes: each one eases from the old height to the new one around its moment
-    const changes = [];
-    for (let k = 1; k < pts.length; k++) {
-      const d = yOf(pts[k]) - yOf(pts[k - 1]);
-      if (Math.abs(d) > 0.01) changes.push({ t: pts[k].t, d });
-    }
-    changes.forEach((c, k) => {
-      const gap = Math.min(c.t - (changes[k - 1]?.t ?? t0), (changes[k + 1]?.t ?? t1) - c.t);
-      c.len = Math.max(span * 0.004, Math.min(span * MOVE_MS, gap));
+    const now = Math.max(data.now || Date.now(), pts[pts.length - 1].t);
+    let stops = [];
+    pts.forEach((p, k) => {
+      const y = yOf(p), until = pts[k + 1]?.t ?? now;
+      const last = stops[stops.length - 1];
+      if (last && last.tier === p.tier) last.stay += until - p.t;
+      else stops.push({ y, tier: p.tier, stay: until - p.t });
     });
-    const y0 = yOf(pts[0]);
-    const baseY = (t) => changes.reduce((y, c) => y + c.d * smooth((t - c.t) / c.len + 0.5), y0);
-
-    // the curls: in every stretch without a move, one curl per LOOP_EVERY_MS
-    const R = LOOP_R * bandH;
-    const loopW = 2 * Math.PI * R * 0.62; // narrower than the curl, so it really turns back
-    const loops = [];
-    const stops = [t0, ...changes.map((c) => c.t), t1];
-    for (let k = 0; k < stops.length - 1; k++) {
-      const a = stops[k] + (changes[k - 1]?.len || 0), b = stops[k + 1] - (changes[k]?.len || 0);
-      const px = X(b) - X(a);
-      const n = Math.min(Math.floor((b - a) / LOOP_EVERY_MS), Math.floor(px / (loopW * 1.5)));
-      for (let j = 0; j < n; j++) {
-        const at = a + ((j + 0.5 + (rnd() - 0.5) * 0.4) / n) * (b - a);
-        loops.push({ x: X(at), dir: rnd() < 0.5 ? -1 : 1, r: R * (0.75 + rnd() * 0.5) });
-      }
+    if (stops.length > MAX_STOPS) {
+      // too many: keep evenly spread ones, always the last (where it is now)
+      const keep = [];
+      for (let i = 0; i < MAX_STOPS; i++) keep.push(stops[Math.round((i * (stops.length - 1)) / (MAX_STOPS - 1))]);
+      stops = keep;
     }
 
+    // the way through the stops: start at the bottom in the middle, then up or down to every stop,
+    // each time swinging to the left or the right; a long stay curls around the stop
+    const minX = left + STROKE / 2, maxX = left + W - STROKE / 2;
+    const minY = top + STROKE * 0.3, maxY = top + BOX.h - STROKE * 0.3;
+    const way = [[left + W / 2, maxY]];
+    let x = left + W / 2, dir = rnd() < 0.5 ? -1 : 1;
+    for (const s of stops) {
+      if (rnd() < 0.25) dir = -dir; // now and then it keeps going the same way
+      let nx = x + dir * (SWING_MIN + rnd() * (SWING_MAX - SWING_MIN)) * W;
+      if (nx < minX || nx > maxX) {
+        dir = -dir;
+        nx = x + dir * (SWING_MIN + rnd() * (SWING_MAX - SWING_MIN)) * W;
+      }
+      x = Math.max(minX, Math.min(maxX, nx));
+      way.push([x, s.y]);
+      const curls = Math.min(LOOP_MAX, Math.floor(s.stay / LOOP_EVERY_MS));
+      const turn = rnd() < 0.5 ? -1 : 1;
+      for (let c = 0; c < curls; c++) {
+        const r = LOOP_R * bandH * (0.7 + rnd() * 0.6);
+        const a0 = rnd() * 6.283;
+        for (let k = 1; k <= 6; k++) {
+          const a = a0 + turn * (k / 6) * 6.283;
+          way.push([x + r * Math.cos(a) - r * Math.cos(a0), s.y + r * Math.sin(a) - r * Math.sin(a0)]);
+        }
+      }
+      dir = -dir;
+    }
+
+    // smooth it, then let it wobble
     const nx = wave(rnd), ny = wave(rnd);
-    const line = [];
-    for (let s = 0; s <= SAMPLES; s++) {
-      const u = s / SAMPLES;
-      const t = t0 + u * span;
-      let x = left + u * W + nx(u * 3) * bandH * NOISE * 0.5;
-      let y = baseY(t) + ny(u * 4) * bandH * NOISE;
-      for (const L of loops) {
-        const v = (left + u * W - L.x) / loopW + 0.5;
-        if (v <= 0 || v >= 1) continue;
-        x -= L.r * Math.sin(2 * Math.PI * v);
-        y += L.dir * L.r * (1 - Math.cos(2 * Math.PI * v));
-      }
-      line.push([Math.max(left, Math.min(left + W, x)), Math.max(top, Math.min(top + BOX.h, y))]);
-    }
-
-    // one color per tier: split the line where it crosses into another band
-    const bandOf = (y) => tiers[Math.max(0, Math.min(tiers.length - 1, Math.floor((y - top) / bandH)))].id;
-    const runs = [];
-    for (const p of line) {
-      const id = bandOf(p[1]);
-      const last = runs[runs.length - 1];
-      if (last && last.id === id) last.pts.push(p);
-      else {
-        if (last) last.pts.push(p); // overlap one point so the pieces connect
-        runs.push({ id, pts: [p] });
-      }
-    }
+    const line = spline(way, STEPS).map(([px, py], i, all) => {
+      const u = i / all.length;
+      return [Math.max(minX, Math.min(maxX, px + nx(u * 6) * bandH * NOISE)),
+              Math.max(minY, Math.min(maxY, py + ny(u * 7) * bandH * NOISE))];
+    });
     const f = (n) => n.toFixed(2);
-    const paths = runs.map((r) =>
-      `<polyline points="${r.pts.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}" stroke="${COLORS[r.id] || INK}"/>`).join("");
+    const tierNow = (data.current && data.current.tier) || pts[pts.length - 1].tier || "F";
+    const path = `<polyline points="${line.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}"/>`;
 
     // text, three lines in the middle: the place right now, the name, the tier right now
     const name = String((data.entry && data.entry.title) || "").toUpperCase();
@@ -157,7 +164,7 @@
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW} ${VH}" width="100%" height="100%">
   <rect x="${FRAME / 2}" y="${FRAME / 2}" width="${VW - FRAME}" height="${VH - FRAME}" fill="#fff"${FRAME ? ` stroke="#181716" stroke-width="${FRAME}"` : ""}/>
-  <g fill="none" stroke-width="${STROKE}" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
+  <g fill="none" stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}" stroke-linecap="round" stroke-linejoin="round">${path}</g>
   <g fill="${INK}" font-family='${FONT}' font-size="${f(fs)}" text-anchor="middle" letter-spacing="${f(TRACKING * fs)}">${text}</g>
 </svg>`;
   };
