@@ -25,7 +25,7 @@
   const INK = "#000";
   const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
-  const MIDDLE_SIZE = 260; // the tier letter in the middle (26 mm)
+  const MIDDLE_SIZE = 380; // the tier letter in the middle (38 mm)
   const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
   const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
@@ -154,10 +154,14 @@
     const slot = (2 * Math.PI * textR) / 6; // the room for one piece
     const longest = Math.max(...pieces.map((t) => t.length));
     const ringSize = Math.min(RING_SIZE, (slot * 0.9) / (longest * (0.64 + TRACKING)));
-    // the circle as a path, starting at the top and going clockwise
-    const circle = `M ${f(C)},${f(C - textR)} a ${f(textR)},${f(textR)} 0 1,1 0,${f(2 * textR)} a ${f(textR)},${f(textR)} 0 1,1 0,${f(-2 * textR)}`;
-    const ringText = [...pieces, ...pieces].map((t, i) =>
-      `<textPath href="#ring${uid}" startOffset="${f(((i + 0.5) / 6) * 100)}%">${esc(t)}</textPath>`).join("");
+    // six pieces clockwise, the name always at the top in the middle: # at -60°, name at 0°, tier at 60°, and again
+    // opposite. The circle path starts at 150° (between two pieces), so no piece is cut where it begins.
+    const START = 150;
+    const pt = (deg) => [C + textR * Math.sin((deg * Math.PI) / 180), C - textR * Math.cos((deg * Math.PI) / 180)];
+    const [sx, sy] = pt(START), [ox, oy] = pt(START + 180);
+    const circle = `M ${f(sx)},${f(sy)} A ${f(textR)},${f(textR)} 0 1,1 ${f(ox)},${f(oy)} A ${f(textR)},${f(textR)} 0 1,1 ${f(sx)},${f(sy)}`;
+    const ringText = [[-60, pieces[0]], [0, pieces[1]], [60, pieces[2]], [120, pieces[0]], [180, pieces[1]], [240, pieces[2]]]
+      .map(([deg, t]) => `<textPath href="#ring${uid}" startOffset="${f(((((deg - START) % 360) + 360) % 360) / 3.6)}%">${esc(t)}</textPath>`).join("");
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="100%">
   <defs>
