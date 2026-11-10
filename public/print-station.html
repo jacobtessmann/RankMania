@@ -63,14 +63,14 @@
 <script src="shared.js"></script>
 <script src="print.js"></script>
 <script>
-// The label paper: the middle of each sticker in mm from the top left corner of the A4 sheet.
-// Measure your paper and change these if the stickers don't sit on the labels.
+// The label paper HERMA 4477 (round, 60 mm, 12 per A4): the middle of each sticker in mm from the top left
+// corner of the sheet, taken from HERMA's template (Etiketten-Vorlage-HERMA-round-60-blanko.ai).
 const D = 60; // sticker diameter in mm (also .page .st / .slot in the style)
 const SHEET = [
-  [40, 49.5], [105, 49.5], [170, 49.5],
-  [40, 115.5], [105, 115.5], [170, 115.5],
-  [40, 181.5], [105, 181.5], [170, 181.5],
-  [40, 247.5], [105, 247.5], [170, 247.5],
+  [38, 48], [105, 48], [172, 48],
+  [38, 115.07], [105, 115.07], [172, 115.07],
+  [38, 182.07], [105, 182.07], [172, 182.07],
+  [38, 249.07], [105, 249.07], [172, 249.07],
 ];
 const PER_SHEET = SHEET.length;
 const POLL_MS = 3000; // how often it asks for new stickers
