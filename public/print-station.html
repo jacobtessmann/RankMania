@@ -31,18 +31,17 @@
   ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--grey); flex: 1; min-width: 220px; }
   ol b { color: var(--ink); font-weight: 600; }
 
-  /* the label sheet: A4 with 12 round stickers (positions in the script: SHEET) */
-  .page { position: relative; width: 210mm; height: 297mm; background: #fff; }
-  .page .st { position: absolute; width: 60mm; height: 60mm; }
-  .page .st svg { display: block; }
-  .page .slot { position: absolute; width: 60mm; height: 60mm; border-radius: 50%; border: 1px dashed #ccc; }
-  .preview { zoom: .36; box-shadow: 0 0 0 3px #ddd; flex: none; }
+  /* the label sheet: one SVG of exactly A4, in the coordinates of HERMA's template (script: SHEET) */
+  .page { flex: none; line-height: 0; }
+  .page > svg { display: block; width: 76mm; height: auto; box-shadow: 0 0 0 3px #ddd; background: #fff; }
 
-  @page { size: A4; margin: 0; }
+  @page { size: 210mm 297mm; margin: 0; }
   @media print {
-    main > :not(.wrap), ol, .page .slot { display: none !important; }
+    html, body { margin: 0; padding: 0; }
+    main > :not(.wrap), ol, .slot { display: none !important; }
     main { padding: 0; max-width: none; }
-    .preview { zoom: 1; box-shadow: none; }
+    .wrap { display: block; }
+    .page > svg { width: 210mm; height: 297mm; box-shadow: none; }
   }
 </style>
 </head>
@@ -63,15 +62,16 @@
 <script src="shared.js"></script>
 <script src="print.js"></script>
 <script>
-// The label paper HERMA 4477 (round, 60 mm, 12 per A4): the middle of each sticker in mm from the top left
-// corner of the sheet, taken from HERMA's template (Etiketten-Vorlage-HERMA-round-60-blanko.ai).
-const D = 60; // sticker diameter in mm (also .page .st / .slot in the style)
-const SHEET = [
-  [38, 48], [105, 48], [172, 48],
-  [38, 115.07], [105, 115.07], [172, 115.07],
-  [38, 182.07], [105, 182.07], [172, 182.07],
-  [38, 249.07], [105, 249.07], [172, 249.07],
-];
+// The label paper HERMA 4477 (round, 60 mm, 12 per A4), straight from HERMA's template
+// (Etiketten-Vorlage-HERMA-round-60-blanko.ai): the sheet is drawn in the template's own units,
+// points (1/72 inch) on A4 = 595.2756 × 841.8898, measured from the top left corner.
+// Each label is the box between the template's guide lines.
+const PAGE_W = 595.2756, PAGE_H = 841.8898;
+const COLS = [[22.6772, 192.7559], [212.5985, 382.6772], [402.5198, 572.5984]]; // left, right
+const ROWS = [[791.0646, 620.5891], [600.7465, 430.6678], [410.8252, 240.7465], [220.9039, 50.8252]]; // top, bottom (from the bottom, as in the template)
+const D = 170.0787; // label diameter in points (60 mm)
+const SHEET = ROWS.flatMap(([t, b]) => COLS.map(([l, r]) => [(l + r) / 2, PAGE_H - (t + b) / 2])); // middles, from the top left
+const MM = 72 / 25.4; // points per mm
 const PER_SHEET = SHEET.length;
 const POLL_MS = 3000; // how often it asks for new stickers
 const AFTER_PRINT_MS = 8000; // pause after each sheet, so the printer can keep up
@@ -95,19 +95,35 @@ function log(html) {
 }
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const at = ([x, y]) => `left:${x - D / 2}mm;top:${y - D / 2}mm`;
+// one sticker placed on the sheet: its SVG nested at the label's place and size
+const place = (svg, [x, y]) =>
+  svg.replace('width="100%" height="100%"', `x="${x - D / 2}" y="${y - D / 2}" width="${D}" height="${D}"`);
+
+// test marks: a cross on the middle of every label and a 100 mm ruler, to check the print against the labels
+function marks() {
+  const c = 4 * MM;
+  const crosses = SHEET.map(([x, y]) =>
+    `<path d="M${x - c},${y}H${x + c}M${x},${y - c}V${y + c}" stroke="#000" stroke-width=".4"/>`).join("");
+  const y = PAGE_H - 9 * MM, x0 = PAGE_W / 2 - 50 * MM;
+  const ticks = Array.from({ length: 11 }, (_, i) => `M${x0 + i * 10 * MM},${y}v${i % 5 ? -2 * MM : -4 * MM}`).join("");
+  return crosses + `<path d="M${x0},${y}h${100 * MM}${ticks}" stroke="#000" stroke-width=".5" fill="none"/>` +
+    `<text x="${PAGE_W / 2}" y="${y + 4 * MM}" font-family="Helvetica, Arial, sans-serif" font-size="8" text-anchor="middle">100 mm</text>`;
+}
 
 // the sheet: stickers on the first places, the empty places only as dashed circles on the screen
-function drawPage(jobs) {
-  $("page").innerHTML = SHEET.map((p, i) => jobs[i]
-    ? `<div class="st" style="${at(p)}">${drawRankPrint(jobs[i].data, "-" + i)}</div>`
-    : `<div class="slot" style="${at(p)}"></div>`).join("");
+function drawPage(jobs, test = false) {
+  $("page").innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PAGE_W} ${PAGE_H}" width="210mm" height="297mm">
+    <rect width="${PAGE_W}" height="${PAGE_H}" fill="#fff"/>
+    ${SHEET.map((p, i) => jobs[i] ? place(drawRankPrint(jobs[i].data, "-" + i), p)
+      : `<circle class="slot" cx="${p[0]}" cy="${p[1]}" r="${D / 2}" fill="none" stroke="#bbb" stroke-dasharray="4 4"/>`).join("")}
+    ${test ? marks() : ""}
+  </svg>`;
 }
 drawPage([]);
 
 // print the sheet and wait until the browser is done with it
-function printSheet(jobs) {
-  drawPage(jobs);
+function printSheet(jobs, test = false) {
+  drawPage(jobs, test);
   return new Promise((resolve) => {
     let done = false;
     const finish = () => { if (!done) { done = true; resolve(); } };
@@ -166,8 +182,30 @@ $("flush").onclick = () => {
   flushNext = true;
   state("Printing what is there with the next check…", "on");
 };
-// started before with a saved password: start again by itself after a reload
-if ($("key").value) $("go").click();
+// print-station.html?test=1 prints one test sheet first: 12 stickers of entries ranked right now,
+// with a cross on the middle of every label and a 100 mm ruler (nothing is taken from the queue)
+async function testSheet() {
+  history.replaceState(null, "", location.pathname); // a reload does not print it again
+  state("Printing a test sheet…", "on");
+  const snap = await (await fetch(RANK_BASE + "/api/state", { cache: "no-store" })).json();
+  const picks = snap.categories.flatMap((c) => c.entries.map((e) => [c.name, e.image])).slice(0, PER_SHEET);
+  const jobs = [];
+  for (const [list, image] of picks) {
+    const r = await fetch(RANK_BASE + "/api/track?" + new URLSearchParams({ list, image }), { cache: "no-store" });
+    if (r.ok) jobs.push({ at: Date.now(), data: await r.json() });
+  }
+  await printSheet(jobs, true);
+  log(`Test sheet printed ${time(Date.now())} (${jobs.length} stickers, with marks)`);
+  state("Test sheet printed. Lay it on a label sheet against the light to check the places.", "on");
+}
+
+(async function () {
+  if (new URLSearchParams(location.search).has("test")) {
+    try { await testSheet(); } catch { state("The test sheet could not be made: the ranking machine can't be reached.", "off"); }
+  }
+  // started before with a saved password: start again by itself after a reload
+  if ($("key").value) $("go").click();
+})();
 </script>
 </body>
 </html>
