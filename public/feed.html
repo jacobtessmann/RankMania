@@ -42,7 +42,6 @@
   .article h1 { margin: 8px 0 10px; font-size: 38px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
   .article .deck { font-size: 26px; line-height: 1.25; color: var(--red); margin: 0 0 8px; }
   .article .deck2 { font-size: 15px; line-height: 1.4; color: var(--grey); margin: 0 0 12px; }
-  .byline { font-size: 12px; color: var(--grey); margin-bottom: 14px; }
   .body p { font-size: 19px; line-height: 1.5; margin: 18px 0; color: #000; }
   .body h2 { font-size: 24px; font-weight: 900; letter-spacing: -.3px; margin: 30px 0 6px; }
   .box { background: var(--soft); padding: 14px 16px; margin: 22px 0; font-size: 15px; line-height: 1.5; }
@@ -94,9 +93,10 @@
   .poll .catch { margin: 6px 0 0; color: var(--grey); }
   .related { margin-top: 34px; }
   .related h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin: 0 0 4px; }
-  .related .card { display: grid; grid-template-columns: 40% 1fr; gap: 12px; align-items: center; padding: 14px 0; }
-  .related .card .thumb { margin: 0; border-width: 2px; }
-  .related .card h2 { font-size: 17px; color: var(--ink); text-transform: none; letter-spacing: -.2px; margin: 0; }
+  .related .card { display: grid; grid-template-columns: 40% 1fr; gap: 12px; align-items: stretch; padding: 14px 0; }
+  .related .card .thumb { margin: 0; border-width: 2px; aspect-ratio: auto; height: 100%; min-height: 90px; } /* as tall as the text next to it */
+  .related .card h2 { font-size: 20px; line-height: 1.15; color: var(--ink); text-transform: none; letter-spacing: 0; margin: 0 0 6px; }
+  .related .card .sub { font-size: 16px; }
   .end { margin-top: 30px; padding-top: 16px; border-top: 4px solid var(--ink); font-size: 15px; line-height: 1.5; }
 
   /* one entry, with the print button */
@@ -287,7 +287,7 @@ const VERDICT = {
   bad: "Bad",
   thanksGood: "Thank you! Your vote has been counted. 💚",
   thanksBad: "Thank you! Your vote has been counted. 💔",
-  catch: "Every vote goes straight to the ranking on the screens and moves it a tiny bit. Look up: you just did that.",
+  catch: "Nothing on the screens jumps right away. Your vote nudges every entry on this list a tiny bit, and over the next rounds the ranking slowly drifts in your direction.",
   tooFast: "Whoa, slow down. One vote at a time, try again in a moment.",
   offline: "Voting is down right now. Try again in a moment.",
 };
@@ -530,7 +530,6 @@ function article(slug) {
       <a class="back" href="#">← All articles</a>
       <h1>${esc(a.head)}</h1>
       <p class="deck">${esc(a.title)}</p>
-      <div class="byline">by The Ranking Desk · snapshot from ${timeOf(edition.at)} · generated only for you</div>
       ${thumb(a)}
       <div class="body">
         ${a.intros.map((p) => `<p>${esc(p)}</p>`).join("")}
