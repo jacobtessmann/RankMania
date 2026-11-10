@@ -62,7 +62,7 @@ $("print").onclick = () => window.print();
       ? `${data.entry.title} is out of the running round. This is its path through the last round it was in, as it ended at ${at(data.now)}.`
       : `${data.entry.title}, its path through this round, as of ${at(Date.now())}.`;
     $("print").disabled = false;
-    if (qs.get("auto")) setTimeout(() => window.print(), 300);
+    if (qs.get("auto")) window.rankPrintFont.then(() => setTimeout(() => window.print(), 300));
   } catch {
     $("note").textContent = "The ranking machine can't be reached right now. Try again in a moment.";
   }

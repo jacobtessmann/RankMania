@@ -12,6 +12,12 @@
 //  In the middle: the letter of the tier right now. Around the edge: place, name and tier, twice, spread evenly around.
 // ════════════════════════════════════════════════════════════════
 (function () {
+  // load the font of the middle letter once; window.rankPrintFont resolves when it is there (wait for it before printing)
+  const fontUrl = new URL("fonts/kg-miss-kindergarten.ttf", document.currentScript.src).href;
+  const face = new FontFace("Rank Letter", `url("${fontUrl}")`);
+  document.fonts.add(face);
+  window.rankPrintFont = face.load().catch(() => {});
+
   const SIZE = 850; // drawing units across the sticker (printed at 60 mm: 1 unit ≈ 0.07 mm; all sizes below scale with it)
   const C = SIZE / 2; // the middle
   const FRAME = 3.3; // thin outline of the sticker (to cut along), 0 = none
@@ -25,6 +31,8 @@
   const INK = "#000";
   const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
+  // the tier letter in the middle is in KG Miss Kindergarten (fonts/kg-miss-kindergarten.ttf, next to this script)
+  const LETTER_FONT = '"Rank Letter", Helvetica, Arial, sans-serif';
   const MIDDLE_SIZE = 440; // the tier letter in the middle (about half the sticker)
   const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
@@ -174,7 +182,7 @@
     <g stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}">${path}</g>
   </g>
   <g fill="${INK}" font-family='${FONT}'>
-    <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" text-anchor="middle">${esc(cur ? cur.tier : "?")}</text>
+    <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" font-family='${LETTER_FONT}' text-anchor="middle">${esc(cur ? cur.tier : "?")}</text>
     <text font-size="${f(ringSize)}" text-anchor="middle" letter-spacing="${f(TRACKING * ringSize)}">${ringText}</text>
   </g>
 </svg>`;

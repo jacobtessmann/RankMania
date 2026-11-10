@@ -128,7 +128,8 @@ function drawPage(jobs, test = false) {
 drawPage([]);
 
 // print the sheet and wait until the browser is done with it
-function printSheet(jobs, test = false) {
+async function printSheet(jobs, test = false) {
+  await window.rankPrintFont; // the middle letter's font must be loaded, or it prints in Helvetica
   drawPage(jobs, test);
   return new Promise((resolve) => {
     let done = false;
