@@ -1,39 +1,39 @@
 // ════════════════════════════════════════════════════════════════
-//  print.js — draws the print of one entry: its path through the tiers this round, as a scribble.
+//  print.js — draws the sticker of one entry: a round sticker, 85 mm across.
 //
-//  drawRankPrint(data) → an SVG string (69.5 × 90.16 mm, upright). data comes from GET /api/track:
+//  drawRankPrint(data) → an SVG string (85 × 85 mm, the sticker is the circle). data comes from GET /api/track:
 //    { entry: {title, image}, current: {rank, tier, of}, startedAt, now, tiers[], track[] }
 //    track = [{ t, score, tier, rank, pos, of }]  (a point whenever its score or place changed)
 //
-//  The six tiers are six bands from S (top) to F (bottom), like the ranking screen.
-//  There is no time axis: the line starts at the bottom in the middle and then goes up and down
-//  to every place the entry had, in order, swinging left and right on the way. The heights are the
-//  data; the sideways swings, the wobble and the curls (more where it stayed longer) are noise.
-//  One color: the tier the entry is in right now.
+//  The six tiers are six rings: F in the middle, S on the outside. The line starts in the middle and
+//  goes out and in to every tier the entry was in, in order, turning left or right around the middle
+//  on the way. How far out is the data; the turns, the wobble and the curls (more where it stayed
+//  longer) are noise. One color: the tier the entry is in right now.
+//  In the middle: the tier right now. Around the edge: place, name and tier, twice, closing the circle.
 // ════════════════════════════════════════════════════════════════
 (function () {
-  // the format of the reference (print_referenz_2.svg): units of the drawing, 197.01 × 255.58 = 69.5 × 90.16 mm
-  const VW = 197.01, VH = 255.58;
-  const BOX = { x: 9.72, y: 11.15, w: 175.48, h: 233.28 }; // the six tier bands (each 38.88 high)
-  const FRAME = 0.94; // thin outline of the card (to cut along), 0 = none
-  const STROKE = 30; // line width
-  const OUTLINE = 0.9; // fine dark outline around the line (0 = none)
+  const SIZE = 850; // drawing units: 1 unit = 0.1 mm, so the sticker is 85 mm across
+  const C = SIZE / 2; // the middle
+  const FRAME = 3.3; // thin outline of the sticker (to cut along), 0 = none
+  const TEXT_BAND = 78; // width of the ring with the text around the edge
+  const INNER = 70; // the ring of F starts this far from the middle
+  const STROKE = 105; // line width (about 10.5 mm)
+  const OUTLINE = 3.2; // fine dark outline around the line (0 = none)
   const OUTLINE_COLOR = "#181716";
   // the tier colors of the tierlist (the same as the tier chips in feed.html)
   const COLORS = { S: "#ff7f7f", A: "#ffff7f", B: "#7fff7f", C: "#7fffff", D: "#ff7fff", F: "#9b30ff" };
   const INK = "#000";
   const FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';
-  const FONT_SIZE = 23.2; // as in the reference (capitals 16.7 high)
-  const LEADING = 0.87; // line distance relative to the font size (tight)
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
-  const TEXT_Y = 0.485; // middle of the text block, relative to the height
+  const MIDDLE_SIZE = 82; // the tier in the middle (8.2 mm, as the text of the earlier card)
+  const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
-  const SWING_MIN = 0.35, SWING_MAX = 0.75; // how far the line swings sideways per stop, relative to the width
-  const NOISE = 0.1; // how wobbly the line is, relative to one tier band
+  const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
+  const NOISE = 0.1; // how wobbly the line is, relative to one tier ring
   const LOOP_EVERY_MS = 20000; // one curl for every 20 s the entry stayed in one place …
   const LOOP_MAX = 2; // … but at most this many at one stop
-  const LOOP_R = 0.95; // curl radius, relative to one tier band (bigger than the line, so the hole stays open)
-  const STEPS = 18; // points drawn between two stops
+  const LOOP_R = 0.9; // curl radius, relative to one tier ring
+  const STEPS = 10; // points drawn between two points of the way
 
   // a small seeded random, so the same entry gets the same scribble on every print
   function seeded(str) {
@@ -65,38 +65,41 @@
     return out;
   }
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const f = (n) => n.toFixed(2);
 
   window.drawRankPrint = function (data) {
     const tiers = data.tiers && data.tiers.length ? data.tiers : ["S", "A", "B", "C", "D", "F"].map((id, i) => ({ id, min: [90, 70, 50, 30, 10, 0][i] }));
-    const left = BOX.x, top = BOX.y, W = BOX.w, bandH = BOX.h / tiers.length;
     const rnd = seeded(data.entry && data.entry.image);
+    const OUTER = C - TEXT_BAND; // the ring of S ends here, the text ring begins
+    const ringW = (OUTER - INNER) / tiers.length;
 
-    // a point → height: the band of its tier, and inside the band its place in that tier's row
-    // (so it also moves when others push it); while it was still hovering: by its score
-    function yOf(p) {
+    // a point → distance from the middle: the ring of its tier (F inside, S outside), and inside the ring
+    // its place in that tier's row (first = further out); while it was still hovering: by its score
+    function radiusOf(p) {
       let i = tiers.findIndex((t) => (p.tier ? t.id === p.tier : p.score >= t.min));
       if (i < 0) i = tiers.length - 1;
-      let f;
-      if (Number.isFinite(p.pos) && p.of) f = (p.pos + 1) / (p.of + 1);
+      let fr; // 0 = best place in the tier, 1 = worst
+      if (Number.isFinite(p.pos) && p.of) fr = (p.pos + 1) / (p.of + 1);
       else {
         const max = i === 0 ? 100 : tiers[i - 1].min;
         const min = Math.max(1, tiers[i].min);
-        f = (max - p.score) / Math.max(1, max - min);
+        fr = (max - p.score) / Math.max(1, max - min);
       }
-      return top + (i + Math.max(0.12, Math.min(0.88, f))) * bandH;
+      const level = tiers.length - 1 - i + (1 - Math.max(0.12, Math.min(0.88, fr))); // 0 … 6, from the middle out
+      return INNER + level * ringW;
     }
 
     // the stops: every tier it was in, in order (staying in the same tier counts once, with all its time;
-    // the height inside the band is where it was when it arrived there)
+    // the distance inside the ring is where it was when it arrived there)
     const pts = (data.track || []).filter((p) => p && Number.isFinite(p.score)).sort((a, b) => a.t - b.t);
     if (!pts.length) pts.push({ t: data.now || Date.now(), score: 50 });
     const now = Math.max(data.now || Date.now(), pts[pts.length - 1].t);
     let stops = [];
     pts.forEach((p, k) => {
-      const y = yOf(p), until = pts[k + 1]?.t ?? now;
+      const until = pts[k + 1]?.t ?? now;
       const last = stops[stops.length - 1];
       if (last && last.tier === p.tier) last.stay += until - p.t;
-      else stops.push({ y, tier: p.tier, stay: until - p.t });
+      else stops.push({ r: radiusOf(p), tier: p.tier, stay: until - p.t });
     });
     if (stops.length > MAX_STOPS) {
       // too many: keep evenly spread ones, always the last (where it is now)
@@ -105,72 +108,68 @@
       stops = keep;
     }
 
-    // the way through the stops: start at the bottom in the middle, then up or down to every stop,
-    // each time swinging to the left or the right; a long stay curls around the stop
-    const minX = left + STROKE / 2, maxX = left + W - STROKE / 2;
-    const minY = top + STROKE * 0.3, maxY = top + BOX.h - STROKE * 0.3;
-    const way = [[left + W / 2, maxY]];
-    let x = left + W / 2, dir = rnd() < 0.5 ? -1 : 1;
+    // the way: start in the middle, then out or in to every stop, each time turning left or right around
+    // the middle (in small steps, so the line follows the circle); a long stay curls around the stop
+    const xy = (a, r) => [C + r * Math.cos(a), C + r * Math.sin(a)];
+    let a = rnd() * 2 * Math.PI, r = 0;
+    const way = [xy(a, 0)];
     for (const s of stops) {
-      if (rnd() < 0.25) dir = -dir; // now and then it keeps going the same way
-      let nx = x + dir * (SWING_MIN + rnd() * (SWING_MAX - SWING_MIN)) * W;
-      if (nx < minX || nx > maxX) {
-        dir = -dir;
-        nx = x + dir * (SWING_MIN + rnd() * (SWING_MAX - SWING_MIN)) * W;
-      }
-      x = Math.max(minX, Math.min(maxX, nx));
-      way.push([x, s.y]);
+      const turn = (rnd() < 0.5 ? -1 : 1) * (TURN_MIN + rnd() * (TURN_MAX - TURN_MIN)) * (Math.PI / 180);
+      const parts = 4;
+      for (let k = 1; k <= parts; k++) way.push(xy(a + (turn * k) / parts, r + ((s.r - r) * k) / parts));
+      a += turn;
+      r = s.r;
+      const [x, y] = xy(a, r);
       const curls = Math.min(LOOP_MAX, Math.floor(s.stay / LOOP_EVERY_MS));
-      const turn = rnd() < 0.5 ? -1 : 1;
+      const dir = rnd() < 0.5 ? -1 : 1;
       for (let c = 0; c < curls; c++) {
-        const r = LOOP_R * bandH * (0.7 + rnd() * 0.6);
+        const lr = LOOP_R * ringW * (0.7 + rnd() * 0.6);
         const a0 = rnd() * 6.283;
         for (let k = 1; k <= 6; k++) {
-          const a = a0 + turn * (k / 6) * 6.283;
-          way.push([x + r * Math.cos(a) - r * Math.cos(a0), s.y + r * Math.sin(a) - r * Math.sin(a0)]);
+          const b = a0 + dir * (k / 6) * 6.283;
+          way.push([x + lr * Math.cos(b) - lr * Math.cos(a0), y + lr * Math.sin(b) - lr * Math.sin(a0)]);
         }
       }
-      dir = -dir;
     }
 
-    // smooth it, then let it wobble
+    // smooth it, then let it wobble; it stays inside the rings
     const nx = wave(rnd), ny = wave(rnd);
+    const maxR = OUTER - STROKE * 0.35;
     const line = spline(way, STEPS).map(([px, py], i, all) => {
       const u = i / all.length;
-      return [Math.max(minX, Math.min(maxX, px + nx(u * 6) * bandH * NOISE)),
-              Math.max(minY, Math.min(maxY, py + ny(u * 7) * bandH * NOISE))];
+      let x = px + nx(u * 6) * ringW * NOISE, y = py + ny(u * 7) * ringW * NOISE;
+      const d = Math.hypot(x - C, y - C);
+      if (d > maxR) [x, y] = [C + ((x - C) * maxR) / d, C + ((y - C) * maxR) / d];
+      return [x, y];
     });
-    const f = (n) => n.toFixed(2);
     const tierNow = (data.current && data.current.tier) || pts[pts.length - 1].tier || "F";
     const path = `<polyline points="${line.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}"/>`;
 
-    // text, three lines in the middle: the place right now, the name, the tier right now
-    const name = String((data.entry && data.entry.title) || "").toUpperCase();
+    // the text around the edge: place, name, tier — twice, spread so that the circle closes
     const cur = data.current;
-    const width = (str, size) => str.length * size * (0.64 + TRACKING); // rough width of capitals in Helvetica
-    const fit = (str) => Math.min(FONT_SIZE, (VW - 14) / Math.max(1, str.length * (0.64 + TRACKING)));
-    let names = [name];
-    if (width(name, FONT_SIZE) > VW - 14 && name.includes(" ")) {
-      // too long for one line: break it where the two halves are most even
-      const words = name.split(" ");
-      const diff = (k) => Math.abs(words.slice(0, k).join(" ").length - words.slice(k).join(" ").length);
-      let best = 1;
-      for (let k = 2; k < words.length; k++) if (diff(k) < diff(best)) best = k;
-      names = [words.slice(0, best).join(" "), words.slice(best).join(" ")];
-    }
-    const all = [cur ? `#${cur.rank}` : "#–", ...names, cur ? `${cur.tier}-TIER` : "UNRANKED"];
-    const fs = Math.min(...names.map(fit));
-    const lh = fs * LEADING;
-    const y1 = VH * TEXT_Y - ((all.length - 1) * lh) / 2 + fs * 0.36;
-    const text = all.map((l, i) => `<text x="${f(VW / 2)}" y="${f(y1 + i * lh)}">${esc(l)}</text>`).join("");
+    const name = String((data.entry && data.entry.title) || "").toUpperCase();
+    const gap = (n) => "\u00a0".repeat(n); // spaces that SVG does not swallow
+    const label = [cur ? `#${cur.rank}` : "#–", name, cur ? `${cur.tier}-TIER` : "UNRANKED"].join(gap(3));
+    const ring = label + gap(6) + label + gap(6);
+    const textR = C - TEXT_BAND / 2 - RING_SIZE * 0.36; // baseline, so the capitals sit in the middle of the band
+    const around = 2 * Math.PI * textR;
+    const ringSize = Math.min(RING_SIZE, (around * 0.94) / (ring.length * (0.64 + TRACKING)));
+    const circle = `M ${f(C - textR)},${f(C)} a ${f(textR)},${f(textR)} 0 1,1 ${f(2 * textR)},0 a ${f(textR)},${f(textR)} 0 1,1 ${f(-2 * textR)},0`;
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VW} ${VH}" width="100%" height="100%">
-  <rect x="${FRAME / 2}" y="${FRAME / 2}" width="${VW - FRAME}" height="${VH - FRAME}" fill="#fff"${FRAME ? ` stroke="#181716" stroke-width="${FRAME}"` : ""}/>
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="100%">
+  <defs>
+    <clipPath id="sticker"><circle cx="${C}" cy="${C}" r="${C}"/></clipPath>
+    <path id="ring" d="${circle}"/>
+  </defs>
+  <circle cx="${C}" cy="${C}" r="${f(C - FRAME / 2)}" fill="#fff"${FRAME ? ` stroke="#181716" stroke-width="${FRAME}"` : ""}/>
+  <g clip-path="url(#sticker)" fill="none" stroke-linecap="round" stroke-linejoin="round">
     ${OUTLINE ? `<g stroke="${OUTLINE_COLOR}" stroke-width="${STROKE + 2 * OUTLINE}">${path}</g>` : ""}
     <g stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}">${path}</g>
   </g>
-  <g fill="${INK}" font-family='${FONT}' font-size="${f(fs)}" text-anchor="middle" letter-spacing="${f(TRACKING * fs)}">${text}</g>
+  <g fill="${INK}" font-family='${FONT}'>
+    <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" text-anchor="middle" letter-spacing="${f(TRACKING * MIDDLE_SIZE)}">${esc(cur ? `${cur.tier}-TIER` : "UNRANKED")}</text>
+    <text font-size="${f(ringSize)}"><textPath href="#ring" textLength="${f(around)}" lengthAdjust="spacing">${esc(ring)}</textPath></text>
+  </g>
 </svg>`;
   };
 })();
