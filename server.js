@@ -41,7 +41,7 @@ const CATEGORIES = [
     label: "Historic Inventions",
     names: true,
     title: "Ranking {n} Historic Inventions",
-    source: "",
+    source: "list sourced from The Atlantic, \"The 50 Greatest Breakthroughs Since the Wheel\" (2013), picked by a panel of scientists and historians",
     headline: "{W} Just Out-Invented {L} and History Will Never Recover",
   },
   {
@@ -49,7 +49,7 @@ const CATEGORIES = [
     label: "Konzerne",
     names: true,
     title: "Ranking {n} Konzerne",
-    source: "",
+    source: "companies sourced from the Forbes Global 2000 (2026)",
     headline: "{W} Overtook {L} and the Shareholders Are Screaming",
   },
 ];

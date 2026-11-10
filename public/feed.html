@@ -8,8 +8,10 @@
 <style>
   :root { --red: #ee3322; --yellow: #ffee00; --ink: #222; --grey: #757575; --line: #e8e8e8; --soft: #f6f6f6;
           --tier-S: #ff7f7f; --tier-A: #ffff7f; --tier-B: #7fff7f; --tier-C: #7fffff; --tier-D: #ff7fff; --tier-F: #9b30ff; }
+  @font-face { font-family: "CMU Typewriter Light"; src: url("fonts/cmunbtl.woff") format("woff"); font-weight: normal; font-style: normal; font-display: swap; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #fff; color: var(--ink); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  body { margin: 0; background: #fff; color: var(--ink); font-family: "CMU Typewriter Light", "Courier New", monospace;
+         font-synthesis: style; -webkit-font-smoothing: antialiased; }
   button { font: inherit; }
   .mast { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line);
           display: flex; align-items: center; gap: 14px; padding: 12px 18px; padding-top: max(12px, env(safe-area-inset-top)); }
@@ -48,7 +50,8 @@
   /* article */
   .back { display: inline-block; margin: 16px 0 4px; color: var(--grey); text-decoration: none; font-size: 14px; }
   .article h1 { margin: 8px 0 8px; font-size: 32px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
-  .article .deck { font-size: 19px; line-height: 1.35; color: #444; margin: 0 0 12px; }
+  .article .deck { font-size: 20px; line-height: 1.3; color: var(--red); margin: 0 0 8px; }
+  .article .deck2 { font-size: 15px; line-height: 1.4; color: var(--grey); margin: 0 0 12px; }
   .byline { font-size: 12px; color: var(--grey); margin-bottom: 14px; }
   .article .thumb { font-size: clamp(16px, 5.4vw, 26px); }
   .body p { font-size: 17px; line-height: 1.55; margin: 16px 0; }
@@ -79,16 +82,23 @@
           margin-right: 6px; background: var(--c); color: #000; }
   .tier[data-t="F"] { color: #fff; }
 
-  .poll { border: 2px solid var(--ink); padding: 14px 16px; margin: 26px 0; }
-  .poll b { display: block; font-size: 18px; margin-bottom: 10px; }
-  .poll button { display: block; width: 100%; margin: 6px 0; padding: 12px; border: 2px solid var(--ink); background: #fff;
-                 font-weight: 700; text-align: left; cursor: pointer; }
-  .poll .answer { font-size: 15px; margin: 8px 0 0; color: var(--red); font-weight: 700; min-height: 1.4em; }
-  .poll .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .poll .row2 button { text-align: center; font-size: 18px; }
-  .poll button:disabled { opacity: .35; cursor: default; }
-  .poll .catch { font-size: 15px; line-height: 1.45; margin: 6px 0 0; }
-  .poll small { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin-bottom: 6px; }
+  /* the vote: big, loud, impossible to miss (full width of the phone) */
+  .poll { margin: 34px -18px; padding: 30px 0 0; background: #fff; border-top: 4px solid var(--ink); border-bottom: 4px solid var(--ink); }
+  .poll h2 { margin: 0 14px 22px; font-size: 16px; line-height: 1.35; text-transform: uppercase; letter-spacing: .14em;
+             font-style: italic; text-align: center; font-weight: normal; }
+  .poll .row2 { display: grid; grid-template-columns: 1fr 1fr; }
+  .poll button { aspect-ratio: 1 / 1; max-height: 340px; width: 100%; border: 0; cursor: pointer; color: #fff;
+                 font-size: clamp(26px, 8vw, 42px); letter-spacing: .12em; text-transform: uppercase;
+                 transition: transform .12s, opacity .3s, filter .3s; -webkit-tap-highlight-color: transparent; }
+  .poll button.good { background: #77ff55; color: #0a3d00; }
+  .poll button.bad { background: var(--red); }
+  .poll button:active:not(:disabled) { transform: scale(.96); }
+  .poll button:disabled { cursor: default; opacity: .25; filter: grayscale(1); }
+  .poll button.chosen { opacity: 1; filter: none; }
+  .poll button.chosen::after { content: " ✓"; }
+  .poll .answer { margin: 0; padding: 16px 18px 18px; font-size: 16px; line-height: 1.45; text-align: center; min-height: 1.4em; }
+  .poll .answer:empty { padding: 0; }
+  .poll .catch { margin: 6px 0 0; color: var(--grey); }
   .related { margin-top: 34px; }
   .related h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin: 0 0 4px; }
   .related .card { display: grid; grid-template-columns: 40% 1fr; gap: 12px; align-items: center; padding: 14px 0; }
@@ -129,15 +139,17 @@
 // ════════════════════════════════════════════════════════════════
 
 // ── The three teasers on the home page: no contestants, only the category ──
-//    {n} = how many are ranked. Emojis are picked at random for the thumbnail.
+//    head = the plain headline (says what it is), titles = the clickbait subheadline, subs = one more line
+//    {n} = how many are ranked, {part} = part of the mix. Emojis are picked at random for the thumbnail.
 const TEASERS = {
   students: {
     emojis: ["🎓", "🤓", "😳", "📚", "🙈", "😬", "✏️"],
     color: "#ffd84d",
+    head: "{n} VisCom Students, Ranked",
     titles: [
       "We Ranked Every Student in the Class. Number 7 Will Not Be Happy.",
-      "A Machine Ranked {n} Students. You Won't Believe Who Came Last.",
-      "Your Classmates, Ranked by Something That Has Never Met Them",
+      "{n} Students Got Ranked and You Won't Believe Who Came Last",
+      "Your Classmates, Ranked by Someone Who Has Never Met Them",
     ],
     subs: [
       "The criteria are secret. The results are not.",
@@ -148,23 +160,25 @@ const TEASERS = {
   inventions: {
     emojis: ["💡", "⚙️", "🤯", "🚂", "🔭", "🧲", "📻"],
     color: "#7fd4ff",
+    head: "{n} Inventions That Changed the World, Ranked",
     titles: [
-      "We Ranked {n} Inventions That Changed the World. Number 1 Is Not What You Think.",
+      "Number 1 Is Not What You Think and Historians Are Furious",
       "History Has Been Ranked. Historians Have Not Been Consulted.",
-      "The Greatest Inventions of All Time, Ranked by the Greatest Invention of All Time",
+      "The Greatest Inventions of All Time, Ranked. Your History Teacher Is Shaking.",
     ],
     subs: [
       "Centuries of progress, sorted in seconds.",
-      "One of these changed everything. The machine has decided which.",
+      "One of these changed everything. We know which one.",
       "Your history teacher is going to hate this.",
     ],
   },
   konzerne: {
     emojis: ["🏢", "💰", "😱", "📈", "🤑", "🧾", "🏭"],
     color: "#ff9a8a",
+    head: "{n} of the World's Biggest Konzerne, Ranked",
     titles: [
-      "We Ranked {n} Corporations. Their Lawyers Have Been Informed.",
-      "These Konzerne Were Ranked Without Their Consent. Number 3 Is Furious.",
+      "Their Lawyers Have Been Informed. Number 3 Is Furious.",
+      "These Corporations Were Ranked Without Their Consent and It Shows",
       "Capitalism, Ranked. The Results Are Not Financial Advice.",
     ],
     subs: [
@@ -176,13 +190,14 @@ const TEASERS = {
   mix: {
     emojis: ["🎓", "💡", "🏢", "🤯", "😱", "🌀", "⚖️"],
     color: "#c9a6ff",
+    head: "Students vs. Inventions vs. Konzerne, Ranked (Part {part} of 3)",
     titles: [
       "We Ranked Students Against Inventions Against Corporations. It Got Weird.",
-      "Is a Student Worth More Than a Steam Engine? The Machine Has Answered.",
-      "Everything, Ranked Against Everything. Part {part} of 3.",
+      "Is a Student Worth More Than a Steam Engine? We Have Answers.",
+      "Everything, Ranked Against Everything, and Nobody Is Safe",
     ],
     subs: [
-      "Apples and oranges? The machine doesn't care.",
+      "Apples and oranges? We don't care.",
       "There are no categories anymore. Only places.",
       "You will not like where people ended up.",
     ],
@@ -190,46 +205,54 @@ const TEASERS = {
 };
 
 // ── Inside the article: lines under each entry ({N} the entry, {A} above it, {B} below it, {T} its tier)
-//    The reason for a ranking is NEVER stated.
+//    The reason for a ranking is NEVER stated. Keep them all about the same length (two sentences).
 const LINES = {
-  first: ["Number one. No further questions.", "The top spot. The machine was very sure.", "First place. Nobody will say why."],
-  last: ["Last place. Somebody had to be.", "At the bottom, just below {A}.", "Last. The machine has no regrets."],
+  first: [
+    "Number one, and honestly? It's not even close. Everyone else on this list is now quietly rethinking every single decision that led them here. 👑",
+    "The top spot. We could explain why, but you already know why, and so does everyone who scrolled past {B} to get here. Iconic behaviour. ✨",
+    "First place. Screenshot it, frame it, send it to the group chat. This is what peak performance looks like and {N} is living for it. 🏆",
+  ],
+  last: [
+    "Last place. Somebody had to be here, and today that somebody is {N}. Sending thoughts, prayers and a very gentle hug from {A}. 💀",
+    "Dead last, right below {A}. Is this a tragedy or a comeback story waiting to happen? We don't know either, but we'll be watching. 👀",
+    "The very bottom. No notes, no explanation, just vibes, and the vibes are not great. If {N} needs a minute, we totally understand. 🫠",
+  ],
   mid: [
-    "{N} sits right above {B}.",
-    "Just behind {A}. Close, but no.",
-    "Tier {T}. The machine was very sure.",
-    "Better than {B}. Worse than {A}.",
-    "Nobody saw this coming. Except the ranking.",
-    "Exactly where {N} belongs, apparently.",
-    "Ahead of {B}. For now.",
-    "{A} is one place ahead and knows it.",
+    "{N} sits right above {B}, and we need to talk about it. Is it deserved? Is it a scandal? The comments are already on fire. 🔥",
+    "Just behind {A}. So close you can almost taste it, but close only counts in horseshoes, and this is not a horseshoe situation. 😬",
+    "Tier {T}, and honestly that tracks. Not the top, not the bottom, just living in that comfortable middle we all secretly aim for. 🙂",
+    "Better than {B}. Worse than {A}. Somewhere in between lies the truth, and the truth is that {N} is having a complicated week. 😅",
+    "Nobody saw this coming. We checked twice, refreshed the page, made a coffee, came back, and {N} was still sitting right here. ☕",
+    "Exactly where {N} belongs, apparently. We're not saying we agree, we're not saying we disagree, we're saying the vibes are immaculate. 💅",
+    "Ahead of {B}, for now. Things change in seconds around here, so enjoy the view while it lasts, because {B} is coming for you. ⏳",
+    "{A} is one place ahead and knows it. You can feel the tension from here. In a reality show, this is where the dramatic music starts. 🎻",
   ],
 };
 // the paragraphs that explain the concept ({n} how many, {label} the list, {top} #1, {last} last place)
 const INTROS = [
   "For years we gave our taste away for free: to feeds, charts, recommendation engines and the media outlets that own them. They decided what was hot and what was not, and we called it our opinion.",
-  "Now there is a better option: the perfect machine. It doesn't get tired. It doesn't have friends. It doesn't explain itself. And it has just ranked {n} {label}.",
+  "So we did what any responsible publication would do. We ranked {n} {label}. No criteria, no committee, no apology. Just a list. And you are going to read every single entry.",
 ];
 const MIDDLES = [
-  "You might be wondering how the machine decided this. So were we. It considered a number of variables, weighted them, and came to a conclusion. Then it changed its mind. Then it changed it again.",
+  "You might be wondering how we decided this. So were we. A number of variables were considered, weighted and turned into a conclusion. Then the conclusion changed. Then it changed again.",
   "Notice how quickly you accepted that {top} is number one? You don't know the question. You don't know the criteria. You just saw a list, and a list looks like the truth.",
 ];
 const QUOTES = [
   "Who gets to rank what, based on what?",
-  "We gave our taste away. This time, at least, we gave it to the perfect machine.",
+  "We gave our taste away. At least this time it's a fun list.",
 ];
 // The verdict at the end of each article: the visitor rates the whole list. It really goes to the brain
-// (one green or red dot on that screen, and the screen gets a little calmer or more restless).
+// (one green or red dot on that screen, a flash on the brain screen, and a tiny shift in the ranking).
 const VERDICT = {
-  title: "Your verdict",
+  title: "Help us train the machine.",
   question: "Is this ranking good or bad?",
   good: "Good",
   bad: "Bad",
-  thanksGood: "Thank you. The machine feels confirmed.",
-  thanksBad: "Thank you. The machine is reconsidering.",
-  catch: "Your verdict has been fed into the machine. It learns from every vote, on its way to becoming the perfect ranking machine.",
-  tooFast: "The machine is still processing your last verdict. Try again in a moment.",
-  offline: "The machine can't be reached right now.",
+  thanksGood: "Thank you! Your vote has been counted. 💚",
+  thanksBad: "Thank you! Your vote has been counted. 💔",
+  catch: "Every vote goes straight to the ranking on the screens and moves it a tiny bit. Look up: you just did that.",
+  tooFast: "Whoa, slow down. One vote at a time, try again in a moment.",
+  offline: "Voting is down right now. Try again in a moment.",
 };
 const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
@@ -260,7 +283,7 @@ const EXPOSED_AFTER = [
   "We're not crying, you're crying.",
   "Still tier {T}, apparently.",
   "But sure, keep scrolling. 🤷",
-  "The machine did not factor this in. Or did it?",
+  "Wild. Anyway, back to the list.",
 ];
 
 const EXPOSED = {
@@ -365,7 +388,7 @@ const EXPOSED = {
     url: "https://www.irishtimes.com/news/world/europe/german-arms-manufacturer-fined-37m-for-greek-bribes-1.2034844",
   },
   "Shell": {
-    text: "In Milieudefensie v. Shell the Hague District Court ordered Shell in 2021 to cut its CO₂ emissions by 45% by 2030; on 12 November 2024 the Court of Appeal overturned the target while saying Shell still has a duty to reduce emissions, and Milieudefensie took the case to the Dutch Supreme Court.",
+    text: "In Milieudefensie v. Shell the Hague District Court ordered Shell in 2021 to cut its CO2 emissions by 45% by 2030; on 12 November 2024 the Court of Appeal overturned the target while saying Shell still has a duty to reduce emissions, and Milieudefensie took the case to the Dutch Supreme Court.",
     src: "NPR via KPBS, Nov 2024",
     url: "https://www.kpbs.org/news/international/2024/11/12/dutch-appeals-court-overturns-landmark-climate-ruling-against-shell",
   },
@@ -427,6 +450,7 @@ function writeEdition(snap) {
       list: mixed ? `mix-${c.name}` : c.name, // the list on the screen, for the verdict
       cat: mixed ? `Everything · Part ${i + 1}` : c.label,
       pill: pick(PILLS),
+      head: fill(T.head, v),
       title: fill(pick(T.titles), v),
       sub: fill(pick(T.subs), v),
       emojis: shuffled(T.emojis).slice(0, 3),
@@ -460,7 +484,7 @@ const teaser = (a, cls = "card") => `
   <a class="${cls}" href="#/${a.slug}">
     ${thumb(a)}
     <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span>
-      <h2>${esc(a.title)}</h2>${cls === "card" ? `<p class="sub">${esc(a.sub)}</p>` : ""}</div>
+      <h2>${esc(a.head)}</h2><p class="sub">${esc(a.title)}</p></div>
   </a>`;
 const row = (a, e) => `
   <li class="item" data-id="${esc(e.id)}">
@@ -486,7 +510,7 @@ function home() {
     <p class="edition">Your edition · ${timeOf(edition.at)}</p>
     <p class="note">Generated for you the moment you arrived. It will not change. The ranking already has.</p>
     ${ready.map((a) => teaser(a)).join("")}
-    ${ready.length ? "" : `<p class="note">The machine is still ranking. Come back in a minute for your edition.</p>`}`;
+    ${ready.length ? "" : `<p class="note">Still ranking. Come back in a minute for your edition.</p>`}`;
   window.scrollTo(0, 0);
 }
 
@@ -502,8 +526,9 @@ function article(slug) {
     <div class="article">
       <a class="back" href="#">← All articles</a>
       <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span></div>
-      <h1>${esc(a.title)}</h1>
-      <p class="deck">${esc(a.sub)}</p>
+      <h1>${esc(a.head)}</h1>
+      <p class="deck">${esc(a.title)}</p>
+      <p class="deck2">${esc(a.sub)}</p>
       <div class="byline">by The Ranking Desk · snapshot from ${timeOf(edition.at)} · generated only for you</div>
       ${thumb(a)}
       <div class="body">
@@ -523,9 +548,9 @@ function article(slug) {
         ${rest.length ? `<h2>The rest, ranked</h2><ol class="list">${rest.slice(0, half).map((e) => row(a, e)).join("")}</ol>` : ""}
         <p>${esc(a.middle)}</p>
         ${rest.length > half ? `<ol class="list">${rest.slice(half).map((e) => row(a, e)).join("")}</ol>` : ""}
-        <div class="poll"><small>${esc(VERDICT.title)}</small><b>${esc(VERDICT.question)}</b>
-          <div class="row2"><button type="button" data-vote="good">${esc(VERDICT.good)}</button>
-          <button type="button" data-vote="bad">${esc(VERDICT.bad)}</button></div>
+        <div class="poll"><h2>${esc(VERDICT.title)}<br>${esc(VERDICT.question)}</h2>
+          <div class="row2"><button type="button" class="good" data-vote="good">${esc(VERDICT.good)}</button>
+          <button type="button" class="bad" data-vote="bad">${esc(VERDICT.bad)}</button></div>
           <p class="answer" id="answer"></p>
         </div>
         <div class="box"><b>Meanwhile</b>This list is a snapshot from ${timeOf(edition.at)}. On the screens in the room, the ranking has already moved on. The places you just read no longer exist.</div>
@@ -562,7 +587,7 @@ function setupVerdict(a) {
   const key = `rankfeed-voted-${edition.at}-${a.slug}`;
   const buttons = document.querySelectorAll(".poll [data-vote]");
   const done = (vote) => {
-    buttons.forEach((b) => (b.disabled = true));
+    buttons.forEach((b) => { b.disabled = true; b.classList.toggle("chosen", b.dataset.vote === vote); });
     $("answer").innerHTML = `${esc(vote === "good" ? VERDICT.thanksGood : VERDICT.thanksBad)}<p class="catch">${esc(VERDICT.catch)}</p>`;
   };
   let already = null;
@@ -606,7 +631,7 @@ async function printEntry(entry, article) {
     });
     note.textContent = r.ok ? "Sent to the printer. Pick it up there."
       : r.status === 429 ? "One print at a time. Try again in a few seconds."
-      : r.status === 404 ? "The machine has no path for this one yet."
+      : r.status === 404 ? "This one can't be printed yet."
       : "The printer is busy. Try again in a moment.";
   } catch {
     note.textContent = VERDICT.offline;
@@ -632,7 +657,7 @@ $("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) his
   try {
     edition = writeEdition(await fetchRankState());
   } catch {
-    $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking machine can't be reached right now. Try again in a moment.</p>`;
+    $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking can't be reached right now. Try again in a moment.</p>`;
     return;
   }
   route();

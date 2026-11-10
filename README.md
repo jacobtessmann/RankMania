@@ -156,6 +156,8 @@ Settings near the top of the script: `TILE_SIZE` (fixed size in px for all scree
 
 ## 7. The phone feed (feed.html)
 
+RankFeed is set in **CMU Typewriter Text Light** (Donald Knuth's Computer Modern typewriter, `public/fonts/cmunbtl.woff`). Each article has a plain headline that says what is ranked (`head` in `TEASERS`) and the clickbait as subheadline (`titles`, `subs`). The vote at the end is a full-width green/red block ("Help us train the machine.").
+
 RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
 **Exposed facts:** in every article that contains a Konzern, the caption text of one Konzern gets a real court case or scandal, sandwiched between two lines of BuzzFeed lingo (`EXPOSED_BEFORE`, `EXPOSED_AFTER`) and followed by a small source link. The facts are in `EXPOSED` in `public/feed.html`, keyed by the name the screens show (the file name with `_` as spaces). A new Konzern without a line there simply never gets one. Researched November 2026, so check them again before a later show.
