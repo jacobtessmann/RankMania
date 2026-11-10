@@ -21,7 +21,7 @@
   const SIZE = 850; // drawing units across the sticker (printed at 60 mm: 1 unit ≈ 0.07 mm; all sizes below scale with it)
   const C = SIZE / 2; // the middle
   const FRAME = 3.3; // thin outline of the sticker (to cut along), 0 = none
-  const TEXT_BAND = 96; // width of the ring with the text around the edge
+  const TEXT_BAND = 86; // width of the ring with the text around the edge
   const INNER = 70; // the ring of F starts this far from the middle
   const STROKE = 105; // line width (about 7.4 mm on the 60 mm sticker)
   const OUTLINE = 3.2; // fine dark outline around the line (0 = none)
@@ -34,7 +34,7 @@
   // the tier letter in the middle is in Porky's (fonts/porkys.ttf, next to this script)
   const LETTER_FONT = '"Rank Letter", Helvetica, Arial, sans-serif';
   const MIDDLE_SIZE = 440; // the tier letter in the middle (about half the sticker)
-  const RING_SIZE = 84; // the text around the edge, always this size
+  const RING_SIZE = 72; // the text around the edge, always this size
   const RING_GAP = 14; // at least this much room between the pieces of text around the edge, in degrees
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
   const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
