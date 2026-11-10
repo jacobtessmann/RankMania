@@ -9,7 +9,9 @@
 //  goes out and in to every tier the entry was in, in order, turning left or right around the middle
 //  on the way. How far out is the data; the turns, the wobble and the curls (more where it stayed
 //  longer) are noise. One color: the tier the entry is in right now.
-//  In the middle: the letter of the tier right now. Around the edge: place, name (at the top) and tier, once around.
+//  In the middle: the letter of the tier right now. Around the edge, upright towards the middle: the name at the
+//  top and the bottom, the place left and right. The black circle is the edge of the sticker (60 mm); the color
+//  runs a bit over it, so a sticker cut off-centre still has color to the edge.
 // ════════════════════════════════════════════════════════════════
 (function () {
   // load the font of the middle letter once; window.rankPrintFont resolves when it is there (wait for it before printing)
@@ -20,11 +22,11 @@
 
   const SIZE = 850; // drawing units across the sticker (printed at 60 mm: 1 unit ≈ 0.07 mm; all sizes below scale with it)
   const C = SIZE / 2; // the middle
-  const FRAME = 3.3; // thin outline of the sticker (to cut along), 0 = none
-  const TEXT_BAND = 86; // width of the ring with the text around the edge
+  const FRAME = 6; // the black circle on the edge of the sticker (exactly 60 mm across, the line is centred on it)
+  const BLEED = 34; // the color runs this far over the edge (about 2.4 mm; the labels are 7 mm apart on the sheet)
   const INNER = 70; // the ring of F starts this far from the middle
   const STROKE = 105; // line width (about 7.4 mm on the 60 mm sticker)
-  const OUTLINE = 3.2; // fine dark outline around the line (0 = none)
+  const OUTLINE = 5; // dark outline around the line (0 = none)
   const OUTLINE_COLOR = "#181716";
   // the tier colors of the tierlist (the same as the tier chips in feed.html)
   const COLORS = { S: "#ff7f7f", A: "#ffff7f", B: "#7fff7f", C: "#7fffff", D: "#ff7fff", F: "#9b30ff" };
@@ -34,8 +36,13 @@
   // the tier letter in the middle is in Porky's (fonts/porkys.ttf, next to this script)
   const LETTER_FONT = '"Rank Letter", Helvetica, Arial, sans-serif';
   const MIDDLE_SIZE = 440; // the tier letter in the middle (about half the sticker)
-  const RING_SIZE = 72; // the text around the edge, always this size
-  const RING_GAP = 14; // at least this much room between the pieces of text around the edge, in degrees
+  const LETTER_LINE = 7; // black outline of the letter
+  const LETTER_HALO = 10; // white edge around that outline
+  const SHADOW = [9, 7], SHADOW_LINE = 7; // a line in the tier color, shifted right and down, behind the letter
+  const RING_SIZE = 64; // the text around the edge, always this size
+  const TEXT_INSET = 34; // its baseline is this far inside the edge (the letters stand towards the middle)
+  const RING_GAP = 14; // at least this much room between name and place, in degrees
+  const LINE_GAP = 16; // room between the line and the text
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
   const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
   const NOISE = 0.1; // how wobbly the line is, relative to one tier ring
@@ -73,9 +80,9 @@
     out.push(p[p.length - 1]);
     return out;
   }
-  // the width of a piece of ring text in drawing units (measured in the browser)
+  // the size of a piece of text in drawing units (measured in the browser)
   const ctx = document.createElement("canvas").getContext("2d");
-  const measure = (t) => { ctx.font = `${RING_SIZE}px ${FONT}`; return ctx.measureText(t).width; };
+  const measure = (t, size, font) => { ctx.font = `${size}px ${font}`; return ctx.measureText(t); };
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const f = (n) => n.toFixed(2);
 
@@ -83,7 +90,7 @@
   window.drawRankPrint = function (data, uid = "") {
     const tiers = data.tiers && data.tiers.length ? data.tiers : ["S", "A", "B", "C", "D", "F"].map((id, i) => ({ id, min: [90, 70, 50, 30, 10, 0][i] }));
     const rnd = seeded(data.entry && data.entry.image);
-    const OUTER = C - TEXT_BAND - STROKE / 2; // the ring of S ends here, so the line never runs into the text ring
+    const OUTER = C - TEXT_INSET - RING_SIZE * 0.72 - LINE_GAP - STROKE / 2 - OUTLINE; // the ring of S ends here, so the line never runs into the text
     const ringW = (OUTER - INNER) / tiers.length;
 
     // a point → distance from the middle: the ring of its tier (F inside, S outside), and inside the ring
@@ -158,44 +165,51 @@
     const tierNow = (data.current && data.current.tier) || pts[pts.length - 1].tier || "F";
     const path = `<polyline points="${line.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}"/>`;
 
-    // the text around the edge: place, name, tier — once around, always the same size. The name sits at the top
-    // in the middle, place and tier left and right of it, with the same gap between all three.
-    // A name too long for the ring is cut short with "…".
+    // the text around the edge, always the same size: the name at the top and the bottom, the place left and right.
+    // The path runs counterclockwise, so the letters stand towards the middle (the name at the top is upside down).
+    // A name too long for its half is cut short with "…".
     const cur = data.current;
-    const textR = C - TEXT_BAND / 2 - RING_SIZE * 0.36; // baseline, so the capitals sit in the middle of the band
-    const around = 2 * Math.PI * textR;
-    const deg = (t) => (360 * (measure(t) + TRACKING * RING_SIZE * t.length)) / around; // how much of the circle a piece takes
-    const rank = cur ? `#${cur.rank}` : "#–", tier = cur ? `${cur.tier}-TIER` : "UNRANKED";
-    const room = 360 - deg(rank) - deg(tier) - 3 * RING_GAP;
+    const textR = C - TEXT_INSET; // baseline
+    const deg = (t) => (360 * (measure(t, RING_SIZE, FONT).width + TRACKING * RING_SIZE * t.length)) / (2 * Math.PI * textR);
+    const rank = cur ? `#${cur.rank}` : "#–";
+    const room = 180 - deg(rank) - 2 * RING_GAP;
     let name = String((data.entry && data.entry.title) || "").toUpperCase().trim();
     if (deg(name) > room) {
       while (name && deg(name + "…") > room) name = name.slice(0, -1);
       name = name.trimEnd() + "…";
     }
-    const gap = (360 - deg(rank) - deg(name) - deg(tier)) / 3;
-    const placed = [[-(deg(name) / 2 + gap + deg(rank) / 2), rank], [0, name], [deg(name) / 2 + gap + deg(tier) / 2, tier]];
-    // the circle path starts at the bottom (180°, inside the gap between place and tier), clockwise
-    const START = 180;
+    // angles clockwise from the top; the path starts in the gap between the name at the top and the place on the right
+    const START = (deg(name) / 2 + 90 - deg(rank) / 2) / 2;
     const pt = (d) => [C + textR * Math.sin((d * Math.PI) / 180), C - textR * Math.cos((d * Math.PI) / 180)];
     const [sx, sy] = pt(START), [ox, oy] = pt(START + 180);
-    const circle = `M ${f(sx)},${f(sy)} A ${f(textR)},${f(textR)} 0 1,1 ${f(ox)},${f(oy)} A ${f(textR)},${f(textR)} 0 1,1 ${f(sx)},${f(sy)}`;
-    const ringText = placed
-      .map(([d, t]) => `<textPath href="#ring${uid}" startOffset="${f(((((d - START) % 360) + 360) % 360) / 3.6)}%">${esc(t)}</textPath>`).join("");
+    const circle = `M ${f(sx)},${f(sy)} A ${f(textR)},${f(textR)} 0 1,0 ${f(ox)},${f(oy)} A ${f(textR)},${f(textR)} 0 1,0 ${f(sx)},${f(sy)}`;
+    const ringText = [[0, name], [90, rank], [180, name], [270, rank]]
+      .map(([d, t]) => `<textPath href="#ring${uid}" startOffset="${f(((((START - d) % 360) + 360) % 360) / 3.6)}%">${esc(t)}</textPath>`).join("");
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="100%">
+    // the letter in the middle, centred on its own shape
+    const letter = esc(cur ? cur.tier : "?");
+    const box = measure(cur ? cur.tier : "?", MIDDLE_SIZE, LETTER_FONT);
+    const lx = C - (box.actualBoundingBoxRight - box.actualBoundingBoxLeft) / 2;
+    const ly = C + (box.actualBoundingBoxAscent - box.actualBoundingBoxDescent) / 2;
+    const glyph = (attrs) => `<text x="${f(lx)}" y="${f(ly)}" font-size="${MIDDLE_SIZE}" font-family='${LETTER_FONT}' stroke-linejoin="round" ${attrs}>${letter}</text>`;
+    const color = COLORS[tierNow] || INK;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="100%" overflow="visible">
   <defs>
     <clipPath id="sticker${uid}"><circle cx="${C}" cy="${C}" r="${C}"/></clipPath>
     <path id="ring${uid}" d="${circle}"/>
   </defs>
-  <circle cx="${C}" cy="${C}" r="${f(C - FRAME / 2)}" fill="#fff"${FRAME ? ` stroke="#181716" stroke-width="${FRAME}"` : ""}/>
+  <circle cx="${C}" cy="${C}" r="${C + BLEED}" fill="${color}"/>
+  <circle cx="${C}" cy="${C}" r="${C}" fill="#fff"/>
   <g clip-path="url(#sticker${uid})" fill="none" stroke-linecap="round" stroke-linejoin="round">
     ${OUTLINE ? `<g stroke="${OUTLINE_COLOR}" stroke-width="${STROKE + 2 * OUTLINE}">${path}</g>` : ""}
-    <g stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}">${path}</g>
+    <g stroke="${color}" stroke-width="${STROKE}">${path}</g>
   </g>
-  <g fill="${INK}" font-family='${FONT}'>
-    <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" font-family='${LETTER_FONT}' text-anchor="middle">${esc(cur ? cur.tier : "?")}</text>
-    <text font-size="${RING_SIZE}" text-anchor="middle" letter-spacing="${f(TRACKING * RING_SIZE)}">${ringText}</text>
-  </g>
+  <g transform="translate(${SHADOW[0]},${SHADOW[1]})">${glyph(`fill="none" stroke="${color}" stroke-width="${SHADOW_LINE}"`)}</g>
+  ${glyph(`fill="#fff" stroke="#fff" stroke-width="${LETTER_LINE + 2 * LETTER_HALO}"`)}
+  ${glyph(`fill="#fff" stroke="${OUTLINE_COLOR}" stroke-width="${LETTER_LINE}"`)}
+  <text fill="${INK}" font-family='${FONT}' font-size="${RING_SIZE}" text-anchor="middle" letter-spacing="${f(TRACKING * RING_SIZE)}">${ringText}</text>
+  <circle cx="${C}" cy="${C}" r="${C}" fill="none" stroke="${OUTLINE_COLOR}" stroke-width="${FRAME}"/>
 </svg>`;
   };
 })();
