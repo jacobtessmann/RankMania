@@ -2,7 +2,7 @@
 //  RANKMANIA — the central server
 //
 //  The show has two sequences:
-//   1. SEPARATE  every category fills its own screen (students, inventions, konzerne)
+//   1. SEPARATE  every category fills its own screen (students, inventions, corporations)
 //   2. MIX       all screens clear, then every image of all three categories is dealt
 //                to one of the three screens at random, so each screen shows a mix
 //  In both, each screen does one thing at a time: a new entry hovers in and lands, or one
@@ -45,10 +45,10 @@ const CATEGORIES = [
     headline: "{W} Just Out-Invented {L} and History Will Never Recover",
   },
   {
-    id: "konzerne",
-    label: "Konzerne",
+    id: "corporations",
+    label: "Corporations",
     names: true,
-    title: "Ranking {n} Konzerne",
+    title: "Ranking {n} Corporations",
     source: "companies sourced from the Forbes Global 2000 (2026)",
     headline: "{W} Overtook {L} and the Shareholders Are Screaming",
   },
@@ -81,7 +81,7 @@ const HEADLINES_FILE = path.join(__dirname, "headlines.json"); // saved here whe
 const DEFAULT_HEADLINES = {
   students: ["The Official Top {n} Students of VC ZHdK", "Ranking {n} Students of VisCom"],
   inventions: ["The All-Time Top {n} Things", "The {n} Greatest Inventions"],
-  konzerne: ["The {n} Hottest Brands", "The {n} Best Corporations", "{n} Most Influential Businesses"],
+  corporations: ["The {n} Hottest Brands", "The {n} Best Corporations", "{n} Most Influential Businesses"],
   mix: ["The Index of Everything", "The Best of Everything", "Everything, Ranked"],
   rotateSec: 0, // 0 = one headline per sequence; otherwise switch to another one every N seconds
 };
@@ -90,7 +90,7 @@ const DEFAULT_HEADLINES = {
 //    each screen gets a random third of every category. Same settings for all three screens.
 const MIX = {
   label: "Everything",
-  title: "Ranking {n} Students, Inventions and Konzerne",
+  title: "Ranking {n} Students, Inventions and Corporations",
   source: "",
   headline: "{W} Just Beat {L}. Yes, We Are Comparing These Now.",
 };
@@ -151,6 +151,7 @@ let rotateTimer = null;
 const voteSeen = new Map(); // phone + list → time of its last vote
 const learned = new Map(); // image → { bias, verdicts }  (in memory: forgotten when the server restarts)
 let verdictCount = 0;
+let editions = 0; // how many RankFeed editions were written (resets on restart, like the votes)
 const biasOf = (e) => (e && learned.get(e.image)?.bias) || 0;
 const archive = new Map(); // image → its track from the last round it was in, so it can still be printed (in memory)
 const printQueue = []; // print jobs: { id, at, data }  (data = the track at the moment Print was pressed)
@@ -166,7 +167,7 @@ const clients = new Set(); // { res, lite }
 const files = {}; // category → [file names]
 const lists = {};
 for (const c of CATEGORIES) lists[c.id] = newList(c);
-// one mixed list per screen: "mix-students", "mix-inventions", "mix-konzerne"
+// one mixed list per screen: "mix-students", "mix-inventions", "mix-corporations"
 for (const c of CATEGORIES) lists[`mix-${c.id}`] = newList({ ...MIX, id: `mix-${c.id}`, screen: c.id, virtual: true });
 const mixLists = () => CATEGORIES.map((c) => lists[`mix-${c.id}`]);
 const mixAssign = new Map(); // image id → screen, for the mix
@@ -800,6 +801,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (url.pathname === "/api/state") return json(res, 200, snapshot());
+  if (url.pathname === "/api/edition" && req.method === "POST") return json(res, 200, { n: ++editions }); // RankFeed: "Snapshot #n"
   if (url.pathname === "/api/status") return json(res, 200, status());
   if (url.pathname === "/api/track") {
     const tr = trackOf(url.searchParams.get("list"), url.searchParams.get("image"));
@@ -890,7 +892,7 @@ const server = http.createServer((req, res) => {
       if (msg.action === "headlines") {
         const clean = (a) => (Array.isArray(a) ? a : []).map((x) => String(x).trim().slice(0, 200)).filter(Boolean).slice(0, 100);
         const next = { rotateSec: Math.max(0, Math.min(3600, Number(msg.rotateSec) || 0)) };
-        for (const k of ["students", "inventions", "konzerne", "mix"]) next[k] = clean(msg.lists && msg.lists[k]);
+        for (const k of ["students", "inventions", "corporations", "mix"]) next[k] = clean(msg.lists && msg.lists[k]);
         headlines = next;
         fs.writeFile(HEADLINES_FILE, JSON.stringify(headlines, null, 2), () => {});
         pickTitles(phase === "clearing" ? "separate" : phase, true);

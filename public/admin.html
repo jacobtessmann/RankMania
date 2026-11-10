@@ -31,8 +31,8 @@ Each screen picks one at the start of every sequence. In the mix, the three scre
 <textarea id="h-students" rows="5" cols="60"></textarea></p>
 <p><label for="h-inventions">Inventions screen</label><br>
 <textarea id="h-inventions" rows="5" cols="60"></textarea></p>
-<p><label for="h-konzerne">Konzerne screen</label><br>
-<textarea id="h-konzerne" rows="5" cols="60"></textarea></p>
+<p><label for="h-corporations">Corporations screen</label><br>
+<textarea id="h-corporations" rows="5" cols="60"></textarea></p>
 <p><label for="h-mix">Mix (all three screens, each a different one)</label><br>
 <textarea id="h-mix" rows="5" cols="60"></textarea></p>
 <p><label for="h-rotate">Switch to another headline every</label>
@@ -152,7 +152,7 @@ function applyStatus(s) {
 }
 
 // headlines
-const H_KEYS = ["students", "inventions", "konzerne", "mix"];
+const H_KEYS = ["students", "inventions", "corporations", "mix"];
 let headlinesLoaded = false;
 function fillHeadlines(h) {
   H_KEYS.forEach((k) => ($("h-" + k).value = (h[k] || []).join("\n")));

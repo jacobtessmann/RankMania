@@ -24,9 +24,6 @@
   main { max-width: 680px; margin: 0 auto; padding: 0 18px 60px; }
   .edition { font-size: 12px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; padding: 18px 0 6px; margin: 0; }
   .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; }
-  .cat { font-size: 12px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .5px; }
-  .pill { display: inline-block; background: var(--yellow); color: var(--ink); font-weight: 900; font-size: 10px;
-          padding: 2px 7px; border-radius: 3px; text-transform: uppercase; margin-left: 6px; vertical-align: 1px; }
 
   /* thumbnail: one red word in a red frame (PEOPLE, THINGS, CAPITAL, EVERYTHING) */
   .thumb { aspect-ratio: 16 / 10; display: grid; place-items: center; background: #fff; border: 3px solid var(--red);
@@ -37,13 +34,13 @@
   /* home */
   .card { display: block; padding: 20px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
   .card .thumb { margin-bottom: 12px; }
-  .card h2 { margin: 6px 0 6px; font-size: 28px; line-height: 1.12; font-weight: 900; letter-spacing: -.4px; }
-  .card .sub { margin: 0; font-size: 18px; color: var(--red); line-height: 1.35; }
+  .card h2 { margin: 14px 0 8px; font-size: 30px; line-height: 1.12; font-weight: 900; letter-spacing: -.4px; }
+  .card .sub { margin: 0; font-size: 22px; color: var(--red); line-height: 1.3; }
 
   /* article */
   .back { display: inline-block; margin: 16px 0 4px; color: var(--grey); text-decoration: none; font-size: 14px; }
   .article h1 { margin: 8px 0 10px; font-size: 38px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
-  .article .deck { font-size: 22px; line-height: 1.3; color: var(--red); margin: 0 0 8px; }
+  .article .deck { font-size: 26px; line-height: 1.25; color: var(--red); margin: 0 0 8px; }
   .article .deck2 { font-size: 15px; line-height: 1.4; color: var(--grey); margin: 0 0 12px; }
   .byline { font-size: 12px; color: var(--grey); margin-bottom: 14px; }
   .body p { font-size: 19px; line-height: 1.5; margin: 18px 0; color: #000; }
@@ -134,70 +131,50 @@
 //  Reloading in the same browser tab keeps the same edition.
 // ════════════════════════════════════════════════════════════════
 
-// ── The three teasers on the home page: no contestants, only the category ──
-//    head = the plain headline (says what it is), titles = the clickbait subheadline, subs = one more line
-//    {n} = how many are ranked, {part} = part of the mix. word = the one word on the thumbnail.
+// ── The three articles: no contestants on the thumbnail, only the category ──
+//    word = the one word on the thumbnail, head = the plain headline (says what it is),
+//    titles = the clickbait subheadline (one is picked at random). {n} = how many are ranked, {part} = part of the mix.
 const TEASERS = {
+  corporations: {
+    word: "CAPITAL",
+    head: "{n} of the World's Biggest Corporations, Ranked",
+    titles: [
+      "They Compete for Your Money Every Second. Now They Compete for a Spot on This List.",
+      "We Ranked the Companies That Rank You. Number 1 Has Already Called a Lawyer.",
+      "Forbes Ranks Them by Revenue. We Ranked Them by Something Much Worse.",
+    ],
+  },
   students: {
-    word: "PEOPLE", // the thumbnail
+    word: "PEOPLE",
     head: "{n} VisCom Students, Ranked",
     titles: [
-      "We Ranked Every Student in the Class. Number 7 Will Not Be Happy.",
-      "{n} Students Got Ranked and You Won't Believe Who Came Last",
-      "Your Classmates, Ranked by Someone Who Has Never Met Them",
-    ],
-    subs: [
-      "The criteria are secret. The results are not.",
-      "Nobody asked for this. That has never stopped us.",
-      "Find out where you would land. Actually, better not.",
+      "Your Classmates Have Been Ranked and Honestly, Some of You Should Sit Down",
+      "Nobody Was Asked. Everybody Was Sorted. Find Out Where You Landed.",
+      "You Spent Years Building a Portfolio. It Took Us Two Seconds to Rank You.",
     ],
   },
   inventions: {
-    word: "THINGS", // the thumbnail
+    word: "THINGS",
     head: "{n} Inventions That Changed the World, Ranked",
     titles: [
-      "Number 1 Is Not What You Think and Historians Are Furious",
-      "History Has Been Ranked. Historians Have Not Been Consulted.",
-      "The Greatest Inventions of All Time, Ranked. Your History Teacher Is Shaking.",
-    ],
-    subs: [
-      "Centuries of progress, sorted in seconds.",
-      "One of these changed everything. We know which one.",
-      "Your history teacher is going to hate this.",
-    ],
-  },
-  konzerne: {
-    word: "CAPITAL", // the thumbnail
-    head: "{n} of the World's Biggest Konzerne, Ranked",
-    titles: [
-      "Their Lawyers Have Been Informed. Number 3 Is Furious.",
-      "These Corporations Were Ranked Without Their Consent and It Shows",
-      "Capitalism, Ranked. The Results Are Not Financial Advice.",
-    ],
-    subs: [
-      "They rank you every day. Now it's their turn.",
-      "No press release can save them now.",
-      "The board has called an emergency meeting.",
+      "Scientists Picked the Greatest Breakthroughs in History. We Re-Ranked Them in Seconds.",
+      "Only One Invention Can Be Number 1, and Your History Teacher Will Not Agree",
+      "Thousands of Years of Progress, Sorted From Best to Worst. Sorry, Last Place.",
     ],
   },
   mix: {
-    word: "EVERYTHING", // the thumbnail
-    head: "Students vs. Inventions vs. Konzerne, Ranked (Part {part} of 3)",
+    word: "EVERYTHING",
+    head: "People vs. Things vs. Capital, Ranked (Part {part} of 3)",
     titles: [
-      "We Ranked Students Against Inventions Against Corporations. It Got Weird.",
-      "Is a Student Worth More Than a Steam Engine? We Have Answers.",
-      "Everything, Ranked Against Everything, and Nobody Is Safe",
-    ],
-    subs: [
-      "Apples and oranges? We don't care.",
-      "There are no categories anymore. Only places.",
-      "You will not like where people ended up.",
+      "Is Your Classmate Worth More Than a Steam Engine? This List Has Decided.",
+      "We Threw People, Inventions and Corporations Into One List. Nobody Is Safe.",
+      "Everything Competes With Everything Now. Here's the Proof.",
     ],
   },
 };
 
 // ── Inside the article: the text next to each entry, BuzzFeed-list style ("A … so you can …").
-//    HOOKS: one line per entry, keyed by the name the screens show. Konzerne additionally get their
+//    HOOKS: one line per entry, keyed by the name the screens show. Corporations additionally get their
 //    "Critical review:" from EXPOSED below. Entries without a hook (students) use LINES.
 //    {N} the entry, {A} the one above, {B} the one below, {T} its tier, {R} its place, {n} how many.
 const LINES = {
@@ -206,7 +183,7 @@ const LINES = {
   mid: "{N}, landing in tier {T}, one place behind {A} and one ahead of {B}.",
 };
 const HOOKS = {
-  // Konzerne
+  // Corporations
   "Adobe": "Adobe, the company behind Photoshop, Illustrator and InDesign, so you can pay a monthly subscription for the tools your whole design class can't work without.",
   "Amazon": "Amazon, the everything store that started out selling books from a Seattle garage in 1994 and now also runs a huge share of the internet's servers with AWS.",
   "Apple": "Apple, the iPhone maker that takes up to 30% of App Store purchases, so almost every app you buy pays a little something to Cupertino.",
@@ -288,21 +265,19 @@ const HOOKS = {
 const SOURCES = {
   students: "the names from visualcommunication.zhdk.ch and faces from thispersondoesnotexist.com",
   inventions: "The Atlantic's \"The 50 Greatest Breakthroughs Since the Wheel\" (2013), picked by a panel of scientists and historians,",
-  konzerne: "the Forbes Global 2000 (2026)",
+  corporations: "the Forbes Global 2000 (2026)",
 };
 // the paragraphs that explain the concept ({n} how many, {label} the list, {source} where it comes from, {top} #1, {last} last place)
 const INTROS = [
-  "For years we gave our taste away for free: to feeds, charts, recommendation engines and the media outlets that own them. They decided what was hot and what was not, and we called it our opinion.",
-  "So we did what any responsible publication would do: we took {source} and ranked {n} {label}. No criteria, no committee, no apology. Just a list. And you are going to read every single entry.",
+  "Every day something ranks you: your feed, your grades, your dating app, your credit score. Charts tell you what's hot, lists tell you what's worth it, and somewhere along the way we stopped asking who makes the lists.",
+  "So we made our own. We took {source} and ranked {n} {label}. No criteria, no committee, no appeal. Just a list, sorted from best to worst, and you're going to scroll all the way down.",
 ];
 const MIDDLES = [
-  "You might be wondering how we decided this. So were we. A number of variables were considered, weighted and turned into a conclusion. Then the conclusion changed. Then it changed again.",
+  "Quick question: why do you already believe this order? You don't know the criteria. You don't know who decided. But it's numbered, so it feels like a fact.",
   "Notice how quickly you accepted that {top} is number one? You don't know the question. You don't know the criteria. You just saw a list, and a list looks like the truth.",
 ];
-const QUOTES = [
-  "Who gets to rank what, based on what?",
-  "We gave our taste away. At least this time it's a fun list.",
-];
+// the last paragraph of every article
+const END = "This list was made for you alone, the moment you opened it, and it's already out of date: on the screens in the room the ranking has moved on. Who decided what you just read, and why did you believe it for a second?";
 // The verdict at the end of each article: the visitor rates the whole list. It really goes to the brain
 // (one green or red dot on that screen, a flash on the brain screen, and a tiny shift in the ranking).
 const VERDICT = {
@@ -316,17 +291,16 @@ const VERDICT = {
   tooFast: "Whoa, slow down. One vote at a time, try again in a moment.",
   offline: "Voting is down right now. Try again in a moment.",
 };
-const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
 // ════════════════════════════════════════════════════════════════
-//  EXPOSED — one real court case or scandal per Konzern.
-//  Every Konzern in an article shows its fact as "Critical review:" under its entry.
+//  EXPOSED — one real court case or scandal per Corporation.
+//  Every Corporation in an article shows its fact as "Critical review:" under its entry.
 //
 //  Key   = the name as the screens show it (the image file name, "_" → space).
 //  text  = the fact in 1–2 sentences, packed with names, dates, amounts and case names
 //          people can look up. Factual, no opinions.
 //  src   = where it comes from (small link after the text), url = the link.
-//  To add a Konzern: add a line with exactly its displayed name.
+//  To add a Corporation: add a line with exactly its displayed name.
 //  Researched November 2026.
 // ════════════════════════════════════════════════════════════════
 const EXPOSED = {
@@ -465,7 +439,7 @@ let edition = null;
 
 // ════════ Write the edition (once) ════════
 function writeEdition(snap) {
-  const ORDER = ["konzerne", "students", "inventions"]; // the order of the articles: capital, people, things
+  const ORDER = ["corporations", "students", "inventions"]; // the order of the articles: capital, people, things
   const rank = (c) => (ORDER.indexOf(c.name) + 1) || 99;
   const real = snap.categories.filter((c) => !c.virtual).sort((x, y) => rank(x) - rank(y));
   const byName = Object.fromEntries(snap.categories.map((c) => [c.name, c]));
@@ -479,23 +453,20 @@ function writeEdition(snap) {
     entries.forEach((e, k) => {
       const generic = k === 0 ? LINES.first : k === n - 1 ? LINES.last : LINES.mid;
       e.line = HOOKS[e.title] || fill(generic, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier, R: e.rank, n });
-      e.fact = EXPOSED[e.title] || null; // every Konzern gets its critical review
+      e.fact = EXPOSED[e.title] || null; // every Corporation gets its critical review
     });
-    const source = mixed ? `${SOURCES.students}, ${SOURCES.inventions.replace(/,$/, "")} and ${SOURCES.konzerne},` : SOURCES[c.name] || "whatever we could find";
-    const v = { n, part: i + 1, source, label: mixed ? "things" : c.label.toLowerCase(),
+    const source = mixed ? `${SOURCES.students}, ${SOURCES.inventions.replace(/,$/, "")} and ${SOURCES.corporations},` : SOURCES[c.name] || "whatever we could find";
+    const v = { n, part: i + 1, source, label: mixed ? "people, things and capital" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
       slug: c.name,
       list: mixed ? `mix-${c.name}` : c.name, // the list on the screen, for the verdict
       cat: mixed ? `Everything · Part ${i + 1}` : c.label,
-      pill: pick(PILLS),
       head: fill(T.head, v),
       title: fill(pick(T.titles), v),
-      sub: fill(pick(T.subs), v),
       word: T.word,
       intros: INTROS.map((p) => fill(p, v)),
       middle: fill(pick(MIDDLES), v),
-      quote: pick(QUOTES),
       vars: 9 + Math.floor(Math.random() * 30),
       ready: n >= 2,
       entries,
@@ -514,10 +485,10 @@ const thumb = (a) => `<div class="thumb"><span>${esc(a.word)}</span></div>`;
 const teaser = (a, cls = "card") => `
   <a class="${cls}" href="#/${a.slug}">
     ${thumb(a)}
-    <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span>
+    <div>
       <h2>${esc(a.head)}</h2><p class="sub">${esc(a.title)}</p></div>
   </a>`;
-// one entry: place, name as its headline, picture, the one-liner, and (Konzerne) the critical review.
+// one entry: place, name as its headline, picture, the one-liner, and (Corporations) the critical review.
 // big = the top 3 (picture full width), otherwise a compact row (number, small picture, text)
 const review = (e) => e.fact ? `
     <p class="review"><span class="lbl">Critical review:</span> ${esc(e.fact.text)}
@@ -541,8 +512,7 @@ function home() {
   delete $("view").dataset.slug;
   const ready = edition.articles.filter((a) => a.ready);
   $("view").innerHTML = `
-    <p class="edition">Your edition · ${timeOf(edition.at)}</p>
-    <p class="note">Generated for you the moment you arrived. It will not change. The ranking already has.</p>
+    <p class="edition">Snapshot${edition.n ? ` #${edition.n.toLocaleString("en")}` : ""} · ${timeOf(edition.at)}</p>
     ${ready.map((a) => teaser(a)).join("")}
     ${ready.length ? "" : `<p class="note">Still ranking. Come back in a minute for your edition.</p>`}`;
   window.scrollTo(0, 0);
@@ -558,7 +528,6 @@ function article(slug) {
   $("view").innerHTML = `
     <div class="article">
       <a class="back" href="#">← All articles</a>
-      <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span></div>
       <h1>${esc(a.head)}</h1>
       <p class="deck">${esc(a.title)}</p>
       <div class="byline">by The Ranking Desk · snapshot from ${timeOf(edition.at)} · generated only for you</div>
@@ -573,7 +542,7 @@ function article(slug) {
           <p class="answer" id="answer"></p>
         </div>
         ${others.length ? `<div class="related"><h2>You might also be ranked in</h2>${others.map((o) => teaser(o, "card")).join("")}</div>` : ""}
-        <p class="end">This article was written by no one, for you alone, in less than a second. Ask yourself who decided what you just read, and why you believed it for a moment.</p>
+        <p class="end">${esc(END)}</p>
       </div>
     </div>`;
   document.querySelectorAll(".entry").forEach((el) => (el.onclick = (ev) => { if (!ev.target.closest("a")) location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`; }));
@@ -630,7 +599,7 @@ function setupVerdict(a) {
 // ════════ PRINT ════════
 // Called when a visitor presses "Print" on an entry.
 //   entry   = { id, title, image, tier, rank, line }
-//   article = { slug, list, cat, title, entries }   (slug = students | inventions | konzerne)
+//   article = { slug, list, cat, title, entries }   (slug = students | inventions | corporations)
 // Sends a print job to the brain; the print station (print-station.html) prints it on the printer in the room.
 // The print shows the entry as this edition shows it: its place here, and its path only up to this edition.
 // (print.html?list=…&image=… still shows the print on the screen, with the normal print dialog.)
@@ -677,6 +646,10 @@ $("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) his
   // every page load (also a manual refresh) writes a new edition from the ranking at that moment
   try {
     edition = writeEdition(await fetchRankState());
+    try { // count it: "Snapshot #1234"
+      const r = await fetch(RANK_BASE + "/api/edition", { method: "POST" });
+      if (r.ok) edition.n = (await r.json()).n;
+    } catch {}
   } catch {
     $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking can't be reached right now. Try again in a moment.</p>`;
     return;
