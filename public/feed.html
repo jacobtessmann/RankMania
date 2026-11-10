@@ -44,40 +44,42 @@
   /* home */
   .card { display: block; padding: 20px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
   .card .thumb { font-size: clamp(14px, 4.4vw, 22px); margin-bottom: 12px; }
-  .card h2 { margin: 6px 0 6px; font-size: 25px; line-height: 1.12; font-weight: 900; letter-spacing: -.4px; }
-  .card .sub { margin: 0; font-size: 15px; color: var(--grey); line-height: 1.4; }
+  .card h2 { margin: 6px 0 6px; font-size: 28px; line-height: 1.12; font-weight: 900; letter-spacing: -.4px; }
+  .card .sub { margin: 0; font-size: 18px; color: var(--red); line-height: 1.35; }
 
   /* article */
   .back { display: inline-block; margin: 16px 0 4px; color: var(--grey); text-decoration: none; font-size: 14px; }
-  .article h1 { margin: 8px 0 8px; font-size: 32px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
-  .article .deck { font-size: 20px; line-height: 1.3; color: var(--red); margin: 0 0 8px; }
+  .article h1 { margin: 8px 0 10px; font-size: 38px; line-height: 1.08; font-weight: 900; letter-spacing: -.5px; }
+  .article .deck { font-size: 22px; line-height: 1.3; color: var(--red); margin: 0 0 8px; }
   .article .deck2 { font-size: 15px; line-height: 1.4; color: var(--grey); margin: 0 0 12px; }
   .byline { font-size: 12px; color: var(--grey); margin-bottom: 14px; }
   .article .thumb { font-size: clamp(16px, 5.4vw, 26px); }
-  .body p { font-size: 17px; line-height: 1.55; margin: 16px 0; }
+  .body p { font-size: 19px; line-height: 1.5; margin: 18px 0; color: #000; }
   .body h2 { font-size: 24px; font-weight: 900; letter-spacing: -.3px; margin: 30px 0 6px; }
-  .quote { margin: 26px 0; padding: 4px 0 4px 16px; border-left: 6px solid var(--red); font-size: 24px; line-height: 1.2; font-weight: 900; }
   .box { background: var(--soft); padding: 14px 16px; margin: 22px 0; font-size: 15px; line-height: 1.5; }
   .box b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
-  .src { font-size: 12px; color: var(--grey); white-space: nowrap; }
-  .src a { color: inherit; }
   .box table { border-collapse: collapse; width: 100%; }
   .box td { padding: 3px 0; border-top: 1px solid #e2e2e2; }
   .box td:last-child { text-align: right; font-weight: 700; }
   .redact { background: #111; color: #111; padding: 0 .2em; user-select: none; }
 
-  .top { border-top: 1px solid var(--line); padding: 18px 0; cursor: pointer; }
-  .top .place { font-size: 46px; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 8px; }
-  .top img, .top .ph { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
-  .top h3 { margin: 10px 0 4px; font-size: 24px; font-weight: 900; }
-  .top p { margin: 0; font-size: 16px; line-height: 1.45; color: #444; }
-  .list { list-style: none; margin: 0; padding: 0; }
-  .item { display: grid; grid-template-columns: 44px 88px 1fr; gap: 12px; align-items: center; padding: 12px 0;
-          border-top: 1px solid var(--line); cursor: pointer; }
-  .item .rk { font-size: 28px; font-weight: 900; text-align: center; letter-spacing: -1px; }
-  .item img, .item .ph { width: 88px; height: 88px; object-fit: cover; display: block; background: #eee; }
-  .item h3 { margin: 0 0 3px; font-size: 18px; font-weight: 900; }
-  .item p { margin: 0; font-size: 14px; color: var(--grey); line-height: 1.35; }
+  /* entries, like a BuzzFeed shopping list */
+  .entries { list-style: none; margin: 0; padding: 0; }
+  .entry { cursor: pointer; padding: 22px 0; }
+  .entry + .entry { border-top: 0; background: linear-gradient(var(--ink), var(--ink)) top / 100% 1px no-repeat; }
+  .entry .hook { margin: 0; font-size: 20px; line-height: 1.4; color: #000; }
+  .entry .num { display: inline-block; min-width: 1.9em; padding: 0 .3em; margin-right: .45em; background: var(--yellow);
+                text-align: center; font-size: 1.05em; transform: rotate(-3deg); }
+  .entry .nm { color: var(--red); text-decoration: underline; text-underline-offset: 3px; }
+  .entry.big img, .entry.big .ph { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; margin: 14px 0 12px; }
+  .entry.small { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: start; }
+  .entry.small img, .entry.small .ph { width: 96px; height: 96px; object-fit: contain; background: #f2f2f2; display: block; }
+  .entry.small .hook { font-size: 18px; }
+  .entry.small .txt { display: contents; }
+  .entry.small .review { grid-column: 1 / -1; margin-top: 4px; }
+  .review { margin: 10px 0 0; font-size: 17px; line-height: 1.45; color: #000; }
+  .review .lbl { color: var(--red); }
+  .review .src { display: block; margin-top: 6px; font-size: 14px; color: #000; }
   .tier { display: inline-block; min-width: 22px; text-align: center; font-weight: 900; font-size: 12px; padding: 2px 5px;
           margin-right: 6px; background: var(--c); color: #000; }
   .tier[data-t="F"] { color: #fff; }
@@ -204,29 +206,93 @@ const TEASERS = {
   },
 };
 
-// ── Inside the article: lines under each entry ({N} the entry, {A} above it, {B} below it, {T} its tier)
-//    The reason for a ranking is NEVER stated. Keep them all about the same length (two sentences).
+// ── Inside the article: the text next to each entry, BuzzFeed-list style ("A … so you can …").
+//    HOOKS: one line per entry, keyed by the name the screens show. Konzerne additionally get their
+//    "Critical review:" from EXPOSED below. Entries without a hook (students) use LINES.
+//    {N} the entry, {A} the one above, {B} the one below, {T} its tier, {R} its place, {n} how many.
 const LINES = {
-  first: [
-    "Number one, and honestly? It's not even close. Everyone else on this list is now quietly rethinking every single decision that led them here. 👑",
-    "The top spot. We could explain why, but you already know why, and so does everyone who scrolled past {B} to get here. Iconic behaviour. ✨",
-    "First place. Screenshot it, frame it, send it to the group chat. This is what peak performance looks like and {N} is living for it. 🏆",
-  ],
-  last: [
-    "Last place. Somebody had to be here, and today that somebody is {N}. Sending thoughts, prayers and a very gentle hug from {A}. 💀",
-    "Dead last, right below {A}. Is this a tragedy or a comeback story waiting to happen? We don't know either, but we'll be watching. 👀",
-    "The very bottom. No notes, no explanation, just vibes, and the vibes are not great. If {N} needs a minute, we totally understand. 🫠",
-  ],
-  mid: [
-    "{N} sits right above {B}, and we need to talk about it. Is it deserved? Is it a scandal? The comments are already on fire. 🔥",
-    "Just behind {A}. So close you can almost taste it, but close only counts in horseshoes, and this is not a horseshoe situation. 😬",
-    "Tier {T}, and honestly that tracks. Not the top, not the bottom, just living in that comfortable middle we all secretly aim for. 🙂",
-    "Better than {B}. Worse than {A}. Somewhere in between lies the truth, and the truth is that {N} is having a complicated week. 😅",
-    "Nobody saw this coming. We checked twice, refreshed the page, made a coffee, came back, and {N} was still sitting right here. ☕",
-    "Exactly where {N} belongs, apparently. We're not saying we agree, we're not saying we disagree, we're saying the vibes are immaculate. 💅",
-    "Ahead of {B}, for now. Things change in seconds around here, so enjoy the view while it lasts, because {B} is coming for you. ⏳",
-    "{A} is one place ahead and knows it. You can feel the tension from here. In a reality show, this is where the dramatic music starts. 🎻",
-  ],
+  first: "{N}, the number one of this list, landing in tier {T}.",
+  last: "{N}, coming in last, right below {A}.",
+  mid: "{N}, landing in tier {T}, one place behind {A} and one ahead of {B}.",
+};
+const HOOKS = {
+  // Konzerne
+  "Adobe": "Adobe, the company behind Photoshop, Illustrator and InDesign, so you can pay a monthly subscription for the tools your whole design class can't work without.",
+  "Amazon": "Amazon, the everything store that started out selling books from a Seattle garage in 1994 and now also runs a huge share of the internet's servers with AWS.",
+  "Apple": "Apple, the iPhone maker that takes up to 30% of App Store purchases, so almost every app you buy pays a little something to Cupertino.",
+  "AstraZeneca": "AstraZeneca, the British-Swedish pharma giant behind the Oxford COVID vaccine and a long list of blockbuster drugs you've probably taken without knowing.",
+  "Bayer": "Bayer, the German company that gave the world Aspirin and then, in 2018, bought Monsanto, the world's best-known seed and weedkiller company.",
+  "BlackRock": "BlackRock, the world's largest asset manager, with more than $10 trillion under management and a stake in almost every big company on this list.",
+  "Disney": "Disney, the entertainment giant that owns Marvel, Star Wars, Pixar and ESPN, so your entire childhood fits neatly into one streaming subscription.",
+  "ExxonMobil": "ExxonMobil, the biggest US oil company, descended from John D. Rockefeller's Standard Oil, which was broken up for being a monopoly in 1911.",
+  "H&M": "H&M, the Swedish fast-fashion chain with thousands of stores worldwide, so you can buy a new outfit for less than a pizza.",
+  "Mastercard": "Mastercard, the card network that takes a small fee from almost every swipe, tap and click, so every coffee you buy pays them a little too.",
+  "McDonald's": "McDonald's, the golden arches feeding tens of millions of people a day in more than 100 countries, plus one very famous burger.",
+  "Mercedes-Benz": "Mercedes-Benz, the Stuttgart carmaker that traces itself back to Carl Benz's 1886 Motorwagen, the first real automobile, and has been selling luxury ever since.",
+  "Meta": "Meta, the company formerly known as Facebook, which also owns Instagram and WhatsApp, so billions of people's chats and photos live under one roof.",
+  "Nestlé": "Nestlé, the Swiss food giant from Vevey behind Nespresso, KitKat, Maggi and a long list of bottled waters.",
+  "Netflix": "Netflix, which started out mailing DVDs in red envelopes and now streams to hundreds of millions of households, so you never have to leave the couch.",
+  "Nike": "Nike, the sportswear giant whose swoosh was designed by a design student for $35 in 1971, so you can just do it in very expensive shoes.",
+  "NVIDIA": "NVIDIA, the graphics-card maker that became one of the world's most valuable companies by selling the chips almost every AI runs on.",
+  "Palantir": "Palantir, the data-analysis company co-founded by Peter Thiel and named after the all-seeing stones in The Lord of the Rings, so governments can see a little more.",
+  "Philip Morris": "Philip Morris International, the company behind Marlboro, the world's best-selling cigarette brand, now promising a \"smoke-free future\" with IQOS heated tobacco.",
+  "Rheinmetall": "Rheinmetall, Germany's largest arms maker, whose orders for tank ammunition have exploded since Russia's full-scale invasion of Ukraine in 2022.",
+  "Shell": "Shell, the British oil major whose logo is an actual seashell, because the family business started out selling seashells in London.",
+  "Spotify": "Spotify, the Swedish streaming app with more than 100 million songs, so you never have to buy an album again.",
+  "Starbucks": "Starbucks, the Seattle coffee chain with more than 40,000 stores, so you're never more than a few blocks from a misspelled name on a cup.",
+  "Uber": "Uber, the ride-hailing app that turned millions of private cars into taxis, so you can get anywhere without ever calling a dispatcher.",
+  "UBS": "UBS, Switzerland's biggest bank and the world's largest wealth manager, which since 2023 has been the only Swiss big bank left.",
+  // Inventions (The Atlantic, "The 50 Greatest Breakthroughs Since the Wheel")
+  "Printing Press": "The printing press, Johannes Gutenberg's 1440s machine with movable metal type, so ideas could be copied faster than anyone could ban them.",
+  "Electricity": "Electricity, tamed by Faraday, Edison, Tesla and many others in the 1800s, so you can read this on a glowing rectangle at 2 a.m.",
+  "Penicillin": "Penicillin, the antibiotic Alexander Fleming found growing on a forgotten Petri dish in 1928, which has since saved hundreds of millions of lives.",
+  "Semiconductors": "Semiconductors, the tiny silicon switches inside every chip since Bell Labs built the transistor in 1947, so your phone can out-think a 1960s supercomputer.",
+  "Optical Lenses": "Optical lenses, from medieval reading glasses to microscopes and telescopes, so humans could finally see bacteria and the moons of Jupiter.",
+  "Paper": "Paper, invented in China around 2,000 years ago, so everything from money to memes had something to live on.",
+  "Combustion Engine": "The internal combustion engine, developed in the late 1800s by Otto, Daimler and Diesel, so cars, ships and planes could burn their way across the planet.",
+  "Vaccination": "Vaccination, pioneered by Edward Jenner with cowpox in 1796, which went on to wipe smallpox off the planet by 1980.",
+  "The Internet": "The internet, grown out of the US military's ARPANET in 1969, so you can access all of human knowledge and still choose cat videos.",
+  "Steam Engine": "The steam engine, improved by James Watt in the 1760s and 1770s, which kicked off the Industrial Revolution and its coal-black skies.",
+  "Nitrogen Fixation": "Nitrogen fixation, the Haber-Bosch process from the 1910s that pulls fertiliser out of thin air and helps feed about half the world.",
+  "Sanitation": "Sanitation, the sewers and clean water that turned 19th-century cities from cholera traps into places you could actually survive.",
+  "Refrigeration": "Refrigeration, so food could survive the trip from farm to fridge and you can have ice cream in July.",
+  "Gunpowder": "Gunpowder, discovered by Chinese alchemists in the 9th century while looking for an elixir of life, which is ironic, all things considered.",
+  "The Airplane": "The airplane, first flown by the Wright brothers at Kitty Hawk in 1903 for 12 whole seconds, so you can now cross an ocean in a movie and a half.",
+  "Personal Computer": "The personal computer, which went from hobby kits in the 1970s to the Apple II and the IBM PC, so everyone could have a computer at home.",
+  "Compass": "The compass, a magnetised needle used for navigation in China by the 11th century, so sailors finally knew which way was home.",
+  "The Automobile": "The automobile, born with Carl Benz's Motorwagen in 1886 and mass-produced by Ford, so cities could be redesigned around parking spaces.",
+  "Steelmaking": "Industrial steelmaking, made cheap by Henry Bessemer's converter in 1856, so we could build railways, skyscrapers and battleships.",
+  "The Pill": "The pill, the oral contraceptive approved in the US in 1960, so people could decide for themselves when to have kids.",
+  "Nuclear Fission": "Nuclear fission, discovered by Otto Hahn, Fritz Strassmann and Lise Meitner in 1938, which brought us both nuclear power plants and the atomic bomb.",
+  "Green Revolution": "The Green Revolution, Norman Borlaug's high-yield wheat and rice from the 1940s to 60s, credited with saving a billion people from famine.",
+  "Sextant": "The sextant, the 18th-century instrument that measures the angle between sun and horizon, so ships could figure out where on earth they were.",
+  "Telephone": "The telephone, patented by Alexander Graham Bell in 1876, so you could finally ignore calls from your relatives in real time.",
+  "Alphabet": "The alphabet, developed around 4,000 years ago in Egypt and the Levant, so writing no longer needed thousands of different symbols.",
+  "Telegraph": "The telegraph, with Samuel Morse's code from the 1830s and 1840s, so news could cross continents in minutes instead of weeks.",
+  "Mechanical Clock": "The mechanical clock, ticking in European church towers since the 13th century, so everyone could be late at exactly the same time.",
+  "Radio": "Radio, pushed by Guglielmo Marconi around 1900, so music, news and propaganda could reach millions of homes at once.",
+  "Photography": "Photography, from Niépce's first surviving photo around 1826 to Daguerre's daguerreotype in 1839, so nobody had to sit still for a painter again.",
+  "Moldboard Plow": "The moldboard plow, which turns heavy soil over instead of just scratching it, so medieval farmers could grow far more food.",
+  "Archimedes' Screw": "Archimedes' screw, a rotating spiral that lifts water uphill, still in use more than 2,000 years after the Greek mathematician.",
+  "Cotton Gin": "The cotton gin, patented by Eli Whitney in 1793, which made cotton hugely profitable and tragically expanded slavery in the American South.",
+  "Pasteurization": "Pasteurization, Louis Pasteur's 1860s trick of gently heating liquids to kill germs, so your milk doesn't make you sick.",
+  "Gregorian Calendar": "The Gregorian calendar, introduced by Pope Gregory XIII in 1582, which deleted ten days from October to fix the drift of the seasons.",
+  "Oil Refining": "Oil refining, which turns crude oil into kerosene, petrol and plastic and made Rockefeller's Standard Oil the richest company of its time.",
+  "Steam Turbine": "The steam turbine, invented by Charles Parsons in 1884, which still spins in most power plants to make the electricity you're using right now.",
+  "Cement": "Cement, used by the Romans and reinvented as Portland cement in 1824, so the world could pour concrete everywhere.",
+  "Plant Breeding": "Scientific plant breeding, built on Gregor Mendel's pea experiments in the 1860s, so crops could grow bigger and resist disease.",
+  "Oil Drilling": "Oil drilling, kicked off by Edwin Drake's well in Titusville, Pennsylvania, in 1859, so the world could start pumping its fuel out of the ground.",
+  "Sailboat": "The sailboat, which let humans catch the wind thousands of years ago and eventually connected every continent by sea.",
+  "Rocketry": "Rocketry, from Robert Goddard's liquid-fuel rocket in 1926 to the Moon landing in 1969, so humans could leave the planet.",
+  "Paper Money": "Paper money, first used in China in the 11th century, so you no longer had to carry a bag of coins.",
+  "Abacus": "The abacus, a frame of sliding beads used for thousands of years, so merchants could calculate faster than anyone with a pen.",
+  "Air Conditioning": "Air conditioning, invented by Willis Carrier in 1902 for a printing plant, so whole cities could grow in places that are way too hot.",
+  "Television": "Television, from John Logie Baird's demonstration in 1926 to a TV in almost every living room by the 1960s, so families had something to stare at together.",
+  "Anesthesia": "Anesthesia, first publicly demonstrated with ether in Boston in 1846, so surgery stopped being the worst moment of your life.",
+  "The Nail": "The nail, hand-forged for thousands of years and mass-produced since the 1800s, so you can build a house, or at least hang a poster.",
+  "The Lever": "The lever, explained by Archimedes, who supposedly said: give me a place to stand and I will move the Earth.",
+  "Assembly Line": "The moving assembly line, introduced by Henry Ford in 1913, which cut the time to build a Model T from about 12 hours to 90 minutes.",
+  "Combine Harvester": "The combine harvester, which reaps, threshes and cleans grain in a single pass, so one farmer can do the work of a whole village.",
 };
 // the paragraphs that explain the concept ({n} how many, {label} the list, {top} #1, {last} last place)
 const INTROS = [
@@ -258,8 +324,7 @@ const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
 // ════════════════════════════════════════════════════════════════
 //  EXPOSED — one real court case or scandal per Konzern.
-//  Every article that contains a Konzern slips ONE of these into the text under
-//  one Konzern's caption, sandwiched between two lines of BuzzFeed lingo.
+//  Every Konzern in an article shows its fact as "Critical review:" under its entry.
 //
 //  Key   = the name as the screens show it (the image file name, "_" → space).
 //  text  = the fact in 1–2 sentences, packed with names, dates, amounts and case names
@@ -268,24 +333,6 @@ const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 //  To add a Konzern: add a line with exactly its displayed name.
 //  Researched November 2026.
 // ════════════════════════════════════════════════════════════════
-// the BuzzFeed lingo around the fact: one before, one after
-const EXPOSED_BEFORE = [
-  "Okay but here's the tea ☕:",
-  "Wait, it gets better:",
-  "Fun fact nobody asked for:",
-  "Not to be dramatic, but:",
-  "Plot twist:",
-  "Sorry, we have to tell you this:",
-];
-const EXPOSED_AFTER = [
-  "Anyway, love that for them. 💅",
-  "Iconic. Moving on.",
-  "We're not crying, you're crying.",
-  "Still tier {T}, apparently.",
-  "But sure, keep scrolling. 🤷",
-  "Wild. Anyway, back to the list.",
-];
-
 const EXPOSED = {
   "Adobe": {
     text: "In 2022 Adobe agreed to buy design-software rival Figma for $20 billion; after the European Commission and the UK's CMA warned it would kill competition, Adobe abandoned the deal in December 2023 and paid Figma a $1 billion termination fee.",
@@ -431,18 +478,11 @@ function writeEdition(snap) {
     const T = TEASERS[key] || TEASERS.mix;
     const entries = (L.entries || []).map((e) => ({ id: e.id, title: e.title, image: e.image, tier: e.tier, rank: e.rank }));
     const n = entries.length;
-    const recent = [];
     entries.forEach((e, k) => {
-      const pool = k === 0 ? LINES.first : k === n - 1 ? LINES.last : LINES.mid;
-      const line = pick(pool.filter((l) => !recent.includes(l)));
-      recent.push(line);
-      if (recent.length > 2) recent.shift();
-      e.line = fill(line, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier });
+      const generic = k === 0 ? LINES.first : k === n - 1 ? LINES.last : LINES.mid;
+      e.line = HOOKS[e.title] || fill(generic, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier, R: e.rank, n });
+      e.fact = EXPOSED[e.title] || null; // every Konzern gets its critical review
     });
-    // one real court case / scandal per article, in the caption text of one Konzern (see EXPOSED)
-    const exposable = entries.filter((e) => EXPOSED[e.title]);
-    const hit = exposable.length ? pick(exposable) : null;
-    if (hit) hit.fact = { ...EXPOSED[hit.title], before: pick(EXPOSED_BEFORE), after: fill(pick(EXPOSED_AFTER), { T: hit.tier }) };
     const v = { n, part: i + 1, label: mixed ? "things" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
@@ -486,21 +526,24 @@ const teaser = (a, cls = "card") => `
     <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span>
       <h2>${esc(a.head)}</h2><p class="sub">${esc(a.title)}</p></div>
   </a>`;
-const row = (a, e) => `
-  <li class="item" data-id="${esc(e.id)}">
-    <div class="rk">${e.rank}</div>${img(e)}
-    <div><h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${caption(e)}</p></div>
+// one entry, BuzzFeed-list style: number + text (name in red), the picture, then the critical review.
+// big = the top 3 (picture full width), otherwise a compact row (picture on the left)
+const named = (e) => {
+  const t = esc(e.line), n = esc(e.title), at = t.toLowerCase().indexOf(n.toLowerCase());
+  return at < 0 ? `<span class="nm">${n}:</span> ${t}` : `${t.slice(0, at)}<span class="nm">${t.slice(at, at + n.length)}</span>${t.slice(at + n.length)}`;
+};
+const review = (e) => e.fact ? `
+    <p class="review"><span class="lbl">Critical review:</span> ${esc(e.fact.text)}
+      <a class="src" href="${esc(e.fact.url)}" target="_blank" rel="noopener">Source: ${esc(e.fact.src)}</a></p>` : "";
+const entry = (e, big) => `
+  <li class="entry ${big ? "big" : "small"}" data-id="${esc(e.id)}">
+    ${big ? "" : img(e)}
+    <div class="txt">
+      <p class="hook"><span class="num">${e.rank}.</span>${tierChip(e.tier)}${named(e)}</p>
+      ${big ? img(e) : ""}
+      ${review(e)}
+    </div>
   </li>`;
-const topCard = (e) => `
-  <div class="top" data-id="${esc(e.id)}">
-    <div class="place">#${e.rank}</div>${img(e)}
-    <h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${caption(e)}</p>
-  </div>`;
-
-// the caption text: the ranking line, and (once per article) lingo + fact + lingo + source
-const caption = (e) => esc(e.line) + (e.fact
-  ? ` ${esc(e.fact.before)} ${esc(e.fact.text)} ${esc(e.fact.after)} <span class="src">(<a href="${esc(e.fact.url)}" target="_blank" rel="noopener">${esc(e.fact.src)}</a>)</span>`
-  : "");
 
 // ════════ Views ════════
 function home() {
@@ -520,7 +563,6 @@ function article(slug) {
   $("view").dataset.slug = slug;
   const top = a.entries.slice(0, 3);
   const rest = a.entries.slice(3);
-  const half = Math.ceil(rest.length / 2);
   const others = edition.articles.filter((x) => x.slug !== slug && x.ready);
   $("view").innerHTML = `
     <div class="article">
@@ -528,37 +570,22 @@ function article(slug) {
       <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span></div>
       <h1>${esc(a.head)}</h1>
       <p class="deck">${esc(a.title)}</p>
-      <p class="deck2">${esc(a.sub)}</p>
       <div class="byline">by The Ranking Desk · snapshot from ${timeOf(edition.at)} · generated only for you</div>
       ${thumb(a)}
       <div class="body">
         ${a.intros.map((p) => `<p>${esc(p)}</p>`).join("")}
-        <div class="box"><b>How we ranked</b>
-          <table>
-            <tr><td>Question asked</td><td><span class="redact">which one is better</span></td></tr>
-            <tr><td>Variables considered</td><td>${a.vars} (classified)</td></tr>
-            <tr><td>Human input</td><td>none</td></tr>
-            <tr><td>Appeals</td><td>not accepted</td></tr>
-            <tr><td>Updated</td><td>every few seconds, forever</td></tr>
-          </table>
-        </div>
-        <h2>The top 3</h2>
-        ${top.map(topCard).join("")}
-        <blockquote class="quote">${esc(a.quote)}</blockquote>
-        ${rest.length ? `<h2>The rest, ranked</h2><ol class="list">${rest.slice(0, half).map((e) => row(a, e)).join("")}</ol>` : ""}
-        <p>${esc(a.middle)}</p>
-        ${rest.length > half ? `<ol class="list">${rest.slice(half).map((e) => row(a, e)).join("")}</ol>` : ""}
+        <ol class="entries">${top.map((e) => entry(e, true)).join("")}</ol>
+        ${rest.length ? `<p>${esc(a.middle)}</p><ol class="entries">${rest.map((e) => entry(e, false)).join("")}</ol>` : ""}
         <div class="poll"><h2>${esc(VERDICT.title)}<br>${esc(VERDICT.question)}</h2>
           <div class="row2"><button type="button" class="good" data-vote="good">${esc(VERDICT.good)}</button>
           <button type="button" class="bad" data-vote="bad">${esc(VERDICT.bad)}</button></div>
           <p class="answer" id="answer"></p>
         </div>
-        <div class="box"><b>Meanwhile</b>This list is a snapshot from ${timeOf(edition.at)}. On the screens in the room, the ranking has already moved on. The places you just read no longer exist.</div>
         ${others.length ? `<div class="related"><h2>You might also be ranked in</h2>${others.map((o) => teaser(o, "card")).join("")}</div>` : ""}
         <p class="end">This article was written by no one, for you alone, in less than a second. Ask yourself who decided what you just read, and why you believed it for a moment.</p>
       </div>
     </div>`;
-  document.querySelectorAll(".item, .top").forEach((el) => (el.onclick = (ev) => { if (!ev.target.closest("a")) location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`; }));
+  document.querySelectorAll(".entry").forEach((el) => (el.onclick = (ev) => { if (!ev.target.closest("a")) location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`; }));
   setupVerdict(a);
   window.scrollTo(0, 0);
 }

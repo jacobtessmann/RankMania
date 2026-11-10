@@ -160,7 +160,7 @@ RankFeed is set in **CMU Typewriter Text Light** (Donald Knuth's Computer Modern
 
 RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
-**Exposed facts:** in every article that contains a Konzern, the caption text of one Konzern gets a real court case or scandal, sandwiched between two lines of BuzzFeed lingo (`EXPOSED_BEFORE`, `EXPOSED_AFTER`) and followed by a small source link. The facts are in `EXPOSED` in `public/feed.html`, keyed by the name the screens show (the file name with `_` as spaces). A new Konzern without a line there simply never gets one. Researched November 2026, so check them again before a later show.
+**Entries** look like a BuzzFeed shopping list: a yellow number, one line about the entry (`HOOKS` in `public/feed.html`, keyed by the displayed name: written for all 25 Konzerne and the 50 Atlantic inventions; students get a plain line from `LINES`), the picture (big for the top 3, small for the rest) and, for every Konzern, a **"Critical review:"** with a real court case or scandal and its source (`EXPOSED`). Researched November 2026, so check the facts again before a later show.
 
 - The home page shows the three articles. Tapping one opens the full list, entries under each other with place, tier, picture, name and a short line.
 - Tapping an entry opens it large with a **Print** button. Printing is not connected yet: put the real code into `printEntry(entry, article)` in `feed.html`.
