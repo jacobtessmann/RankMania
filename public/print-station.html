@@ -7,7 +7,7 @@
 <!--
   The print station: keep this page open on a computer next to the printer.
   It collects the stickers from RankFeed and prints a sheet as soon as it is full
-  (label paper with 6 round stickers of 85 mm on A4). "Print part sheet now" prints what is there.
+  (label paper with 12 round stickers of 60 mm on A4). "Print part sheet now" prints what is there.
 
   To print without a dialog, start Chrome with --kiosk-printing; it then prints straight to the
   default printer of the computer (set the Brother as the default printer first). On a Mac:
@@ -31,11 +31,11 @@
   ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--grey); flex: 1; min-width: 220px; }
   ol b { color: var(--ink); font-weight: 600; }
 
-  /* the label sheet: A4 with 6 round stickers (positions in the script: SHEET) */
+  /* the label sheet: A4 with 12 round stickers (positions in the script: SHEET) */
   .page { position: relative; width: 210mm; height: 297mm; background: #fff; }
-  .page .st { position: absolute; width: 85mm; height: 85mm; }
+  .page .st { position: absolute; width: 60mm; height: 60mm; }
   .page .st svg { display: block; }
-  .page .slot { position: absolute; width: 85mm; height: 85mm; border-radius: 50%; border: 1px dashed #ccc; }
+  .page .slot { position: absolute; width: 60mm; height: 60mm; border-radius: 50%; border: 1px dashed #ccc; }
   .preview { zoom: .36; box-shadow: 0 0 0 3px #ddd; flex: none; }
 
   @page { size: A4; margin: 0; }
@@ -65,11 +65,12 @@
 <script>
 // The label paper: the middle of each sticker in mm from the top left corner of the A4 sheet.
 // Measure your paper and change these if the stickers don't sit on the labels.
-const D = 85; // sticker diameter in mm
+const D = 60; // sticker diameter in mm (also .page .st / .slot in the style)
 const SHEET = [
-  [57.5, 55.5], [152.5, 55.5],
-  [57.5, 148.5], [152.5, 148.5],
-  [57.5, 241.5], [152.5, 241.5],
+  [40, 49.5], [105, 49.5], [170, 49.5],
+  [40, 115.5], [105, 115.5], [170, 115.5],
+  [40, 181.5], [105, 181.5], [170, 181.5],
+  [40, 247.5], [105, 247.5], [170, 247.5],
 ];
 const PER_SHEET = SHEET.length;
 const POLL_MS = 3000; // how often it asks for new stickers

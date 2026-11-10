@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════
-//  print.js — draws the sticker of one entry: a round sticker, 85 mm across.
+//  print.js — draws the sticker of one entry: a round sticker, printed 60 mm across.
 //
-//  drawRankPrint(data, uid) → an SVG string (85 × 85 mm, the sticker is the circle). data comes from GET /api/track:
+//  drawRankPrint(data, uid) → an SVG string (square, the sticker is the circle; the page sets the size). data comes from GET /api/track:
 //    { entry: {title, image}, current: {rank, tier, of}, startedAt, now, tiers[], track[] }
 //    track = [{ t, score, tier, rank, pos, of }]  (a point whenever its score or place changed)
 //
@@ -12,12 +12,12 @@
 //  In the middle: the letter of the tier right now. Around the edge: place, name and tier, twice, spread evenly around.
 // ════════════════════════════════════════════════════════════════
 (function () {
-  const SIZE = 850; // drawing units: 1 unit = 0.1 mm, so the sticker is 85 mm across
+  const SIZE = 850; // drawing units across the sticker (printed at 60 mm: 1 unit ≈ 0.07 mm; all sizes below scale with it)
   const C = SIZE / 2; // the middle
   const FRAME = 3.3; // thin outline of the sticker (to cut along), 0 = none
   const TEXT_BAND = 78; // width of the ring with the text around the edge
   const INNER = 70; // the ring of F starts this far from the middle
-  const STROKE = 105; // line width (about 10.5 mm)
+  const STROKE = 105; // line width (about 7.4 mm on the 60 mm sticker)
   const OUTLINE = 3.2; // fine dark outline around the line (0 = none)
   const OUTLINE_COLOR = "#181716";
   // the tier colors of the tierlist (the same as the tier chips in feed.html)
@@ -25,7 +25,7 @@
   const INK = "#000";
   const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
-  const MIDDLE_SIZE = 380; // the tier letter in the middle (38 mm)
+  const MIDDLE_SIZE = 440; // the tier letter in the middle (about half the sticker)
   const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
   const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees

@@ -653,12 +653,12 @@ async function printEntry(entry, article) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ list: article.list, image: entry.image, at, rank: entry.rank, tier: entry.tier, of: article.entries.length }),
     });
-    // stickers are printed 6 to a sheet: say how many are still missing until this one is printed
+    // stickers are printed 12 to a sheet: say how many are still missing until this one is printed
     const m = r.ok ? await r.json().catch(() => ({})) : {};
-    const missing = m.waiting ? (6 - (m.waiting % 6)) % 6 : null;
+    const missing = m.waiting ? (12 - (m.waiting % 12)) % 12 : null;
     note.textContent = r.ok
       ? missing === 0 ? "Your sticker is on a full sheet. It is printing now."
-        : missing ? `Your sticker is in the queue. It prints when the sheet of 6 is full (${missing} more to go).`
+        : missing ? `Your sticker is in the queue. It prints when the sheet of 12 is full (${missing} more to go).`
         : "Your sticker is in the queue."
       : r.status === 429 ? "One print at a time. Try again in a few seconds."
       : r.status === 404 ? "This one can't be printed yet."
