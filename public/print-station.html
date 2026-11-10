@@ -31,17 +31,20 @@
   ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: var(--grey); flex: 1; min-width: 220px; }
   ol b { color: var(--ink); font-weight: 600; }
 
-  /* the label sheet: one SVG of exactly A4, in the coordinates of HERMA's template (script: SHEET) */
+  /* the label sheet: one SVG in the coordinates of HERMA's template (script: SHEET).
+     The printer can't print right to the edge; if the page reached the edge, the browser would shrink it to fit
+     (and the stickers would come out smaller than 60 mm). So the page keeps a margin (MARGIN, here and in the
+     script) and the SVG shows A4 without that margin, at full size: everything stays exactly where it is on the paper. */
   .page { flex: none; line-height: 0; }
   .page > svg { display: block; width: 76mm; height: auto; box-shadow: 0 0 0 3px #ddd; background: #fff; }
 
-  @page { size: 210mm 297mm; margin: 0; }
+  @page { size: 210mm 297mm; margin: 6mm; } /* = MARGIN_MM */
   @media print {
     html, body { margin: 0; padding: 0; }
     main > :not(.wrap), ol, .slot { display: none !important; }
     main { padding: 0; max-width: none; }
     .wrap { display: block; }
-    .page > svg { width: 210mm; height: 297mm; box-shadow: none; }
+    .page > svg { width: 198mm; height: 284mm; box-shadow: none; } /* A4 minus 2 × MARGIN_MM (and 1 mm, so it never spills onto a 2nd page) */
   }
 </style>
 </head>
@@ -72,6 +75,7 @@ const ROWS = [[791.0646, 620.5891], [600.7465, 430.6678], [410.8252, 240.7465], 
 const D = 170.0787; // label diameter in points (60 mm)
 const SHEET = ROWS.flatMap(([t, b]) => COLS.map(([l, r]) => [(l + r) / 2, PAGE_H - (t + b) / 2])); // middles, from the top left
 const MM = 72 / 25.4; // points per mm
+const MARGIN_MM = 6; // the page margin the printer keeps free (also @page and .page > svg in the style)
 const PER_SHEET = SHEET.length;
 const POLL_MS = 3000; // how often it asks for new stickers
 const AFTER_PRINT_MS = 8000; // pause after each sheet, so the printer can keep up
@@ -112,7 +116,9 @@ function marks() {
 
 // the sheet: stickers on the first places, the empty places only as dashed circles on the screen
 function drawPage(jobs, test = false) {
-  $("page").innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PAGE_W} ${PAGE_H}" width="210mm" height="297mm">
+  const m = MARGIN_MM * MM; // A4 without the margin, so 1 mm in the drawing is 1 mm on the paper
+  $("page").innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${m} ${m} ${PAGE_W - 2 * m} ${PAGE_H - 2 * m - MM}"
+    width="${210 - 2 * MARGIN_MM}mm" height="${297 - 2 * MARGIN_MM - 1}mm">
     <rect width="${PAGE_W}" height="${PAGE_H}" fill="#fff"/>
     ${SHEET.map((p, i) => jobs[i] ? place(drawRankPrint(jobs[i].data, "-" + i), p)
       : `<circle class="slot" cx="${p[0]}" cy="${p[1]}" r="${D / 2}" fill="none" stroke="#bbb" stroke-dasharray="4 4"/>`).join("")}
