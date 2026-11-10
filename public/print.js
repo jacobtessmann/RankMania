@@ -9,7 +9,7 @@
 //  goes out and in to every tier the entry was in, in order, turning left or right around the middle
 //  on the way. How far out is the data; the turns, the wobble and the curls (more where it stayed
 //  longer) are noise. One color: the tier the entry is in right now.
-//  In the middle: the tier right now. Around the edge: place, name and tier, twice, spread evenly around.
+//  In the middle: the letter of the tier right now. Around the edge: place, name and tier, twice, spread evenly around.
 // ════════════════════════════════════════════════════════════════
 (function () {
   const SIZE = 850; // drawing units: 1 unit = 0.1 mm, so the sticker is 85 mm across
@@ -25,7 +25,7 @@
   const INK = "#000";
   const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
-  const MIDDLE_SIZE = 82; // the tier in the middle (8.2 mm, as the text of the earlier card)
+  const MIDDLE_SIZE = 150; // the tier letter in the middle (15 mm)
   const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
   const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
@@ -170,7 +170,7 @@
     <g stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}">${path}</g>
   </g>
   <g fill="${INK}" font-family='${FONT}'>
-    <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" text-anchor="middle" letter-spacing="${f(TRACKING * MIDDLE_SIZE)}">${esc(cur ? `${cur.tier}-TIER` : "UNRANKED")}</text>
+    <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" text-anchor="middle">${esc(cur ? cur.tier : "?")}</text>
     <text font-size="${f(ringSize)}" text-anchor="middle" letter-spacing="${f(TRACKING * ringSize)}">${ringText}</text>
   </g>
 </svg>`;
