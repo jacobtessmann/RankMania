@@ -840,7 +840,8 @@ const server = http.createServer((req, res) => {
   }
 
   // a print from RankFeed: POST /api/print  {"list": "students", "image": "/images/students/x.jpg"}
-  // the print station takes the jobs one by one: POST /api/print/next  {"key": "..."}  → { job } or { job: null }
+  // the print station takes the jobs as full sheets: POST /api/print/next  {"key": "...", "count": 6}
+  //   → { jobs: [6 jobs] } once 6 are waiting, else { jobs: [] }; with "flush": true it takes what is there (a part sheet)
   if ((url.pathname === "/api/print" || url.pathname === "/api/print/next") && req.method === "POST") {
     let body = "";
     req.on("data", (d) => {
@@ -854,7 +855,9 @@ const server = http.createServer((req, res) => {
       } catch {}
       if (url.pathname === "/api/print/next") {
         if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
-        return json(res, 200, { ok: true, job: printQueue.shift() || null, waiting: printQueue.length });
+        const count = Math.max(1, Math.min(24, Math.round(Number(msg.count) || 1)));
+        const jobs = printQueue.length >= count || msg.flush ? printQueue.splice(0, count) : [];
+        return json(res, 200, { ok: true, jobs, job: jobs[0] || null, waiting: printQueue.length });
       }
       const who = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
       if (Date.now() - (printSeen.get(who) || 0) < PRINT_COOLDOWN_MS) return json(res, 429, { ok: false, error: "too fast" });

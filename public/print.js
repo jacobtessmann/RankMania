@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════
 //  print.js — draws the sticker of one entry: a round sticker, 85 mm across.
 //
-//  drawRankPrint(data) → an SVG string (85 × 85 mm, the sticker is the circle). data comes from GET /api/track:
+//  drawRankPrint(data, uid) → an SVG string (85 × 85 mm, the sticker is the circle). data comes from GET /api/track:
 //    { entry: {title, image}, current: {rank, tier, of}, startedAt, now, tiers[], track[] }
 //    track = [{ t, score, tier, rank, pos, of }]  (a point whenever its score or place changed)
 //
@@ -9,7 +9,7 @@
 //  goes out and in to every tier the entry was in, in order, turning left or right around the middle
 //  on the way. How far out is the data; the turns, the wobble and the curls (more where it stayed
 //  longer) are noise. One color: the tier the entry is in right now.
-//  In the middle: the tier right now. Around the edge: place, name and tier, twice, closing the circle.
+//  In the middle: the tier right now. Around the edge: place, name and tier, twice, spread evenly around.
 // ════════════════════════════════════════════════════════════════
 (function () {
   const SIZE = 850; // drawing units: 1 unit = 0.1 mm, so the sticker is 85 mm across
@@ -23,7 +23,7 @@
   // the tier colors of the tierlist (the same as the tier chips in feed.html)
   const COLORS = { S: "#ff7f7f", A: "#ffff7f", B: "#7fff7f", C: "#7fffff", D: "#ff7fff", F: "#9b30ff" };
   const INK = "#000";
-  const FONT = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+  const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
   const MIDDLE_SIZE = 82; // the tier in the middle (8.2 mm, as the text of the earlier card)
   const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
@@ -67,10 +67,11 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const f = (n) => n.toFixed(2);
 
-  window.drawRankPrint = function (data) {
+  // uid: makes the ids inside unique, when several stickers are on one page
+  window.drawRankPrint = function (data, uid = "") {
     const tiers = data.tiers && data.tiers.length ? data.tiers : ["S", "A", "B", "C", "D", "F"].map((id, i) => ({ id, min: [90, 70, 50, 30, 10, 0][i] }));
     const rnd = seeded(data.entry && data.entry.image);
-    const OUTER = C - TEXT_BAND; // the ring of S ends here, the text ring begins
+    const OUTER = C - TEXT_BAND - STROKE / 2; // the ring of S ends here, so the line never runs into the text ring
     const ringW = (OUTER - INNER) / tiers.length;
 
     // a point → distance from the middle: the ring of its tier (F inside, S outside), and inside the ring
@@ -134,7 +135,7 @@
 
     // smooth it, then let it wobble; it stays inside the rings
     const nx = wave(rnd), ny = wave(rnd);
-    const maxR = OUTER - STROKE * 0.35;
+    const maxR = OUTER;
     const line = spline(way, STEPS).map(([px, py], i, all) => {
       const u = i / all.length;
       let x = px + nx(u * 6) * ringW * NOISE, y = py + ny(u * 7) * ringW * NOISE;
@@ -145,30 +146,32 @@
     const tierNow = (data.current && data.current.tier) || pts[pts.length - 1].tier || "F";
     const path = `<polyline points="${line.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}"/>`;
 
-    // the text around the edge: place, name, tier — twice, spread so that the circle closes
+    // the text around the edge: place, name, tier — twice, six pieces spread evenly around the circle
     const cur = data.current;
     const name = String((data.entry && data.entry.title) || "").toUpperCase();
-    const gap = (n) => "\u00a0".repeat(n); // spaces that SVG does not swallow
-    const label = [cur ? `#${cur.rank}` : "#–", name, cur ? `${cur.tier}-TIER` : "UNRANKED"].join(gap(3));
-    const ring = label + gap(6) + label + gap(6);
+    const pieces = [cur ? `#${cur.rank}` : "#–", name, cur ? `${cur.tier}-TIER` : "UNRANKED"];
     const textR = C - TEXT_BAND / 2 - RING_SIZE * 0.36; // baseline, so the capitals sit in the middle of the band
-    const around = 2 * Math.PI * textR;
-    const ringSize = Math.min(RING_SIZE, (around * 0.94) / (ring.length * (0.64 + TRACKING)));
-    const circle = `M ${f(C - textR)},${f(C)} a ${f(textR)},${f(textR)} 0 1,1 ${f(2 * textR)},0 a ${f(textR)},${f(textR)} 0 1,1 ${f(-2 * textR)},0`;
+    const slot = (2 * Math.PI * textR) / 6; // the room for one piece
+    const longest = Math.max(...pieces.map((t) => t.length));
+    const ringSize = Math.min(RING_SIZE, (slot * 0.9) / (longest * (0.64 + TRACKING)));
+    // the circle as a path, starting at the top and going clockwise
+    const circle = `M ${f(C)},${f(C - textR)} a ${f(textR)},${f(textR)} 0 1,1 0,${f(2 * textR)} a ${f(textR)},${f(textR)} 0 1,1 0,${f(-2 * textR)}`;
+    const ringText = [...pieces, ...pieces].map((t, i) =>
+      `<textPath href="#ring${uid}" startOffset="${f(((i + 0.5) / 6) * 100)}%">${esc(t)}</textPath>`).join("");
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="100%">
   <defs>
-    <clipPath id="sticker"><circle cx="${C}" cy="${C}" r="${C}"/></clipPath>
-    <path id="ring" d="${circle}"/>
+    <clipPath id="sticker${uid}"><circle cx="${C}" cy="${C}" r="${C}"/></clipPath>
+    <path id="ring${uid}" d="${circle}"/>
   </defs>
   <circle cx="${C}" cy="${C}" r="${f(C - FRAME / 2)}" fill="#fff"${FRAME ? ` stroke="#181716" stroke-width="${FRAME}"` : ""}/>
-  <g clip-path="url(#sticker)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g clip-path="url(#sticker${uid})" fill="none" stroke-linecap="round" stroke-linejoin="round">
     ${OUTLINE ? `<g stroke="${OUTLINE_COLOR}" stroke-width="${STROKE + 2 * OUTLINE}">${path}</g>` : ""}
     <g stroke="${COLORS[tierNow] || INK}" stroke-width="${STROKE}">${path}</g>
   </g>
   <g fill="${INK}" font-family='${FONT}'>
     <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" text-anchor="middle" letter-spacing="${f(TRACKING * MIDDLE_SIZE)}">${esc(cur ? `${cur.tier}-TIER` : "UNRANKED")}</text>
-    <text font-size="${f(ringSize)}"><textPath href="#ring" textLength="${f(around)}" lengthAdjust="spacing">${esc(ring)}</textPath></text>
+    <text font-size="${f(ringSize)}" text-anchor="middle" letter-spacing="${f(TRACKING * ringSize)}">${ringText}</text>
   </g>
 </svg>`;
   };
