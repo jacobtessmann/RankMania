@@ -63,25 +63,27 @@
   .box td:last-child { text-align: right; font-weight: 700; }
   .redact { background: #111; color: #111; padding: 0 .2em; user-select: none; }
 
-  /* entries, like a BuzzFeed shopping list */
+  /* entries: big for the top 3, compact rows for the rest. Pictures get a thin red outline. */
   .entries { list-style: none; margin: 0; padding: 0; }
-  .entry { cursor: pointer; padding: 22px 0; }
-  .entry + .entry { border-top: 0; background: linear-gradient(var(--ink), var(--ink)) top / 100% 1px no-repeat; }
-  .entry .hook { margin: 0; font-size: 20px; line-height: 1.4; color: #000; }
-  .entry .num { display: inline-block; min-width: 1.9em; padding: 0 .3em; margin-right: .45em; background: var(--yellow);
-                text-align: center; font-size: 1.05em; transform: rotate(-3deg); }
-  .entry .nm { color: var(--red); text-decoration: underline; text-underline-offset: 3px; }
-  .entry.big img, .entry.big .ph { width: 100%; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; margin: 14px 0 12px; }
-  .entry.small { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: start; }
-  .entry.small img, .entry.small .ph { width: 96px; height: 96px; object-fit: contain; background: #f2f2f2; display: block; }
-  .entry.small .hook { font-size: 18px; }
-  .entry.small .txt { display: contents; }
-  .entry.small .review { grid-column: 1 / -1; margin-top: 4px; }
-  .review { margin: 10px 0 0; font-size: 17px; line-height: 1.45; color: #000; }
+  .entry { cursor: pointer; padding: 22px 0; border-top: 1px solid var(--ink); }
+  .entry img, .entry .ph { border: 1px solid var(--red); background: #fff; display: block; object-fit: contain; }
+  .entry h3 { margin: 0; font-weight: normal; color: #000; }
+  .entry .hook { margin: 0; color: #000; }
+  .entry.big .place { font-size: 64px; line-height: 1; color: var(--red); margin-bottom: 6px; }
+  .entry.big h3 { font-size: 34px; line-height: 1.1; margin-bottom: 14px; }
+  .entry.big img, .entry.big .ph { width: 100%; aspect-ratio: 1; margin-bottom: 14px; }
+  .entry.big .hook { font-size: 19px; line-height: 1.45; }
+  .entry.small { display: grid; grid-template-columns: 40px 92px 1fr; gap: 12px; align-items: start; padding: 16px 0; }
+  .entry.small .rk { font-size: 34px; line-height: 1; color: var(--red); text-align: center; }
+  .entry.small img, .entry.small .ph { width: 92px; height: 92px; }
+  .entry.small h3 { font-size: 24px; line-height: 1.1; margin-bottom: 6px; }
+  .entry.small .hook { font-size: 16px; line-height: 1.4; }
+  .entry.small .review { grid-column: 2 / -1; margin-top: 2px; font-size: 16px; }
+  .review { margin: 12px 0 0; font-size: 17px; line-height: 1.45; color: #000; }
   .review .lbl { color: var(--red); }
   .review .src { display: block; margin-top: 6px; font-size: 14px; color: #000; }
   .tier { display: inline-block; min-width: 22px; text-align: center; font-weight: 900; font-size: 12px; padding: 2px 5px;
-          margin-right: 6px; background: var(--c); color: #000; }
+          margin-right: 8px; vertical-align: .35em; background: var(--c); color: #000; }
   .tier[data-t="F"] { color: #fff; }
 
   /* the vote: big, loud, impossible to miss (full width of the phone) */
@@ -526,23 +528,23 @@ const teaser = (a, cls = "card") => `
     <div><span class="cat">${esc(a.cat)}</span><span class="pill">${esc(a.pill)}</span>
       <h2>${esc(a.head)}</h2><p class="sub">${esc(a.title)}</p></div>
   </a>`;
-// one entry, BuzzFeed-list style: number + text (name in red), the picture, then the critical review.
-// big = the top 3 (picture full width), otherwise a compact row (picture on the left)
-const named = (e) => {
-  const t = esc(e.line), n = esc(e.title), at = t.toLowerCase().indexOf(n.toLowerCase());
-  return at < 0 ? `<span class="nm">${n}:</span> ${t}` : `${t.slice(0, at)}<span class="nm">${t.slice(at, at + n.length)}</span>${t.slice(at + n.length)}`;
-};
+// one entry: place, name as its headline, picture, the one-liner, and (Konzerne) the critical review.
+// big = the top 3 (picture full width), otherwise a compact row (number, small picture, text)
 const review = (e) => e.fact ? `
     <p class="review"><span class="lbl">Critical review:</span> ${esc(e.fact.text)}
       <a class="src" href="${esc(e.fact.url)}" target="_blank" rel="noopener">Source: ${esc(e.fact.src)}</a></p>` : "";
-const entry = (e, big) => `
-  <li class="entry ${big ? "big" : "small"}" data-id="${esc(e.id)}">
-    ${big ? "" : img(e)}
-    <div class="txt">
-      <p class="hook"><span class="num">${e.rank}.</span>${tierChip(e.tier)}${named(e)}</p>
-      ${big ? img(e) : ""}
-      ${review(e)}
-    </div>
+const entry = (e, big) => big ? `
+  <li class="entry big" data-id="${esc(e.id)}">
+    <div class="place">#${e.rank}</div>
+    <h3>${tierChip(e.tier)}${esc(e.title)}</h3>
+    ${img(e)}
+    <p class="hook">${esc(e.line)}</p>
+    ${review(e)}
+  </li>` : `
+  <li class="entry small" data-id="${esc(e.id)}">
+    <div class="rk">${e.rank}</div>${img(e)}
+    <div class="txt"><h3>${tierChip(e.tier)}${esc(e.title)}</h3><p class="hook">${esc(e.line)}</p></div>
+    ${review(e)}
   </li>`;
 
 // ════════ Views ════════
