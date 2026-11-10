@@ -158,6 +158,8 @@ Settings near the top of the script: `TILE_SIZE` (fixed size in px for all scree
 
 RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
+**Exposed facts:** every article that contains a Konzern shows one yellow box between the paragraphs ("FUN FACT 🤫", "Meanwhile, in court ⚖️" …) with a real court case or scandal about one of the Konzerne in it, plus its source. Tapping a Konzern shows its own fact on the entry sheet. The facts are in `EXPOSED` in `public/feed.html`, keyed by the name the screens show (the file name with `_` as spaces). A new Konzern without a line there simply gets no box. Researched November 2026, so check them again before a later show.
+
 - The home page shows the three articles. Tapping one opens the full list, entries under each other with place, tier, picture, name and a short line.
 - Tapping an entry opens it large with a **Print** button. Printing is not connected yet: put the real code into `printEntry(entry, article)` in `feed.html`.
 - Headlines, intros and lines are templates at the top of the script (`HEADLINES`, `LEADS`, `LINES`). Placeholders: `{top}` `{second}` `{last}` `{mid}` `{n}` `{label}` in headlines and intros; `{N}` `{A}` (above) `{B}` (below) `{T}` (tier) in the lines. The reason for a ranking is never stated.

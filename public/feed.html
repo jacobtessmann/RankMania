@@ -56,6 +56,14 @@
   .quote { margin: 26px 0; padding: 4px 0 4px 16px; border-left: 6px solid var(--red); font-size: 24px; line-height: 1.2; font-weight: 900; }
   .box { background: var(--soft); padding: 14px 16px; margin: 22px 0; font-size: 15px; line-height: 1.5; }
   .box b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+  .exposed { border: 3px solid var(--ink); padding: 14px 16px 12px; margin: 26px 0; background: #fff6a8; font-size: 15px; line-height: 1.5; }
+  .exposed b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 4px; }
+  .exposed .who { font-weight: 900; font-size: 18px; margin-bottom: 4px; }
+  .exposed p { margin: 0 0 8px; }
+  .exposed small, .panel .src { display: block; font-size: 12px; color: var(--grey); }
+  .exposed a, .panel .src a { color: inherit; }
+  .panel .fact { background: #fff6a8; padding: 10px 12px; font-size: 13px; line-height: 1.4; margin: 0 0 12px; }
+  .panel .fact b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px; }
   .box table { border-collapse: collapse; width: 100%; }
   .box td { padding: 3px 0; border-top: 1px solid #e2e2e2; }
   .box td:last-child { text-align: right; font-weight: 700; }
@@ -231,6 +239,153 @@ const VERDICT = {
 };
 const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
+// ════════════════════════════════════════════════════════════════
+//  EXPOSED — one real court case or scandal per Konzern.
+//  Every article that contains a Konzern shows ONE of these boxes
+//  between the paragraphs, and the entry sheet (tap on a Konzern) shows its own.
+//
+//  Key   = the name as the screens show it (the image file name, "_" → space).
+//  text  = the fact. Keep it short, factual and dated. No opinions.
+//  src   = where it comes from (shown under the box), url = the link.
+//  To add a Konzern: add a line with exactly its displayed name.
+//  Researched November 2026.
+// ════════════════════════════════════════════════════════════════
+const EXPOSED_HEADS = [
+  "FUN FACT 🤫",
+  "Meanwhile, in court ⚖️",
+  "The part their PR team skipped 🙊",
+  "Not in the press release 📎",
+  "Plot twist 🌀",
+];
+
+const EXPOSED = {
+  "Adobe": {
+    text: "Adobe tried to buy its fastest-growing rival, Figma, for $20 billion. After EU and UK competition regulators raised concerns, Adobe gave up in December 2023 and had to pay Figma a $1 billion break-up fee.",
+    src: "TechTarget, Dec 2023",
+    url: "https://www.techtarget.com/searchcontentmanagement/news/366564138/Abandoning-Figma-merger-will-cost-Adobe-1-billion",
+  },
+  "Amazon": {
+    text: "The US Federal Trade Commission is suing Amazon for illegally maintaining a monopoly over online shopping; the trial is set for 2027. Separately, in September 2025 Amazon paid a record $2.5 billion to settle claims that it tricked millions of people into Prime subscriptions.",
+    src: "AP via AJC, Sep 2025",
+    url: "https://www.ajc.com/news/2025/09/amazon-to-pay-25-billion-to-settle-ftc-allegations-it-duped-customers-into-enrolling-in-prime",
+  },
+  "Apple": {
+    text: "In 2024 the EU fined Apple €1.8 billion for stopping music apps like Spotify from telling iPhone users about cheaper subscriptions outside the App Store. Apple is fighting the fine in court.",
+    src: "The Star / Reuters, May 2024",
+    url: "https://thestar.com.my/tech/tech-news/2024/05/22/apple-fights-18bil-eu-antitrust-fine-for-curbs-on-spotify",
+  },
+  "AstraZeneca": {
+    text: "The EU fined AstraZeneca €60 million for misleading patent offices about its ulcer drug Losec to keep cheaper generic copies off the market. The EU's highest court confirmed the abuse in 2012.",
+    src: "Wikipedia: AstraZeneca plc v Commission",
+    url: "https://en.wikipedia.org/wiki/AstraZeneca_plc_v_Commission",
+  },
+  "Bayer": {
+    text: "Since buying Monsanto, Bayer has faced more than 100,000 lawsuits claiming its weedkiller Roundup causes cancer, and has proposed a $7.25 billion settlement. In June 2026 the US Supreme Court ruled 7–2 for Bayer, blocking many of the state-law claims.",
+    src: "Insurance Journal / AP, Jun 2026",
+    url: "https://www.insurancejournal.com/news/national/2026/06/25/875312.htm",
+  },
+  "BlackRock": {
+    text: "Texas and nine other US states are suing BlackRock, Vanguard and State Street, accusing the world's biggest asset managers of using their shareholdings to collectively cut coal output. In August 2025 a federal judge let most of the antitrust case go ahead.",
+    src: "ESG Dive, Aug 2025",
+    url: "https://www.esgdive.com/news/blackrock-vanguard-state-street-motion-to-dismiss-coal-antitrust-case-denied-texas-ag/757336/",
+  },
+  "Disney": {
+    text: "Disney, Fox and Warner Bros. Discovery planned a joint sports-streaming service, Venu. A smaller rival, Fubo, sued for antitrust and won an injunction that blocked the launch. In January 2025 the giants scrapped Venu, paid Fubo $220 million, and Disney took a 70% stake in Fubo.",
+    src: "TheWrap, Jan 2025",
+    url: "https://thewrap.com/disney-combines-fubo-hulu-live-tv-ends-venu-sports-dispute",
+  },
+  "ExxonMobil": {
+    text: "When Exxon bought rival Pioneer for about $60 billion in 2024, the FTC banned Pioneer's ex-CEO from Exxon's board, accusing him of trying to coordinate oil output with OPEC. In 2025 the FTC, under new leadership, dropped the ban.",
+    src: "Reuters via StreetInsider, Jul 2025",
+    url: "https://www.streetinsider.com/Reuters/FTC+reverses+bans+on+two+executives+joining+Chevron%2C+Exxon+boards/25066765.html",
+  },
+  "H&M": {
+    text: "In 2020 H&M was fined €35.3 million in Germany for secretly recording details of hundreds of employees' private lives, from illnesses to family problems, at its service centre in Nuremberg.",
+    src: "European Data Protection Board, Oct 2020",
+    url: "https://edpb.europa.eu/news/national-news/2020/hamburg-commissioner-fines-hm-353-million-euro-data-protection-violations_it",
+  },
+  "Mastercard": {
+    text: "In 2019 the EU fined Mastercard €570 million for blocking shops from getting cheaper card-payment deals from banks in other EU countries.",
+    src: "FinTech Futures, Jan 2019",
+    url: "https://www.fintechfutures.com/regulatory-actions/ec-fines-mastercard-570m-for-anti-competitive-antics",
+  },
+  "McDonald's": {
+    text: "McDonald's lost its EU trademark on \"Big Mac\" for chicken products to the small Irish chain Supermac's. In June 2024 the EU General Court ruled that McDonald's hadn't really used the name for poultry.",
+    src: "AP via News4JAX, Jun 2024",
+    url: "https://www.news4jax.com/news/weird-news/2024/06/05/big-mac-battle-mcdonalds-loses-burger-trademark-for-eu-in-battle-with-irish-rival/",
+  },
+  "Mercedes-Benz": {
+    text: "In April 2025 the EU fined 15 carmakers €458 million for running a cartel on car recycling. Mercedes-Benz was part of it too, but paid nothing: it was the first to report the cartel to the regulators.",
+    src: "Recycling Magazine, Apr 2025",
+    url: "https://www.recycling-magazine.com/2025/04/04/commission-fines-car-manufacturers-over-end-of-life-vehicles-recycling-cartel/",
+  },
+  "Meta": {
+    text: "In 2024 the EU fined Meta €798 million for tying Facebook Marketplace to Facebook and imposing unfair terms on rival classified-ad services. In 2025 it added €200 million under the new Digital Markets Act.",
+    src: "Computing, Nov 2024",
+    url: "https://computing.co.uk/news/2024/legislation-regulation/eu-fines-meta-798-million-facebook-marketplace",
+  },
+  "Nestlé": {
+    text: "Nestlé admitted to treating \"natural mineral waters\" such as Perrier with banned filters and UV light, and paid €2 million in France. A French Senate report in 2025 said the government had covered it up.",
+    src: "Food Manufacture, May 2025",
+    url: "https://www.foodmanufacture.co.uk/Article/2025/05/23/nestle-water-fraud-covered-up-by-french-government-report-says",
+  },
+  "Netflix": {
+    text: "Netflix agreed to buy Warner Bros.' studios and HBO Max for $82.7 billion and was grilled by a US Senate panel over antitrust concerns. Then Paramount outbid it, and Netflix walked away. The $110 billion Paramount–Warner merger closed in October 2026.",
+    src: "TechCrunch, Oct 2026",
+    url: "https://techcrunch.com/2026/10/06/paramount-closes-historic-warner-bros-merger-to-form-skydance/",
+  },
+  "Nike": {
+    text: "In 2019 the EU fined Nike €12.5 million for stopping retailers from selling licensed football merchandise, such as FC Barcelona and Juventus shirts, to shops in other EU countries.",
+    src: "CNBC, Mar 2019",
+    url: "https://www.cnbc.com/2019/03/25/nike-fined-for-blocking-cross-border-sales-of-soccer-merchandise.html",
+  },
+  "NVIDIA": {
+    text: "In September 2025 China's market regulator said NVIDIA had broken China's anti-monopoly law by violating the conditions of its Mellanox takeover, right in the middle of the US–China chip war.",
+    src: "The Register, Sep 2025",
+    url: "https://www.theregister.com/2025/09/15/china_nvidia_antitrust/",
+  },
+  "Palantir": {
+    text: "In 2023 Germany's Constitutional Court ruled that the laws allowing police in Hesse and Hamburg to use automated data analysis (Palantir's software, in Hesse called \"hessenDATA\") were unconstitutional.",
+    src: "netzpolitik.org, Feb 2023",
+    url: "https://netzpolitik.org/2023/urteil-des-bundesverfassungsgerichts-automatisierte-datenanalyse-fuer-die-vorbeugende-bekaempfung-von-straftaten-ist-verfassungswidrig/",
+  },
+  "Philip Morris": {
+    text: "Philip Morris sued Uruguay for $25 million over its anti-smoking packaging laws. In 2016 the tribunal ruled for Uruguay and ordered Philip Morris to pay about $7 million of the country's legal costs.",
+    src: "Wikipedia: Philip Morris v. Uruguay",
+    url: "https://en.wikipedia.org/wiki/Philip_Morris_v._Uruguay",
+  },
+  "Rheinmetall": {
+    text: "In 2014 Rheinmetall's Bremen subsidiary accepted a €37 million fine over bribes paid to win arms deals with Greece.",
+    src: "The Irish Times, Dec 2014",
+    url: "https://www.irishtimes.com/news/world/europe/german-arms-manufacturer-fined-37m-for-greek-bribes-1.2034844",
+  },
+  "Shell": {
+    text: "In 2021 a Dutch court ordered Shell to cut its CO₂ emissions by 45% by 2030. In November 2024 Shell won on appeal, and the order was overturned.",
+    src: "NPR via KPBS, Nov 2024",
+    url: "https://www.kpbs.org/news/international/2024/11/12/dutch-appeals-court-overturns-landmark-climate-ruling-against-shell",
+  },
+  "Spotify": {
+    text: "Spotify founder Daniel Ek's investment firm put more than $100 million into Helsing, a German maker of military AI and drones. In 2025 bands such as King Gizzard & the Lizard Wizard and Deerhoof pulled their music in protest.",
+    src: "NPR via WBHM, 2025",
+    url: "https://wbhm.org/npr-story/musicians-keep-leaving-spotify-in-protest-of-ceos-defense-investments",
+  },
+  "Starbucks": {
+    text: "In 2015 the EU ordered the Netherlands to claw back €20–30 million in tax advantages from Starbucks. In 2019 an EU court annulled that decision, and Starbucks kept the money.",
+    src: "NL Times, Sep 2019",
+    url: "https://nltimes.nl/2019/09/24/dutch-tax-deal-starbucks-legit-state-aid-european-court",
+  },
+  "Uber": {
+    text: "The \"Uber Files\", a 2022 leak of more than 124,000 internal documents, showed how Uber pushed into new markets with secret lobbying and used a \"kill switch\" to cut off data access during police raids.",
+    src: "Euronews, Jul 2022",
+    url: "https://www.euronews.com/2022/07/11/uber-files-leak-reveals-how-uber-lobbied-leaders-and-duped-police-to-grab-new-markets",
+  },
+  "UBS": {
+    text: "When UBS took over its only big Swiss rival, Credit Suisse, in 2023, the government pushed it through over one weekend with emergency law. The financial regulator FINMA took over the competition review and approved it in 2024 without conditions.",
+    src: "FINMA, Jun 2024",
+    url: "https://www.finma.ch/it/news/2024/06/20240619-mm-zusammenschluss-ubs-cs/",
+  },
+};
+
 const $ = (id) => document.getElementById(id);
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -256,6 +411,10 @@ function writeEdition(snap) {
       if (recent.length > 2) recent.shift();
       e.line = fill(line, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier });
     });
+    // one real court case / scandal per article, about one of the Konzerne in it (see exposed.js)
+    const exposable = entries.filter((e) => EXPOSED[e.title]);
+    const hit = exposable.length ? pick(exposable) : null;
+    const fact = hit ? { head: pick(EXPOSED_HEADS), title: hit.title, ...EXPOSED[hit.title] } : null;
     const v = { n, part: i + 1, label: mixed ? "things" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
@@ -272,6 +431,7 @@ function writeEdition(snap) {
       middle: fill(pick(MIDDLES), v),
       quote: pick(QUOTES),
       vars: 9 + Math.floor(Math.random() * 30),
+      fact,
       ready: n >= 2,
       entries,
     };
@@ -308,6 +468,11 @@ const topCard = (e) => `
     <div class="place">#${e.rank}</div>${img(e)}
     <h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${esc(e.line)}</p>
   </div>`;
+
+const sourceLine = (f) => `<small class="src">Source: <a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.src)}</a></small>`;
+const exposedBox = (f) => `
+  <div class="exposed"><b>${esc(f.head)}</b><div class="who">${esc(f.title)}</div>
+    <p>${esc(f.text)}</p>${sourceLine(f)}</div>`;
 
 // ════════ Views ════════
 function home() {
@@ -353,6 +518,7 @@ function article(slug) {
         <blockquote class="quote">${esc(a.quote)}</blockquote>
         ${rest.length ? `<h2>The rest, ranked</h2><ol class="list">${rest.slice(0, half).map((e) => row(a, e)).join("")}</ol>` : ""}
         <p>${esc(a.middle)}</p>
+        ${a.fact ? exposedBox(a.fact) : ""}
         ${rest.length > half ? `<ol class="list">${rest.slice(half).map((e) => row(a, e)).join("")}</ol>` : ""}
         <div class="poll"><small>${esc(VERDICT.title)}</small><b>${esc(VERDICT.question)}</b>
           <div class="row2"><button type="button" data-vote="good">${esc(VERDICT.good)}</button>
@@ -380,6 +546,7 @@ function sheet(slug, id) {
     <h2>${esc(e.title)}</h2>
     <div class="meta">${tierChip(e.tier)}#${e.rank} of ${a.entries.length} · ${esc(a.cat)}</div>
     <p>${esc(e.line)}${ctx ? ` Ranked ${esc(ctx)}.` : ""}</p>
+    ${EXPOSED[e.title] ? `<div class="fact"><b>Meanwhile, in court ⚖️</b>${esc(EXPOSED[e.title].text)}${sourceLine(EXPOSED[e.title])}</div>` : ""}
     <button class="print" id="print">Print</button>
     <div class="printnote" id="printnote"></div>
     <button class="close" id="close">Close</button>`;
