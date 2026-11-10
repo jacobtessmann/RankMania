@@ -465,7 +465,9 @@ let edition = null;
 
 // ════════ Write the edition (once) ════════
 function writeEdition(snap) {
-  const real = snap.categories.filter((c) => !c.virtual);
+  const ORDER = ["konzerne", "students", "inventions"]; // the order of the articles: capital, people, things
+  const rank = (c) => (ORDER.indexOf(c.name) + 1) || 99;
+  const real = snap.categories.filter((c) => !c.virtual).sort((x, y) => rank(x) - rank(y));
   const byName = Object.fromEntries(snap.categories.map((c) => [c.name, c]));
   const mixed = snap.phase === "mix";
   const articles = real.map((c, i) => {
