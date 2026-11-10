@@ -9,11 +9,11 @@
 //  goes out and in to every tier the entry was in, in order, turning left or right around the middle
 //  on the way. How far out is the data; the turns, the wobble and the curls (more where it stayed
 //  longer) are noise. One color: the tier the entry is in right now.
-//  In the middle: the letter of the tier right now. Around the edge: place, name and tier, twice, spread evenly around.
+//  In the middle: the letter of the tier right now. Around the edge: place, name (at the top) and tier, once around.
 // ════════════════════════════════════════════════════════════════
 (function () {
   // load the font of the middle letter once; window.rankPrintFont resolves when it is there (wait for it before printing)
-  const fontUrl = new URL("fonts/kg-miss-kindergarten.ttf", document.currentScript.src).href;
+  const fontUrl = new URL("fonts/porkys.ttf", document.currentScript.src).href;
   const face = new FontFace("Rank Letter", `url("${fontUrl}")`);
   document.fonts.add(face);
   window.rankPrintFont = face.load().catch(() => {});
@@ -21,7 +21,7 @@
   const SIZE = 850; // drawing units across the sticker (printed at 60 mm: 1 unit ≈ 0.07 mm; all sizes below scale with it)
   const C = SIZE / 2; // the middle
   const FRAME = 3.3; // thin outline of the sticker (to cut along), 0 = none
-  const TEXT_BAND = 78; // width of the ring with the text around the edge
+  const TEXT_BAND = 96; // width of the ring with the text around the edge
   const INNER = 70; // the ring of F starts this far from the middle
   const STROKE = 105; // line width (about 7.4 mm on the 60 mm sticker)
   const OUTLINE = 3.2; // fine dark outline around the line (0 = none)
@@ -31,10 +31,11 @@
   const INK = "#000";
   const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
-  // the tier letter in the middle is in KG Miss Kindergarten (fonts/kg-miss-kindergarten.ttf, next to this script)
+  // the tier letter in the middle is in Porky's (fonts/porkys.ttf, next to this script)
   const LETTER_FONT = '"Rank Letter", Helvetica, Arial, sans-serif';
   const MIDDLE_SIZE = 440; // the tier letter in the middle (about half the sticker)
-  const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
+  const RING_SIZE = 84; // the text around the edge, always this size
+  const RING_GAP = 14; // at least this much room between the pieces of text around the edge, in degrees
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
   const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
   const NOISE = 0.1; // how wobbly the line is, relative to one tier ring
@@ -72,6 +73,9 @@
     out.push(p[p.length - 1]);
     return out;
   }
+  // the width of a piece of ring text in drawing units (measured in the browser)
+  const ctx = document.createElement("canvas").getContext("2d");
+  const measure = (t) => { ctx.font = `${RING_SIZE}px ${FONT}`; return ctx.measureText(t).width; };
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const f = (n) => n.toFixed(2);
 
@@ -154,22 +158,29 @@
     const tierNow = (data.current && data.current.tier) || pts[pts.length - 1].tier || "F";
     const path = `<polyline points="${line.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}"/>`;
 
-    // the text around the edge: place, name, tier — twice, six pieces spread evenly around the circle
+    // the text around the edge: place, name, tier — once around, always the same size. The name sits at the top
+    // in the middle, place and tier left and right of it, with the same gap between all three.
+    // A name too long for the ring is cut short with "…".
     const cur = data.current;
-    const name = String((data.entry && data.entry.title) || "").toUpperCase();
-    const pieces = [cur ? `#${cur.rank}` : "#–", name, cur ? `${cur.tier}-TIER` : "UNRANKED"];
     const textR = C - TEXT_BAND / 2 - RING_SIZE * 0.36; // baseline, so the capitals sit in the middle of the band
-    const slot = (2 * Math.PI * textR) / 6; // the room for one piece
-    const longest = Math.max(...pieces.map((t) => t.length));
-    const ringSize = Math.min(RING_SIZE, (slot * 0.9) / (longest * (0.64 + TRACKING)));
-    // six pieces clockwise, the name always at the top in the middle: # at -60°, name at 0°, tier at 60°, and again
-    // opposite. The circle path starts at 150° (between two pieces), so no piece is cut where it begins.
-    const START = 150;
-    const pt = (deg) => [C + textR * Math.sin((deg * Math.PI) / 180), C - textR * Math.cos((deg * Math.PI) / 180)];
+    const around = 2 * Math.PI * textR;
+    const deg = (t) => (360 * (measure(t) + TRACKING * RING_SIZE * t.length)) / around; // how much of the circle a piece takes
+    const rank = cur ? `#${cur.rank}` : "#–", tier = cur ? `${cur.tier}-TIER` : "UNRANKED";
+    const room = 360 - deg(rank) - deg(tier) - 3 * RING_GAP;
+    let name = String((data.entry && data.entry.title) || "").toUpperCase().trim();
+    if (deg(name) > room) {
+      while (name && deg(name + "…") > room) name = name.slice(0, -1);
+      name = name.trimEnd() + "…";
+    }
+    const gap = (360 - deg(rank) - deg(name) - deg(tier)) / 3;
+    const placed = [[-(deg(name) / 2 + gap + deg(rank) / 2), rank], [0, name], [deg(name) / 2 + gap + deg(tier) / 2, tier]];
+    // the circle path starts at the bottom (180°, inside the gap between place and tier), clockwise
+    const START = 180;
+    const pt = (d) => [C + textR * Math.sin((d * Math.PI) / 180), C - textR * Math.cos((d * Math.PI) / 180)];
     const [sx, sy] = pt(START), [ox, oy] = pt(START + 180);
     const circle = `M ${f(sx)},${f(sy)} A ${f(textR)},${f(textR)} 0 1,1 ${f(ox)},${f(oy)} A ${f(textR)},${f(textR)} 0 1,1 ${f(sx)},${f(sy)}`;
-    const ringText = [[-60, pieces[0]], [0, pieces[1]], [60, pieces[2]], [120, pieces[0]], [180, pieces[1]], [240, pieces[2]]]
-      .map(([deg, t]) => `<textPath href="#ring${uid}" startOffset="${f(((((deg - START) % 360) + 360) % 360) / 3.6)}%">${esc(t)}</textPath>`).join("");
+    const ringText = placed
+      .map(([d, t]) => `<textPath href="#ring${uid}" startOffset="${f(((((d - START) % 360) + 360) % 360) / 3.6)}%">${esc(t)}</textPath>`).join("");
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="100%" height="100%">
   <defs>
@@ -183,7 +194,7 @@
   </g>
   <g fill="${INK}" font-family='${FONT}'>
     <text x="${C}" y="${f(C + MIDDLE_SIZE * 0.36)}" font-size="${MIDDLE_SIZE}" font-family='${LETTER_FONT}' text-anchor="middle">${esc(cur ? cur.tier : "?")}</text>
-    <text font-size="${f(ringSize)}" text-anchor="middle" letter-spacing="${f(TRACKING * ringSize)}">${ringText}</text>
+    <text font-size="${RING_SIZE}" text-anchor="middle" letter-spacing="${f(TRACKING * RING_SIZE)}">${ringText}</text>
   </g>
 </svg>`;
   };
