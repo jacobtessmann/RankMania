@@ -567,13 +567,10 @@ function sheet(slug, id) {
   const a = edition.articles.find((x) => x.slug === slug);
   const e = a && a.entries.find((x) => x.id === id);
   if (!e) return;
-  const above = a.entries[e.rank - 2], below = a.entries[e.rank];
-  const ctx = [above && `below ${above.title}`, below && `above ${below.title}`].filter(Boolean).join(", ");
   $("panel").innerHTML = `
     ${img(e)}
     <h2>${esc(e.title)}</h2>
     <div class="meta">${tierChip(e.tier)}#${e.rank} of ${a.entries.length} · ${esc(a.cat)}</div>
-    <p>${caption(e)}${ctx ? ` Ranked ${esc(ctx)}.` : ""}</p>
     <button class="print" id="print">Print</button>
     <div class="printnote" id="printnote"></div>
     <button class="close" id="close">Close</button>`;
