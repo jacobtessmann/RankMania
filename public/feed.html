@@ -56,14 +56,8 @@
   .quote { margin: 26px 0; padding: 4px 0 4px 16px; border-left: 6px solid var(--red); font-size: 24px; line-height: 1.2; font-weight: 900; }
   .box { background: var(--soft); padding: 14px 16px; margin: 22px 0; font-size: 15px; line-height: 1.5; }
   .box b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
-  .exposed { border: 3px solid var(--ink); padding: 14px 16px 12px; margin: 26px 0; background: #fff6a8; font-size: 15px; line-height: 1.5; }
-  .exposed b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 4px; }
-  .exposed .who { font-weight: 900; font-size: 18px; margin-bottom: 4px; }
-  .exposed p { margin: 0 0 8px; }
-  .exposed small, .panel .src { display: block; font-size: 12px; color: var(--grey); }
-  .exposed a, .panel .src a { color: inherit; }
-  .panel .fact { background: #fff6a8; padding: 10px 12px; font-size: 13px; line-height: 1.4; margin: 0 0 12px; }
-  .panel .fact b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px; }
+  .src { font-size: 12px; color: var(--grey); white-space: nowrap; }
+  .src a { color: inherit; }
   .box table { border-collapse: collapse; width: 100%; }
   .box td { padding: 3px 0; border-top: 1px solid #e2e2e2; }
   .box td:last-child { text-align: right; font-weight: 700; }
@@ -241,21 +235,31 @@ const PILLS = ["Trending", "Hot", "Viral", "Must Read", "OMG"];
 
 // ════════════════════════════════════════════════════════════════
 //  EXPOSED — one real court case or scandal per Konzern.
-//  Every article that contains a Konzern shows ONE of these boxes
-//  between the paragraphs, and the entry sheet (tap on a Konzern) shows its own.
+//  Every article that contains a Konzern slips ONE of these into the text under
+//  one Konzern's caption, sandwiched between two lines of BuzzFeed lingo.
 //
 //  Key   = the name as the screens show it (the image file name, "_" → space).
 //  text  = the fact. Keep it short, factual and dated. No opinions.
-//  src   = where it comes from (shown under the box), url = the link.
+//  src   = where it comes from (small link after the text), url = the link.
 //  To add a Konzern: add a line with exactly its displayed name.
 //  Researched November 2026.
 // ════════════════════════════════════════════════════════════════
-const EXPOSED_HEADS = [
-  "FUN FACT 🤫",
-  "Meanwhile, in court ⚖️",
-  "The part their PR team skipped 🙊",
-  "Not in the press release 📎",
-  "Plot twist 🌀",
+// the BuzzFeed lingo around the fact: one before, one after
+const EXPOSED_BEFORE = [
+  "Okay but here's the tea ☕:",
+  "Wait, it gets better:",
+  "Fun fact nobody asked for:",
+  "Not to be dramatic, but:",
+  "Plot twist:",
+  "Sorry, we have to tell you this:",
+];
+const EXPOSED_AFTER = [
+  "Anyway, love that for them. 💅",
+  "Iconic. Moving on.",
+  "We're not crying, you're crying.",
+  "Still tier {T}, apparently.",
+  "But sure, keep scrolling. 🤷",
+  "The machine did not factor this in. Or did it?",
 ];
 
 const EXPOSED = {
@@ -411,10 +415,10 @@ function writeEdition(snap) {
       if (recent.length > 2) recent.shift();
       e.line = fill(line, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier });
     });
-    // one real court case / scandal per article, about one of the Konzerne in it (see exposed.js)
+    // one real court case / scandal per article, in the caption text of one Konzern (see EXPOSED)
     const exposable = entries.filter((e) => EXPOSED[e.title]);
     const hit = exposable.length ? pick(exposable) : null;
-    const fact = hit ? { head: pick(EXPOSED_HEADS), title: hit.title, ...EXPOSED[hit.title] } : null;
+    if (hit) hit.fact = { ...EXPOSED[hit.title], before: pick(EXPOSED_BEFORE), after: fill(pick(EXPOSED_AFTER), { T: hit.tier }) };
     const v = { n, part: i + 1, label: mixed ? "things" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
@@ -431,7 +435,6 @@ function writeEdition(snap) {
       middle: fill(pick(MIDDLES), v),
       quote: pick(QUOTES),
       vars: 9 + Math.floor(Math.random() * 30),
-      fact,
       ready: n >= 2,
       entries,
     };
@@ -461,18 +464,18 @@ const teaser = (a, cls = "card") => `
 const row = (a, e) => `
   <li class="item" data-id="${esc(e.id)}">
     <div class="rk">${e.rank}</div>${img(e)}
-    <div><h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${esc(e.line)}</p></div>
+    <div><h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${caption(e)}</p></div>
   </li>`;
 const topCard = (e) => `
   <div class="top" data-id="${esc(e.id)}">
     <div class="place">#${e.rank}</div>${img(e)}
-    <h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${esc(e.line)}</p>
+    <h3>${esc(e.title)}</h3><p>${tierChip(e.tier)}${caption(e)}</p>
   </div>`;
 
-const sourceLine = (f) => `<small class="src">Source: <a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.src)}</a></small>`;
-const exposedBox = (f) => `
-  <div class="exposed"><b>${esc(f.head)}</b><div class="who">${esc(f.title)}</div>
-    <p>${esc(f.text)}</p>${sourceLine(f)}</div>`;
+// the caption text: the ranking line, and (once per article) lingo + fact + lingo + source
+const caption = (e) => esc(e.line) + (e.fact
+  ? ` ${esc(e.fact.before)} ${esc(e.fact.text)} ${esc(e.fact.after)} <span class="src">(<a href="${esc(e.fact.url)}" target="_blank" rel="noopener">${esc(e.fact.src)}</a>)</span>`
+  : "");
 
 // ════════ Views ════════
 function home() {
@@ -518,7 +521,6 @@ function article(slug) {
         <blockquote class="quote">${esc(a.quote)}</blockquote>
         ${rest.length ? `<h2>The rest, ranked</h2><ol class="list">${rest.slice(0, half).map((e) => row(a, e)).join("")}</ol>` : ""}
         <p>${esc(a.middle)}</p>
-        ${a.fact ? exposedBox(a.fact) : ""}
         ${rest.length > half ? `<ol class="list">${rest.slice(half).map((e) => row(a, e)).join("")}</ol>` : ""}
         <div class="poll"><small>${esc(VERDICT.title)}</small><b>${esc(VERDICT.question)}</b>
           <div class="row2"><button type="button" data-vote="good">${esc(VERDICT.good)}</button>
@@ -530,7 +532,7 @@ function article(slug) {
         <p class="end">This article was written by no one, for you alone, in less than a second. Ask yourself who decided what you just read, and why you believed it for a moment.</p>
       </div>
     </div>`;
-  document.querySelectorAll(".item, .top").forEach((el) => (el.onclick = () => (location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`)));
+  document.querySelectorAll(".item, .top").forEach((el) => (el.onclick = (ev) => { if (!ev.target.closest("a")) location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`; }));
   setupVerdict(a);
   window.scrollTo(0, 0);
 }
@@ -545,8 +547,7 @@ function sheet(slug, id) {
     ${img(e)}
     <h2>${esc(e.title)}</h2>
     <div class="meta">${tierChip(e.tier)}#${e.rank} of ${a.entries.length} · ${esc(a.cat)}</div>
-    <p>${esc(e.line)}${ctx ? ` Ranked ${esc(ctx)}.` : ""}</p>
-    ${EXPOSED[e.title] ? `<div class="fact"><b>Meanwhile, in court ⚖️</b>${esc(EXPOSED[e.title].text)}${sourceLine(EXPOSED[e.title])}</div>` : ""}
+    <p>${caption(e)}${ctx ? ` Ranked ${esc(ctx)}.` : ""}</p>
     <button class="print" id="print">Print</button>
     <div class="printnote" id="printnote"></div>
     <button class="close" id="close">Close</button>`;
