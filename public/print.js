@@ -25,7 +25,7 @@
   const INK = "#000";
   const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
   const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
-  const MIDDLE_SIZE = 150; // the tier letter in the middle (15 mm)
+  const MIDDLE_SIZE = 260; // the tier letter in the middle (26 mm)
   const RING_SIZE = 66; // the text around the edge, at most (smaller if the name is long)
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
   const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
