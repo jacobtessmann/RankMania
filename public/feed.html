@@ -28,22 +28,15 @@
   .pill { display: inline-block; background: var(--yellow); color: var(--ink); font-weight: 900; font-size: 10px;
           padding: 2px 7px; border-radius: 3px; text-transform: uppercase; margin-left: 6px; vertical-align: 1px; }
 
-  /* clickbait thumbnail: big emojis on a loud background, no contestants */
-  .thumb { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg); display: block; }
-  .thumb .e { position: absolute; line-height: 1; filter: drop-shadow(0 4px 0 rgba(0,0,0,.18)); }
-  .thumb .e1 { font-size: 4.6em; left: 8%; top: 18%; transform: rotate(-12deg); }
-  .thumb .e2 { font-size: 3.2em; right: 10%; top: 10%; transform: rotate(10deg); }
-  .thumb .e3 { font-size: 3.6em; right: 22%; bottom: 6%; transform: rotate(-4deg); }
-  .thumb .ring { position: absolute; left: 4%; top: 10%; width: 46%; aspect-ratio: 1; border: .32em solid #ff1e1e; border-radius: 50%; }
-  .thumb .arrow { position: absolute; left: 47%; top: 40%; font-size: 3em; transform: rotate(-15deg); }
-  .thumb .num { position: absolute; left: 0; bottom: 0; background: var(--yellow); color: #000; font-weight: 900;
-                font-size: 1.15em; padding: .25em .5em; letter-spacing: -.5px; }
-  .thumb .q { position: absolute; right: 6%; top: 46%; font-size: 3.4em; font-weight: 900; color: #fff;
-              text-shadow: 0 3px 0 #000; transform: rotate(8deg); }
+  /* thumbnail: one red word in a red frame (PEOPLE, THINGS, CAPITAL, EVERYTHING) */
+  .thumb { aspect-ratio: 16 / 10; display: grid; place-items: center; background: #fff; border: 3px solid var(--red);
+           container-type: inline-size; overflow: hidden; }
+  .thumb span { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--red); font-size: 11.5cqw;
+                line-height: 1; text-transform: uppercase; letter-spacing: -.01em; }
 
   /* home */
   .card { display: block; padding: 20px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
-  .card .thumb { font-size: clamp(14px, 4.4vw, 22px); margin-bottom: 12px; }
+  .card .thumb { margin-bottom: 12px; }
   .card h2 { margin: 6px 0 6px; font-size: 28px; line-height: 1.12; font-weight: 900; letter-spacing: -.4px; }
   .card .sub { margin: 0; font-size: 18px; color: var(--red); line-height: 1.35; }
 
@@ -53,7 +46,6 @@
   .article .deck { font-size: 22px; line-height: 1.3; color: var(--red); margin: 0 0 8px; }
   .article .deck2 { font-size: 15px; line-height: 1.4; color: var(--grey); margin: 0 0 12px; }
   .byline { font-size: 12px; color: var(--grey); margin-bottom: 14px; }
-  .article .thumb { font-size: clamp(16px, 5.4vw, 26px); }
   .body p { font-size: 19px; line-height: 1.5; margin: 18px 0; color: #000; }
   .body h2 { font-size: 24px; font-weight: 900; letter-spacing: -.3px; margin: 30px 0 6px; }
   .box { background: var(--soft); padding: 14px 16px; margin: 22px 0; font-size: 15px; line-height: 1.5; }
@@ -106,7 +98,7 @@
   .related { margin-top: 34px; }
   .related h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin: 0 0 4px; }
   .related .card { display: grid; grid-template-columns: 40% 1fr; gap: 12px; align-items: center; padding: 14px 0; }
-  .related .card .thumb { font-size: 9px; margin: 0; }
+  .related .card .thumb { margin: 0; border-width: 2px; }
   .related .card h2 { font-size: 17px; color: var(--ink); text-transform: none; letter-spacing: -.2px; margin: 0; }
   .end { margin-top: 30px; padding-top: 16px; border-top: 4px solid var(--ink); font-size: 15px; line-height: 1.5; }
 
@@ -144,11 +136,10 @@
 
 // ── The three teasers on the home page: no contestants, only the category ──
 //    head = the plain headline (says what it is), titles = the clickbait subheadline, subs = one more line
-//    {n} = how many are ranked, {part} = part of the mix. Emojis are picked at random for the thumbnail.
+//    {n} = how many are ranked, {part} = part of the mix. word = the one word on the thumbnail.
 const TEASERS = {
   students: {
-    emojis: ["🎓", "🤓", "😳", "📚", "🙈", "😬", "✏️"],
-    color: "#ffd84d",
+    word: "PEOPLE", // the thumbnail
     head: "{n} VisCom Students, Ranked",
     titles: [
       "We Ranked Every Student in the Class. Number 7 Will Not Be Happy.",
@@ -162,8 +153,7 @@ const TEASERS = {
     ],
   },
   inventions: {
-    emojis: ["💡", "⚙️", "🤯", "🚂", "🔭", "🧲", "📻"],
-    color: "#7fd4ff",
+    word: "THINGS", // the thumbnail
     head: "{n} Inventions That Changed the World, Ranked",
     titles: [
       "Number 1 Is Not What You Think and Historians Are Furious",
@@ -177,8 +167,7 @@ const TEASERS = {
     ],
   },
   konzerne: {
-    emojis: ["🏢", "💰", "😱", "📈", "🤑", "🧾", "🏭"],
-    color: "#ff9a8a",
+    word: "CAPITAL", // the thumbnail
     head: "{n} of the World's Biggest Konzerne, Ranked",
     titles: [
       "Their Lawyers Have Been Informed. Number 3 Is Furious.",
@@ -192,8 +181,7 @@ const TEASERS = {
     ],
   },
   mix: {
-    emojis: ["🎓", "💡", "🏢", "🤯", "😱", "🌀", "⚖️"],
-    color: "#c9a6ff",
+    word: "EVERYTHING", // the thumbnail
     head: "Students vs. Inventions vs. Konzerne, Ranked (Part {part} of 3)",
     titles: [
       "We Ranked Students Against Inventions Against Corporations. It Got Weird.",
@@ -296,10 +284,16 @@ const HOOKS = {
   "Assembly Line": "The moving assembly line, introduced by Henry Ford in 1913, which cut the time to build a Model T from about 12 hours to 90 minutes.",
   "Combine Harvester": "The combine harvester, which reaps, threshes and cleans grain in a single pass, so one farmer can do the work of a whole village.",
 };
-// the paragraphs that explain the concept ({n} how many, {label} the list, {top} #1, {last} last place)
+// where each list comes from, said in the intro ({source})
+const SOURCES = {
+  students: "the names from visualcommunication.zhdk.ch and faces from thispersondoesnotexist.com",
+  inventions: "The Atlantic's \"The 50 Greatest Breakthroughs Since the Wheel\" (2013), picked by a panel of scientists and historians,",
+  konzerne: "the Forbes Global 2000 (2026)",
+};
+// the paragraphs that explain the concept ({n} how many, {label} the list, {source} where it comes from, {top} #1, {last} last place)
 const INTROS = [
   "For years we gave our taste away for free: to feeds, charts, recommendation engines and the media outlets that own them. They decided what was hot and what was not, and we called it our opinion.",
-  "So we did what any responsible publication would do. We ranked {n} {label}. No criteria, no committee, no apology. Just a list. And you are going to read every single entry.",
+  "So we did what any responsible publication would do: we took {source} and ranked {n} {label}. No criteria, no committee, no apology. Just a list. And you are going to read every single entry.",
 ];
 const MIDDLES = [
   "You might be wondering how we decided this. So were we. A number of variables were considered, weighted and turned into a conclusion. Then the conclusion changed. Then it changed again.",
@@ -485,7 +479,8 @@ function writeEdition(snap) {
       e.line = HOOKS[e.title] || fill(generic, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier, R: e.rank, n });
       e.fact = EXPOSED[e.title] || null; // every Konzern gets its critical review
     });
-    const v = { n, part: i + 1, label: mixed ? "things" : c.label.toLowerCase(),
+    const source = mixed ? `${SOURCES.students}, ${SOURCES.inventions.replace(/,$/, "")} and ${SOURCES.konzerne},` : SOURCES[c.name] || "whatever we could find";
+    const v = { n, part: i + 1, source, label: mixed ? "things" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
       slug: c.name,
@@ -495,9 +490,7 @@ function writeEdition(snap) {
       head: fill(T.head, v),
       title: fill(pick(T.titles), v),
       sub: fill(pick(T.subs), v),
-      emojis: shuffled(T.emojis).slice(0, 3),
-      color: T.color,
-      num: n ? `#${1 + Math.floor(Math.random() * n)} 😳` : "?!",
+      word: T.word,
       intros: INTROS.map((p) => fill(p, v)),
       middle: fill(pick(MIDDLES), v),
       quote: pick(QUOTES),
@@ -515,13 +508,7 @@ const img = (e, cls = "") => e.image
   ? `<img class="${cls}" src="${esc(e.image)}" alt="${esc(e.title)}" loading="lazy">`
   : `<div class="ph ${cls}">${esc(e.title[0])}</div>`;
 const tierChip = (t) => `<span class="tier" data-t="${t}" style="--c:var(--tier-${t})">${t}</span>`;
-const thumb = (a) => `
-  <div class="thumb" style="--bg:${a.color}">
-    <span class="ring"></span>
-    <span class="e e1">${a.emojis[0]}</span><span class="e e2">${a.emojis[1]}</span><span class="e e3">${a.emojis[2]}</span>
-    <span class="arrow">👈</span><span class="q">?!</span>
-    <span class="num">${esc(a.num)}</span>
-  </div>`;
+const thumb = (a) => `<div class="thumb"><span>${esc(a.word)}</span></div>`;
 const teaser = (a, cls = "card") => `
   <a class="${cls}" href="#/${a.slug}">
     ${thumb(a)}
