@@ -10,8 +10,8 @@
 //  on the way. How far out is the data; the turns, the wobble and the curls (more where it stayed
 //  longer) are noise. One color: the tier the entry is in right now.
 //  In the middle: the letter of the tier right now. Around the edge, upright towards the middle: the name at the
-//  top and the bottom, the place left and right. The black circle is the edge of the sticker (60 mm); the color
-//  runs a bit over it, so a sticker cut off-centre still has color to the edge.
+//  top and the bottom, the place left and right. The black circle is the edge of the sticker (60 mm), in the middle
+//  of a color band that runs as far over the edge as inside it, so a sticker cut off-centre still has color to the edge.
 // ════════════════════════════════════════════════════════════════
 (function () {
   // load the font of the middle letter once; window.rankPrintFont resolves when it is there (wait for it before printing)
@@ -22,8 +22,8 @@
 
   const SIZE = 850; // drawing units across the sticker (printed at 60 mm: 1 unit ≈ 0.07 mm; all sizes below scale with it)
   const C = SIZE / 2; // the middle
-  const FRAME = 6; // the black circle on the edge of the sticker (exactly 60 mm across, the line is centred on it)
-  const BLEED = 34; // the color runs this far over the edge (about 2.4 mm; the labels are 7 mm apart on the sheet)
+  const FRAME = 10; // the black circle on the edge of the sticker (exactly 60 mm across, the line is centred on it)
+  const BLEED = 34; // the color band on the edge: this wide outside and inside the black circle (about 2.4 mm; the labels are 7 mm apart on the sheet)
   const INNER = 70; // the ring of F starts this far from the middle
   const STROKE = 105; // line width (about 7.4 mm on the 60 mm sticker)
   const OUTLINE = 5; // dark outline around the line (0 = none)
@@ -36,11 +36,11 @@
   // the tier letter in the middle is in Porky's (fonts/porkys.ttf, next to this script)
   const LETTER_FONT = '"Rank Letter", Helvetica, Arial, sans-serif';
   const MIDDLE_SIZE = 440; // the tier letter in the middle (about half the sticker)
-  const LETTER_LINE = 7; // black outline of the letter
+  const LETTER_LINE = 12; // black outline of the letter
   const LETTER_HALO = 10; // white edge around that outline
   const SHADOW = [9, 7], SHADOW_LINE = 7; // a line in the tier color, shifted right and down, behind the letter
   const RING_SIZE = 64; // the text around the edge, always this size
-  const TEXT_INSET = 34; // its baseline is this far inside the edge (the letters stand towards the middle)
+  const TEXT_INSET = BLEED + 18; // its baseline is this far inside the edge, clear of the color band (the letters stand towards the middle)
   const RING_GAP = 14; // at least this much room between name and place, in degrees
   const LINE_GAP = 16; // room between the line and the text
   const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
@@ -200,7 +200,7 @@
     <path id="ring${uid}" d="${circle}"/>
   </defs>
   <circle cx="${C}" cy="${C}" r="${C + BLEED}" fill="${color}"/>
-  <circle cx="${C}" cy="${C}" r="${C}" fill="#fff"/>
+  <circle cx="${C}" cy="${C}" r="${C - BLEED}" fill="#fff"/>
   <g clip-path="url(#sticker${uid})" fill="none" stroke-linecap="round" stroke-linejoin="round">
     ${OUTLINE ? `<g stroke="${OUTLINE_COLOR}" stroke-width="${STROKE + 2 * OUTLINE}">${path}</g>` : ""}
     <g stroke="${color}" stroke-width="${STROKE}">${path}</g>
