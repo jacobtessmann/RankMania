@@ -11,16 +11,15 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: #fff; color: var(--ink); font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
          -webkit-font-smoothing: antialiased; }
-  /* headlines in Arial Black (where a device doesn't have it, e.g. iPhones, Arial Bold steps in) */
-  .logo, .card h2, .article h1, .entry h3, .entry .place, .entry .rk, .panel h2, .poll h2, .poll button, .related .card h2 {
-    font-family: "Arial Black", Arial, sans-serif; font-weight: 900; letter-spacing: -.02em; }
+  /* everything in regular Arial: no bold anywhere, the hierarchy is size only */
+  h1, h2, h3, b, strong, .logo, .entry .place, .entry .rk, .poll button { font-weight: normal; }
   button { font: inherit; }
   .mast { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line);
           display: flex; align-items: center; gap: 14px; padding: 12px 18px; padding-top: max(12px, env(safe-area-inset-top)); }
-  .logo { font-size: 28px; font-weight: 900; letter-spacing: -1.5px; color: var(--red); text-decoration: none; }
+  .logo { font-size: 30px; font-weight: normal; letter-spacing: -.5px; color: var(--red); text-decoration: none; }
   .badges { margin-left: auto; display: flex; gap: 6px; }
   .bdg { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
-         font-size: 8px; font-weight: 900; color: #fff; background: var(--red); }
+         font-size: 8px; font-weight: normal; color: #fff; background: var(--red); }
   .bdg.y { background: var(--yellow); color: var(--ink); }
   .bdg.k { background: var(--ink); }
   main { max-width: 680px; margin: 0 auto; padding: 0 18px 60px; }
@@ -36,21 +35,21 @@
   /* home */
   .card { display: block; padding: 20px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
   .card .thumb { margin-bottom: 12px; }
-  .card h2 { margin: 14px 0 8px; font-size: 26px; line-height: 1.12; }
+  .card h2 { margin: 14px 0 8px; font-size: 30px; line-height: 1.12; }
   .card .sub { margin: 0; font-size: 22px; color: var(--red); line-height: 1.3; }
 
   /* article */
   .back { display: inline-block; margin: 16px 0 4px; color: var(--grey); text-decoration: none; font-size: 14px; }
-  .article h1 { margin: 8px 0 10px; font-size: 32px; line-height: 1.08; }
+  .article h1 { margin: 8px 0 10px; font-size: 36px; line-height: 1.08; }
   .article .deck { font-size: 26px; line-height: 1.25; color: var(--red); margin: 0 0 8px; }
   .article .deck2 { font-size: 15px; line-height: 1.4; color: var(--grey); margin: 0 0 12px; }
   .body p { font-size: 19px; line-height: 1.5; margin: 18px 0; color: #000; }
-  .body h2 { font-size: 24px; font-weight: 900; letter-spacing: -.3px; margin: 30px 0 6px; }
+  .body h2 { font-size: 24px; font-weight: normal; letter-spacing: -.3px; margin: 30px 0 6px; }
   .box { background: var(--soft); padding: 14px 16px; margin: 22px 0; font-size: 15px; line-height: 1.5; }
   .box b { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
   .box table { border-collapse: collapse; width: 100%; }
   .box td { padding: 3px 0; border-top: 1px solid #e2e2e2; }
-  .box td:last-child { text-align: right; font-weight: 700; }
+  .box td:last-child { text-align: right; font-weight: normal; }
   .redact { background: #111; color: #111; padding: 0 .2em; user-select: none; }
 
   /* entries: big for the top 3, compact rows for the rest. Pictures get a thin red outline. */
@@ -60,19 +59,19 @@
   .entry h3 { margin: 0; color: #000; }
   .entry .hook { margin: 0; color: #000; }
   .entry.big .place { font-size: 64px; line-height: 1; color: var(--red); margin-bottom: 6px; }
-  .entry.big h3 { font-size: 28px; line-height: 1.1; margin-bottom: 14px; }
+  .entry.big h3 { font-size: 32px; line-height: 1.1; margin-bottom: 14px; }
   .entry.big img, .entry.big .ph { width: 100%; aspect-ratio: 1; margin-bottom: 14px; }
   .entry.big .hook { font-size: 19px; line-height: 1.45; }
   .entry.small { display: grid; grid-template-columns: 40px 92px 1fr; gap: 12px; align-items: start; padding: 16px 0; }
   .entry.small .rk { font-size: 34px; line-height: 1; color: var(--red); text-align: center; }
   .entry.small img, .entry.small .ph { width: 92px; height: 92px; }
-  .entry.small h3 { font-size: 20px; line-height: 1.1; margin-bottom: 6px; }
+  .entry.small h3 { font-size: 22px; line-height: 1.1; margin-bottom: 6px; }
   .entry.small .hook { font-size: 16px; line-height: 1.4; }
   .entry.small .review { grid-column: 2 / -1; margin-top: 2px; font-size: 16px; }
   .review { margin: 12px 0 0; font-size: 17px; line-height: 1.45; color: #000; }
   .review .lbl { color: var(--red); }
   .review .src { display: block; margin-top: 6px; font-size: 14px; color: #000; }
-  .tier { display: inline-block; min-width: 22px; text-align: center; font-weight: 900; font-size: 12px; padding: 2px 5px;
+  .tier { display: inline-block; min-width: 22px; text-align: center; font-weight: normal; font-size: 12px; padding: 2px 5px;
           margin-right: 8px; vertical-align: .35em; background: var(--c); color: #000; }
   .tier[data-t="F"] { color: #fff; }
 
@@ -107,13 +106,13 @@
   .panel { background: #fff; width: 100%; max-width: 340px; margin: 0 auto; max-height: 86vh; overflow: auto;
            padding: 16px 16px 10px; border-radius: 14px; }
   .panel img, .panel .ph { width: 62%; margin: 0 auto; aspect-ratio: 1; object-fit: contain; background: #f2f2f2; display: block; }
-  .panel h2 { margin: 12px 0 4px; font-size: 22px; font-weight: 900; letter-spacing: -.3px; }
+  .panel h2 { margin: 12px 0 4px; font-size: 22px; font-weight: normal; letter-spacing: -.3px; }
   .panel .meta { font-size: 14px; margin-bottom: 6px; }
   .panel p { font-size: 14px; line-height: 1.4; margin: 0 0 12px; }
-  .print { width: 100%; padding: 13px; border: 0; background: var(--ink); color: #fff; font-weight: 900; font-size: 16px; cursor: pointer; }
+  .print { width: 100%; padding: 13px; border: 0; background: var(--ink); color: #fff; font-weight: normal; font-size: 16px; cursor: pointer; }
   .close { width: 100%; padding: 12px; border: 0; background: none; color: var(--grey); margin-top: 6px; cursor: pointer; }
   .printnote { font-size: 13px; color: var(--grey); text-align: center; min-height: 1.3em; margin-top: 8px; }
-  .ph { display: grid; place-items: center; font-size: 40px; font-weight: 900; color: #bbb; }
+  .ph { display: grid; place-items: center; font-size: 40px; font-weight: normal; color: #bbb; }
 </style>
 </head>
 <body>
@@ -265,21 +264,31 @@ const HOOKS = {
 };
 // where each list comes from, said in the intro ({source})
 const SOURCES = {
-  students: "the names from visualcommunication.zhdk.ch and faces from thispersondoesnotexist.com",
-  inventions: "The Atlantic's \"The 50 Greatest Breakthroughs Since the Wheel\" (2013), picked by a panel of scientists and historians,",
-  corporations: "the Forbes Global 2000 (2026)",
+  students: "the VisCom class list (faces by thispersondoesnotexist.com)",
+  inventions: "The Atlantic's 50 Greatest Breakthroughs Since the Wheel",
+  corporations: "the Forbes Global 2000",
 };
-// the paragraphs that explain the concept ({n} how many, {label} the list, {source} where it comes from, {top} #1, {last} last place)
-const INTROS = [
-  "Every day something ranks you: your feed, your grades, your dating app, your credit score. Charts tell you what's hot, lists tell you what's worth it, and somewhere along the way we stopped asking who makes the lists.",
-  "So we made our own. We took {source} and ranked {n} {label}. No criteria, no committee, no appeal. Just a list, sorted from best to worst, and you're going to scroll all the way down.",
+// the intro: one paragraph from each pool, picked at random. Pure BuzzFeed babble, no real content.
+// ({n} how many, {label} the list, {source} where it comes from)
+const INTROS_1 = [
+  "Okay, we need to talk about this list. We've been staring at it for way too long, and honestly? Some of these placements are going to start fights in the group chat. 👀",
+  "Grab a snack, get comfy, and maybe sit down, because this one gets intense. We ranked {n} {label} and we are NOT okay. 😳",
+  "You asked, we delivered. Well, technically nobody asked. But here we are, and you're definitely going to want to see number 1. Trust us. 🔥",
+  "Not to be dramatic, but this might be the most important list you read today. Maybe this week. Maybe ever. No pressure. ✨",
 ];
+const INTROS_2 = [
+  "Straight from {source}, sorted from absolute icon to... well, you'll see. Keep scrolling. No skipping to the end! 👇",
+  "We took {source} and ranked it all. Some of these will make you scream. Some will make you cry. One will make you do both. 😭",
+  "Everything here comes from {source}. The order? That's all us. Don't @ us. 💅",
+];
+// between the top 3 and the rest
 const MIDDLES = [
-  "Quick question: why do you already believe this order? You don't know the criteria. You don't know who decided. But it's numbered, so it feels like a fact.",
-  "Notice how quickly you accepted that {top} is number one? You don't know the question. You don't know the criteria. You just saw a list, and a list looks like the truth.",
+  "Wait, are you still here? Good. Because the next part is where things get REALLY wild. 🌀",
+  "Halfway there! If you're already mad, maybe take a deep breath before scrolling any further. 😬",
+  "Okay, quick break. Hydrate. Stretch. Text your best friend \"have you seen this??\". Now keep going. 💧",
 ];
 // the last paragraph of every article
-const END = "This list was made for you alone, the moment you opened it, and it's already out of date: on the screens in the room the ranking has moved on. Who decided what you just read, and why did you believe it for a second?";
+const END = "And that's the list! Agree? Disagree? Absolutely furious? Come back soon, because this ranking changes faster than you can say \"number 1\". ✨";
 // The verdict at the end of each article: the visitor rates the whole list. It really goes to the brain
 // (one green or red dot on that screen, a flash on the brain screen, and a tiny shift in the ranking).
 const VERDICT = {
@@ -457,7 +466,7 @@ function writeEdition(snap) {
       e.line = HOOKS[e.title] || fill(generic, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier, R: e.rank, n });
       e.fact = EXPOSED[e.title] || null; // every Corporation gets its critical review
     });
-    const source = mixed ? `${SOURCES.students}, ${SOURCES.inventions.replace(/,$/, "")} and ${SOURCES.corporations},` : SOURCES[c.name] || "whatever we could find";
+    const source = mixed ? `${SOURCES.students}, ${SOURCES.inventions} and ${SOURCES.corporations}` : SOURCES[c.name] || "the internet";
     const v = { n, part: i + 1, source, label: mixed ? "people, things and capital" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
@@ -467,7 +476,7 @@ function writeEdition(snap) {
       head: fill(T.head, v),
       title: fill(pick(T.titles), v),
       word: T.word,
-      intros: INTROS.map((p) => fill(p, v)),
+      intros: [fill(pick(INTROS_1), v), fill(pick(INTROS_2), v)],
       middle: fill(pick(MIDDLES), v),
       vars: 9 + Math.floor(Math.random() * 30),
       ready: n >= 2,

@@ -156,7 +156,7 @@ Settings near the top of the script: `TILE_SIZE` (fixed size in px for all scree
 
 ## 7. The phone feed (feed.html)
 
-RankFeed is set in **Arial**, headlines in **Arial Black** (system fonts; where Arial Black is missing, e.g. on iPhones, Arial Bold steps in). Each article has a plain headline that says what is ranked (`head` in `TEASERS`) and the clickbait as subheadline (`titles`, `subs`). The vote at the end is a full-width green/red block ("Help us train the machine.").
+RankFeed is set in regular **Arial** only (no bold); the hierarchy is size alone. The intro, middle and end paragraphs are BuzzFeed babble picked at random (`INTROS_1`, `INTROS_2`, `MIDDLES`, `END`). Each article has a plain headline that says what is ranked (`head` in `TEASERS`) and the clickbait as subheadline (`titles`, `subs`). The vote at the end is a full-width green/red block ("Help us train the machine.").
 
 The home page shows **"Snapshot #n"**: how many editions have been written since the last restart (counted by the brain, `/api/edition`). The thumbnails are one red word in a red frame: CAPITAL, PEOPLE, THINGS, EVERYTHING.
 
