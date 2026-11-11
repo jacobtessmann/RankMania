@@ -33,7 +33,7 @@ const CATEGORIES = [
     label: "Students",
     names: true,
     title: "Ranking {n} Students of VisCom",
-    source: "data sourced from visualcommunication.zhdk.ch and thispersondoesnotexist.com",
+    source: "List sourced from visualcommunication.zhdk.ch/personen/bachelor · faces from thispersondoesnotexist.com",
     headline: "{W} Is Now Ahead of {L} and the Whole Class Knows It",
   },
   {
@@ -41,7 +41,7 @@ const CATEGORIES = [
     label: "Things",
     names: true,
     title: "Ranking {n} Things",
-    source: "list sourced from listchallenges.com, \"Top 100 Greatest Things Ever\"",
+    source: "List sourced from listchallenges.com/top-100-greatest-things-ever",
     headline: "{W} Just Out-Invented {L} and History Will Never Recover",
   },
   {
@@ -49,7 +49,7 @@ const CATEGORIES = [
     label: "Corporations",
     names: true,
     title: "Ranking {n} Corporations",
-    source: "companies sourced from the Forbes Global 2000 (2026)",
+    source: "List sourced from forbes.com/lists/global2000",
     headline: "{W} Overtook {L} and the Shareholders Are Screaming",
   },
 ];
@@ -91,7 +91,7 @@ const DEFAULT_HEADLINES = {
 const MIX = {
   label: "Everything",
   title: "Ranking {n} Students, Things and Corporations",
-  source: "",
+  source: "Lists sourced from visualcommunication.zhdk.ch, listchallenges.com and forbes.com",
   headline: "{W} Just Beat {L}. Yes, We Are Comparing These Now.",
 };
 
