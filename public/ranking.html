@@ -46,7 +46,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 #stage::before {
   content: ""; position: absolute; left: 0; right: 0; top: -100%; height: 200%; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(90deg, var(--paper) 0 var(--label-w), transparent var(--label-w)),
+    linear-gradient(90deg, var(--label-gap, var(--paper)) 0 var(--label-w), transparent var(--label-w)),
     repeating-linear-gradient(180deg, var(--paper) 0%, var(--paper) calc(50% - var(--band)), var(--shade) 50%,
                               var(--paper) calc(50% + var(--band)), var(--paper) 100%) 0 0 / 100% 50%;
   animation: render var(--render-time) linear infinite;
@@ -147,6 +147,11 @@ body.mix-full .face img, body.mix-full .name, body.mix-full #title, body.mix-ful
 /* vignettes stay white, green and red on the inverted screen (so they are set to the opposite colors) */
 body.mix-full { --vig-up: #ff00ff; --vig-down: #00ffff; }
 body.mix-full .face { --vig: #000; }
+/* the white frame, the white lines between the tier letters and the white side strip stay as in sequence 1 */
+body.mix-full #app { background: #000; --label-gap: #000; }
+body.mix-full #side { color: var(--paper); }
+body.mix-full #side-votes .good { color: #ff00ff; }
+body.mix-full #side-votes .bad { color: #00ffff; }
 /* left and right screen: three entries, big, overlapping, slightly tilted and shaking (POD_LAYOUT) */
 body.mix-top #app, body.mix-bottom #app { display: none; }
 #podium { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; --u: min(100vw, 56.25vh); }

@@ -134,7 +134,7 @@ Settings at the top of `server.js`:
 | `BIG_JUMP_CHANCE`, `BIG_JUMP_MAX` | how often a move jumps 2–3 tiers, and how far |
 | `WILDER_AFTER_MS`, `WILDER_FACTOR` | moves get this much bigger over this time (`1` = stays the same) |
 | `CLEAR_MS` | how long the clearing between the sequences takes |
-| `SEPARATE_MINUTES`, `MIX_MINUTES` | length of each sequence at server start (0 = by hand); the timers on /admin.html change them live |
+| `SEPARATE_MINUTES`, `MIX_MINUTES` | length of each sequence at server start (now 3 and 2 minutes, so the show loops by itself; 0 = by hand); the timers on /admin.html change them live |
 | `AUTO_MIX_AFTER_MS` | `null` = mix only by hand; a time in ms = automatic after all lists are full |
 | `TIERS` | score borders of S A B C D F |
 

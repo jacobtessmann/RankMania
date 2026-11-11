@@ -131,8 +131,8 @@ const WILDER_FACTOR = 1.5; // … 1.5× bigger moves and 1.5× more big jumps (1
 const CLEAR_MS = 2500; // how long the screens take to clear between the sequences
 // Length of each sequence in minutes (also set live on /admin.html). 0 = until you switch by hand.
 // When sequence 1 ends, the mix starts; when the mix ends, sequence 1 starts again.
-const SEPARATE_MINUTES = 0;
-const MIX_MINUTES = 0;
+const SEPARATE_MINUTES = 3;
+const MIX_MINUTES = 2;
 const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.html (or a time in ms after all lists are full)
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
