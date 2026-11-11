@@ -143,13 +143,18 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
    but the pictures and the yellow names stay as they are (inverted twice) */
 body.mix-full { background: #000; }
 body.mix-full #app { filter: invert(1); }
-body.mix-full .face img, body.mix-full .name { filter: invert(1); }
+body.mix-full .face img, body.mix-full .name, body.mix-full #title, body.mix-full .label { filter: invert(1); }
 /* vignettes stay white, green and red on the inverted screen (so they are set to the opposite colors) */
 body.mix-full { --vig-up: #ff00ff; --vig-down: #00ffff; }
 body.mix-full .face { --vig: #000; }
 /* left and right screen: three entries, big, overlapping, slightly tilted and shaking (POD_LAYOUT) */
 body.mix-top #app, body.mix-bottom #app { display: none; }
-#podium { position: fixed; inset: 0; overflow: hidden; --u: min(100vw, 56.25vh); }
+#podium { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; --u: min(100vw, 56.25vh); }
+/* the title bar on top: the same black block with white text as on the tierlist */
+.pod-title { flex: 0 0 auto; background: var(--ink); color: var(--paper); font-family: var(--f-type); font-weight: 400;
+             font-size: min(6.4vh, 7.6vw); line-height: 1.02; letter-spacing: -.01em; padding: .3em .5em .35em;
+             height: calc(min(6.4vh, 7.6vw) * 2.69); display: flex; align-items: center; }
+.pod-area { position: relative; flex: 1 1 auto; min-height: 0; --u: min(100vw, 56.25vh - 9vh); }
 body.mix-top #podium { background: var(--pod-top-bg); }
 body.mix-bottom #podium { background: var(--pod-bottom-bg); }
 .pod { position: absolute; width: calc(var(--w) * var(--u)); aspect-ratio: 1;
@@ -204,7 +209,7 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
 </head>
 <body>
 <!-- the mix on the left and right screen: three big entries -->
-<div id="podium" hidden></div>
+<div id="podium" hidden><div class="pod-title" id="pod-title"></div><div class="pod-area" id="pod-area"></div></div>
 <div id="app">
   <div id="stage">
     <div id="title">&nbsp;</div>
@@ -265,6 +270,7 @@ const clamp = (v) => Math.max(1, Math.min(100, Math.round(v)));
 const MIX_VIEW = { corporations: "top", students: "full", things: "bottom" };
 // where the three big pictures sit (share of the screen; w = width, r = tilt in degrees, z = stacking).
 // Top: #1 biggest at the top. Bottom: the last place biggest, at the bottom.
+const POD_TITLE = { top: "Top 3 of Everything", bottom: "Bottom 3 of Everything" };
 const POD_LAYOUT = {
   top: [
     { x: 4, y: 4, w: 0.74, r: 5, z: 1 },     // #1
@@ -291,7 +297,9 @@ function renderMixView() {
   const key = view + "|" + three.map((e) => e.id + "#" + e.rank).join(",") + "|" + innerWidth + "x" + innerHeight;
   if (key === podKey) return;
   podKey = key;
-  pod.innerHTML = "";
+  $("pod-title").textContent = POD_TITLE[view];
+  const area = $("pod-area");
+  area.innerHTML = "";
   three.forEach((e, i) => {
     const spot = POD_LAYOUT[view][view === "top" ? i : 3 - three.length + i];
     const el = document.createElement("div");
@@ -305,7 +313,7 @@ function renderMixView() {
     name.className = "name";
     lines.forEach((l) => { const sp = document.createElement("span"); sp.textContent = l; name.append(sp); });
     el.querySelector(".face").append(name);
-    pod.append(el);
+    area.append(el);
     // the same yellow name as in the list: as big as possible, always fitting on the picture
     const size = el.offsetWidth || 300; // without the tilt
     const longest = Math.max(...lines.map((l) => l.length));
@@ -676,7 +684,6 @@ function mark(el, cls) {
   el.classList.remove("mark-up", "mark-down", "mark-new");
   el.classList.add(cls);
   clearTimeout(el._mark);
-  if (phase === "mix") return; // in the mix the green/red stays until the next move
   el._mark = setTimeout(() => el.classList.remove(cls), MARK_MS);
 }
 
