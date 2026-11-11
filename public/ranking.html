@@ -61,7 +61,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   font-family: var(--f-type); font-weight: 400; font-size: var(--title-fs); line-height: 1.02;
   letter-spacing: -.01em; padding: .3em .5em .35em; overflow: hidden;
   height: var(--title-h); /* always room for two lines, so the icon size never changes */
-  display: flex; align-items: center;
+  display: flex; align-items: flex-start; /* one or two lines: they start at the top */
 }
 #title .t { display: block; }
 #title .n { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; }
@@ -164,6 +164,7 @@ body.mix-full .face { --vig: #000; }
 body.mix-full #app { background: #000; --label-gap: #000; }
 body.mix-full #tierlist { padding-top: 0; border-top: var(--row-gap) solid #000; } /* the white line under the title, full width */
 body.mix-full #side { color: var(--paper); }
+body.mix-full #side-url, body.mix-full #side-source { background: #000; } /* (white after the inversion) */
 body.mix-full #side-votes .good { color: #ff00ff; }
 body.mix-full #side-votes .bad { color: #00ffff; }
 /* left and right screen: three entries, big, overlapping, slightly tilted and shaking (POD_LAYOUT) */
@@ -172,7 +173,7 @@ body.mix-top #app, body.mix-bottom #app { display: none; }
 /* the title bar on top: the same black block with white text as on the tierlist */
 .pod-title { flex: 0 0 auto; background: var(--ink); color: var(--paper); font-family: var(--f-type); font-weight: 400;
              font-size: var(--title-fs); line-height: 1.02; letter-spacing: -.01em; padding: .3em .5em .35em;
-             height: var(--title-h); display: flex; align-items: center;
+             height: var(--title-h); display: flex; align-items: flex-start;
              margin: var(--frame) calc(var(--frame) * 2 + var(--side-w)) 0 var(--frame); position: relative; z-index: 2; } /* exactly where the tierlist title sits */
 .pod-area { position: relative; flex: 1 1 auto; min-height: 0; --u: min(100vw, 56.25vh - 9vh); }
 body.mix-top #podium { background: var(--pod-top-bg); }
@@ -218,9 +219,10 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
          padding: var(--frame); overflow: hidden; }
 #inter-head { flex: 0 0 auto; box-shadow: inset 0 0 0 3px #fff; background: #000; font-family: var(--f-type); font-weight: 400;
               font-size: var(--title-fs); line-height: 1.02; letter-spacing: -.01em; padding: .3em .5em .35em; height: var(--title-h);
-              display: flex; flex-direction: column; justify-content: center; margin-right: calc(var(--frame) + var(--side-w));
+              display: flex; flex-direction: column; justify-content: flex-start; margin-right: calc(var(--frame) + var(--side-w));
               position: relative; z-index: 2; }
 #inter-head i { display: block; }
+#inter-text { display: block; min-height: 1.02em; } /* keeps its line even while it is empty */
 @keyframes blink { 50% { opacity: 0; } }
 #inter-log { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
              font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: min(1.25vh, 2.1vw); line-height: 1.35;
@@ -1021,6 +1023,7 @@ connectDisplay({
     screen = lists[want] && !lists[want].virtual ? want : screens[0];
     try { userSize = +localStorage.getItem(sizeKey()) || 0; } catch { userSize = 0; }
     markSwitch();
+    renderMixView(); // inverted / top 3 / bottom 3 at once, not a moment later
     if (first || before !== shownId() || cards.size === 0) rebuild();
     else {
       layout();
