@@ -23,7 +23,7 @@
          font-size: 8px; font-weight: normal; color: #fff; background: var(--red); }
   .bdg.y { background: var(--yellow); color: var(--ink); }
   .bdg.k { background: var(--ink); }
-  main { max-width: 680px; margin: 0 auto; padding: 0 18px 60px; }
+  main { max-width: 680px; margin: 0 auto; padding: 0 18px 40px; }
   .edition { font-size: 12px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; padding: 18px 0 6px; margin: 0; }
   .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; }
 
@@ -99,6 +99,10 @@
   .related .card .thumb { margin: 0; border-width: 2px; aspect-ratio: auto; height: 100%; min-height: 90px; } /* as tall as the text next to it */
   .related .card h2 { font-size: 18px; line-height: 1.15; color: var(--ink); text-transform: none; margin: 0 0 6px; }
   .related .card .sub { font-size: 16px; }
+  /* the three sources, at the bottom of every page */
+  .sources { max-width: 680px; margin: 0 auto; padding: 18px 18px 40px; border-top: 1px solid var(--ink); font-size: 15px; line-height: 1.5; }
+  .sources p { margin: 0 0 6px; color: var(--red); }
+  .sources a { display: block; color: #000; word-break: break-all; }
   .end { margin-top: 30px; padding-top: 16px; border-top: 4px solid var(--ink); font-size: 15px; line-height: 1.5; }
 
   /* one entry, with the print button */
@@ -122,6 +126,12 @@
   <div class="badges"><div class="bdg">OMG</div><div class="bdg y">LOL</div><div class="bdg k">WTF</div></div>
 </div>
 <main id="view"><p class="edition">Loading your edition…</p></main>
+<footer class="sources">
+  <p>Sources</p>
+  <a href="https://www.listchallenges.com/top-100-greatest-things-ever" target="_blank" rel="noopener">listchallenges.com/top-100-greatest-things-ever</a>
+  <a href="https://www.forbes.com/lists/global2000/" target="_blank" rel="noopener">forbes.com/lists/global2000</a>
+  <a href="https://visualcommunication.zhdk.ch/personen/bachelor/" target="_blank" rel="noopener">visualcommunication.zhdk.ch/personen/bachelor</a>
+</footer>
 <div class="sheet" id="sheet" hidden><div class="panel" id="panel"></div></div>
 
 <script src="shared.js"></script>
