@@ -65,7 +65,7 @@ const ENTRIES_PER_SCREEN = 20;
 //    "good" calms it down. The effect adds up per vote and fades out by itself.
 const VOTE_WEIGHT = 0.15; // how much one vote changes the mood (the mood goes from -1 calm to +1 restless)
 const MOOD_HALF_LIFE_MS = 90000; // after 90 s, half of the effect is gone
-const VOTE_COOLDOWN_MS = 15000; // one phone can vote for the same list at most every 15 s
+const VOTE_COOLDOWN_MS = 700; // the vote can be pressed again and again; this only stops accidental double taps
 // The brain also really learns from every verdict, per image: a "good" verdict on a list gives everything
 // that was high in the voter's list a tiny plus and everything low a tiny minus ("this order was right").
 // "bad" does the opposite. What it learned stays with the image across all rounds and both sequences,

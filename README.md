@@ -164,6 +164,8 @@ RankFeed is set entirely in **CMU Typewriter Text Light** (Donald Knuth's Comput
 
 The sticky top bar shows "RANKINGS FROM 13:39" (when this edition was written) and three red buttons C, P, T that jump to capital, people and things (in the mix, all three open the one "Everything" article). The thumbnails are one red word in a red frame: CAPITAL, PEOPLE, THINGS, EVERYTHING.
 
+Article headlines are the headlines the tierlist screens show right now (in the mix: the middle screen's). The vote is a bar fixed at the bottom of every article ("How is this ranking? Calibrate the machine.") and can be pressed again and again (`VOTE_COOLDOWN_MS` = 0.7 s only stops double taps); each press counts up on the button. The article ends with the link to its own source list (the mix: all three); the home page has none. In the mix the top bar shows a single E button.
+
 RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one "Everything" article). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
 **Entries** are grouped by tier, each group under a big colored "A-TIER" block, with no numbers: the name, the picture, one line about the entry (`HOOKS` in `public/feed.html`, keyed by the displayed name: written for all 25 corporations and the things; new files without a line get a plain one until it is written; students get a plain line from `LINES`), the picture (big for the top 3, small for the rest) and, for every Corporation, a **"Critical review:"** with a real court case or scandal and its source (`EXPOSED`). Researched November 2026, so check the facts again before a later show.
