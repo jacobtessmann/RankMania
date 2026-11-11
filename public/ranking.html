@@ -27,6 +27,8 @@
   --f-name: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --label-w: min(14vh, 16vw);
   --side-w: min(2.4vh, 4.4vw);
+  --title-fs: min(6.4vh, 7.6vw);                   /* font size of the black title bar, the same in every mode */
+  --title-h: calc(var(--title-fs) * 2.69);         /* its height: always room for two lines */
   --row-gap: 3px;                                  /* white line between the tiers (keep in sync with ROW_GAP) */
   --pod-top-bg: #00ff00;                           /* the mix, left screen: background behind the top 3 */
   --pod-bottom-bg: #ee3322;                        /* the mix, right screen: background behind the bottom 3 */
@@ -56,9 +58,9 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 /* ═══ Title ═══ */
 #title {
   flex: 0 0 auto; background: var(--ink); color: var(--paper); text-align: left;
-  font-family: var(--f-type); font-weight: 400; font-size: min(6.4vh, 7.6vw); line-height: 1.02;
+  font-family: var(--f-type); font-weight: 400; font-size: var(--title-fs); line-height: 1.02;
   letter-spacing: -.01em; padding: .3em .5em .35em; overflow: hidden;
-  height: calc(min(6.4vh, 7.6vw) * 2.69); /* always room for two lines, so the icon size never changes */
+  height: var(--title-h); /* always room for two lines, so the icon size never changes */
   display: flex; align-items: center;
 }
 #title .t { display: block; }
@@ -142,6 +144,13 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 #mode-switch button[aria-pressed="true"] { background: var(--paper); color: var(--ink); outline: 1px solid #000; outline-offset: -1px; }
 .kiosk #mode-switch { display: none; }
 
+/* a verdict from RankFeed: the whole background flashes green or red, then fades out */
+#flash { position: absolute; inset: 0; z-index: -1; opacity: 0; pointer-events: none; }
+#pod-flash { position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; }
+.pod-area { z-index: 1; }
+/* after the mix: slowly to black, then sequence 1 fades in */
+#fade { position: fixed; inset: 0; z-index: 60; background: #000; opacity: 0; pointer-events: none; }
+
 /* ═══ The mix ("everything"): one shared list, three ways of showing it (MIX_VIEW) ═══ */
 /* middle screen: the full list, the graphics and background inverted (light becomes dark),
    but the pictures and the yellow names stay as they are (inverted twice) */
@@ -162,8 +171,9 @@ body.mix-top #app, body.mix-bottom #app { display: none; }
 #podium { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; --u: min(100vw, 56.25vh); }
 /* the title bar on top: the same black block with white text as on the tierlist */
 .pod-title { flex: 0 0 auto; background: var(--ink); color: var(--paper); font-family: var(--f-type); font-weight: 400;
-             font-size: min(6.4vh, 7.6vw); line-height: 1.02; letter-spacing: -.01em; padding: .3em .5em .35em;
-             height: calc(min(6.4vh, 7.6vw) * 2.69); display: flex; align-items: center; }
+             font-size: var(--title-fs); line-height: 1.02; letter-spacing: -.01em; padding: .3em .5em .35em;
+             height: var(--title-h); display: flex; align-items: center;
+             margin: var(--frame) calc(var(--frame) * 2 + var(--side-w)) 0 var(--frame); position: relative; z-index: 2; } /* exactly where the tierlist title sits */
 .pod-area { position: relative; flex: 1 1 auto; min-height: 0; --u: min(100vw, 56.25vh - 9vh); }
 body.mix-top #podium { background: var(--pod-top-bg); }
 body.mix-bottom #podium { background: var(--pod-bottom-bg); }
@@ -206,8 +216,10 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
    progress bar running across all three screens (left → middle → right) ═══ */
 #black { position: fixed; inset: 0; z-index: 40; background: #000; color: #fff; display: flex; flex-direction: column;
          padding: var(--frame); overflow: hidden; }
-#inter-head { flex: 0 0 auto; border: 3px solid #fff; background: #000; font-family: var(--f-type); font-weight: 400;
-              font-size: min(3.6vh, 4.6vw); line-height: 1.15; padding: .45em .6em .5em; position: relative; z-index: 2; }
+#inter-head { flex: 0 0 auto; box-shadow: inset 0 0 0 3px #fff; background: #000; font-family: var(--f-type); font-weight: 400;
+              font-size: var(--title-fs); line-height: 1.02; letter-spacing: -.01em; padding: .3em .5em .35em; height: var(--title-h);
+              display: flex; flex-direction: column; justify-content: center; margin-right: calc(var(--frame) + var(--side-w));
+              position: relative; z-index: 2; }
 #inter-head i { display: block; }
 @keyframes blink { 50% { opacity: 0; } }
 #inter-log { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
@@ -234,9 +246,11 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
 </head>
 <body>
 <!-- the mix on the left and right screen: three big entries -->
-<div id="podium" hidden><div class="pod-title" id="pod-title"></div><div class="pod-area" id="pod-area"></div></div>
+<div id="podium" hidden><div class="pod-title" id="pod-title"></div><div class="pod-area" id="pod-area"></div><div id="pod-flash"></div></div>
+<div id="fade"></div>
 <div id="app">
   <div id="stage">
+    <div id="flash"></div>
     <div id="title">&nbsp;</div>
     <div id="tierlist"></div>
     <div id="source" hidden></div>
@@ -385,8 +399,10 @@ const POD_LAYOUT = {
   ],
 };
 let podKey = "";
+let lastView = null;
 function renderMixView() {
   const view = phase === "mix" ? MIX_VIEW[screen] || "full" : null;
+  if (view !== lastView) { lastView = view; setTimeout(renderHeader); } // the title is measured again once it is visible
   document.body.classList.toggle("mix-full", view === "full");
   document.body.classList.toggle("mix-top", view === "top");
   document.body.classList.toggle("mix-bottom", view === "bottom");
@@ -398,7 +414,10 @@ function renderMixView() {
   const key = view + "|" + three.map((e) => e.id + "#" + e.rank).join(",") + "|" + innerWidth + "x" + innerHeight;
   if (key === podKey) return;
   podKey = key;
-  $("pod-title").textContent = POD_TITLE[view];
+  $("pod-title").textContent = "";
+  const pt = document.createElement("span"); // one inline box, so the spaces around the italic word stay
+  appendItalic(pt, POD_TITLE[view]);
+  $("pod-title").append(pt);
   const area = $("pod-area");
   area.innerHTML = "";
   three.forEach((e, i) => {
@@ -501,6 +520,18 @@ function setScreen(id) {
 }
 
 // title with the number in blue
+// category words in the titles are set in italic
+const ITALIC_WORDS = /\b(Students|Student|Things|Thing|Corporations|Brands|Businesses|Companies|Everything|People|Capital)\b/g;
+function appendItalic(el, text) {
+  let last = 0;
+  text.replace(ITALIC_WORDS, (m, _w, at) => {
+    if (at > last) el.append(text.slice(last, at));
+    const i = document.createElement("i"); i.textContent = m; el.append(i);
+    last = at + m.length;
+    return m;
+  });
+  if (last < text.length) el.append(text.slice(last));
+}
 function renderHeader() {
   const L = shown();
   const own = lists[screen] || {};
@@ -514,11 +545,11 @@ function renderHeader() {
   box.append(t);
   parts.forEach((p, i) => {
     if (i) { const s = document.createElement("span"); s.className = "n"; s.textContent = n; t.append(s); }
-    t.append(p);
+    appendItalic(t, p);
   });
   // a headline longer than two lines gets smaller, the block keeps its height
   t.style.fontSize = "";
-  for (let k = 0; k < 12 && t.offsetHeight > box.clientHeight - 4; k++) {
+  for (let k = 0; k < 12 && box.clientHeight && t.offsetHeight > box.clientHeight - 4; k++) { // (not while hidden)
     t.style.fontSize = parseFloat(getComputedStyle(t).fontSize) * 0.92 + "px";
   }
   const src = (L || own).source || "";
@@ -600,11 +631,17 @@ function layout() {
 
 // ── a verdict from RankFeed: the grey band briefly turns green or red, then fades back to grey
 //    (like the brain screen: green fades fast, red slowly)
+const FADE_OUT_MS = 2800, FADE_IN_MS = 1200; // after the mix: to black slowly, back in a bit faster
 const BAND_FLASH = { good: { color: "#00ff00", fadeMs: 900 }, bad: { color: "#ff0000", fadeMs: 2500 } };
 let bandFlashRun = 0;
 function flashBand(vote) {
   const f = BAND_FLASH[vote];
   if (!f) return;
+  // the whole background (on the inverted middle screen the opposite color, so it shows green / red)
+  const onPodium = !$("podium").hidden, el = onPodium ? $("pod-flash") : $("flash");
+  const inverted = document.body.classList.contains("mix-full");
+  el.style.background = inverted ? (vote === "good" ? "#ff00ff" : "#00ffff") : f.color;
+  el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: f.fadeMs, easing: "ease-out" });
   const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
   const from = hex(f.color), to = hex(bg.shade || "#d6d6d6"), run = ++bandFlashRun, t0 = performance.now();
   const r = document.documentElement.style;
@@ -1026,6 +1063,14 @@ connectDisplay({
   },
   onPhase(ev) {
     if (!ev.replay && ev.phase !== "clearing") { clearTimeout(blackTimer); stopIntermission(); }
+    // after the mix: slowly to black (MIX_FADE_MS on the server), then a bit faster from black into sequence 1
+    const fade = $("fade");
+    if (!ev.replay && ev.phase === "clearing" && ev.next === "separate" && !ev.intermission) {
+      fade.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_OUT_MS, easing: "ease-in", fill: "forwards" });
+    } else if (!ev.replay && ev.phase === "separate" && fade.getAnimations().length) {
+      fade.getAnimations().forEach((a) => a.cancel());
+      fade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_IN_MS, easing: "ease-out" });
+    }
     if (ev.replay || ev.phase !== "clearing") return;
     if (ev.black != null && ev.intermission) { // the intermission after sequence 1
       const start = toLocalTime(ev.t + ev.black);

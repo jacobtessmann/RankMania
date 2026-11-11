@@ -129,6 +129,7 @@ const BIG_JUMP_MAX = 55; // … of up to this many points (= up to 2–3 tiers a
 const WILDER_AFTER_MS = 180000; // over the first 3 minutes of a sequence the moves get bigger, up to …
 const WILDER_FACTOR = 1.5; // … 1.5× bigger moves and 1.5× more big jumps (1 = always the same)
 const CLEAR_MS = 2500; // how long the screens take to clear between the sequences
+const MIX_FADE_MS = 3000; // after the mix the screens slowly fade to black this long, then sequence 1 fades in
 // Length of each sequence in minutes (also set live on /admin.html). 0 = until you switch by hand.
 // When sequence 1 ends, the mix starts; when the mix ends, sequence 1 starts again.
 const SEPARATE_MINUTES = 3;
@@ -139,7 +140,7 @@ const HISTORY = 60; // how many past events a newly opened feed gets
 const PRINT_QUEUE_MAX = 100; // print jobs waiting for the print station (print-station.html)
 const PRINT_PER_LIST = 4; // when sequence 1 ends, the entries of every category that moved most stay standing and are printed …
 const PRINT_SHEET = 12; // … together one sheet of stickers (if a category has fewer, the others give more)
-const PRINT_STAY_MS = 6000; // they stay standing this long, then fall too …
+const PRINT_STAY_MS = 0; // (not used any more: nothing stays standing after sequence 1)
 const INTERMISSION_MS = 45000; // … then the 45-second intermission (terminal replay, progress bar over all screens, laughing face on the brain); then the mix
 const TRACK_MAX = 2000; // the most points kept per entry for the print (its path through the tiers this round)
 
@@ -648,13 +649,15 @@ function switchTo(next) {
   const tops = allLists().filter((l) => l.active).map((l) => ranking(l)[0]).filter(Boolean).map(brief);
   // at the end of sequence 1 the entries that moved most stay standing for a moment (they are printed),
   // then the intermission runs on all screens
-  const keep = phase === "separate" ? pickPrints() : null;
-  const stay = keep ? PRINT_STAY_MS : 0;
-  const black = keep ? PRINT_STAY_MS + CLEAR_MS : null; // when the kept ones have fallen
-  blackSince = keep ? Date.now() + black : null;
+  // (the entries that moved most are still picked and printed, but nothing stays standing on the screens:
+  //  everything falls and the intermission starts right away)
+  const printed = phase === "separate" ? pickPrints() : null;
+  const keep = null, stay = 0;
+  const black = printed ? CLEAR_MS : null; // when everything has fallen
+  blackSince = printed ? Date.now() + black : null;
   allLists().forEach(stop);
   phase = "clearing";
-  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay, black, intermission: keep ? INTERMISSION_MS : null });
+  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay, black, intermission: printed ? INTERMISSION_MS : null });
   console.log(`Clearing → ${next}`);
 
   setTimeout(() => {
@@ -680,7 +683,7 @@ function switchTo(next) {
       sample = pickTwo(CATEGORIES.flatMap((c) => [...lists[c.id].items.values()].map(brief)));
     }
     record({ type: "phase", phase: next, sample });
-  }, keep ? black + INTERMISSION_MS : CLEAR_MS);
+  }, printed ? black + INTERMISSION_MS : next === "separate" ? MIX_FADE_MS : CLEAR_MS);
   return true;
 }
 
