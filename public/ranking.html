@@ -209,7 +209,6 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
 #inter-head { flex: 0 0 auto; border: 3px solid #fff; background: #000; font-family: var(--f-type); font-weight: 400;
               font-size: min(3.6vh, 4.6vw); line-height: 1.15; padding: .45em .6em .5em; position: relative; z-index: 2; }
 #inter-head i { display: block; }
-#inter-text::after { content: "▍"; animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 #inter-log { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
              font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: min(1.25vh, 2.1vw); line-height: 1.35;
@@ -328,7 +327,7 @@ function startIntermission(start, end) {
     $("black").hidden = now < inter.start;
     // the bar covers everything below the headline
     const head = $("inter-head").getBoundingClientRect();
-    if (head.height) $("inter-bar").style.top = head.bottom + 4 + "px";
+    if (head.height) $("inter-bar").style.top = head.bottom + "px";
     // the second headline line types itself, waits, and types again
     const cyc = (now - inter.start) % 6000, chars = Math.min(inter.text.length, Math.floor(cyc / 90));
     const typed = cyc > 4800 ? "" : inter.text.slice(0, chars);
