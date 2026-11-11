@@ -145,6 +145,8 @@ const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
 // ════════════════ STATE ════════════════
 let phase = "separate"; // separate | clearing | mix
 let speed = START_SPEED; // changed live by the slider on /admin.html
+const MIX_SPEEDUP = 2; // in the mix everything runs this many times faster
+const pace = () => speed * (phase === "mix" ? MIX_SPEEDUP : 1);
 const lengths = { separate: SEPARATE_MINUTES * 60000, mix: MIX_MINUTES * 60000 }; // changed live on /admin.html
 let phaseStartedAt = Date.now();
 let headlines = loadHeadlines();
@@ -369,7 +371,7 @@ function start(list) {
 function moodOf(list) {
   return (list.mood || 0) * Math.pow(0.5, (Date.now() - list.moodAt) / MOOD_HALF_LIFE_MS);
 }
-const pause = (list) => (rand(PAUSE_MIN_MS, PAUSE_MAX_MS) / speed) * (1 - 0.35 * (list ? moodOf(list) : 0));
+const pause = (list) => (rand(PAUSE_MIN_MS, PAUSE_MAX_MS) / pace()) * (1 - 0.35 * (list ? moodOf(list) : 0));
 
 // the one action loop of a list: a new entry OR a move, then a pause, then the next
 function moveChance(list) {
@@ -400,7 +402,7 @@ function hover(list) {
   let slot = 0;
   while (used.has(slot)) slot++;
   const now = Date.now();
-  const h = { id, slot, startedAt: now, landAt: Math.round(now + rand(HOVER_MIN_MS, HOVER_MAX_MS) / speed) };
+  const h = { id, slot, startedAt: now, landAt: Math.round(now + rand(HOVER_MIN_MS, HOVER_MAX_MS) / pace()) };
   list.hovering.set(id, h);
   trackPoint(list, id, { t: now, score: e.score, tier: tierOf(e.score), rank: null, hover: true });
   broadcast({ type: "hover", now, category: list.id, ...hoverPublic(list, h), waiting: list.queue.length });

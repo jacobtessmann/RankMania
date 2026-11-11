@@ -144,6 +144,9 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 body.mix-full { background: #000; }
 body.mix-full #app { filter: invert(1); }
 body.mix-full .face img, body.mix-full .name { filter: invert(1); }
+/* vignettes stay white, green and red on the inverted screen (so they are set to the opposite colors) */
+body.mix-full { --vig-up: #ff00ff; --vig-down: #00ffff; }
+body.mix-full .face { --vig: #000; }
 /* left and right screen: three entries, big, overlapping, slightly tilted and shaking (POD_LAYOUT) */
 body.mix-top #app, body.mix-bottom #app { display: none; }
 #podium { position: fixed; inset: 0; overflow: hidden; --u: min(100vw, 56.25vh); }
@@ -308,7 +311,10 @@ function renderMixView() {
     const longest = Math.max(...lines.map((l) => l.length));
     name.style.fontSize = Math.max(8, Math.min(size * 0.17, (size * 0.92) / (longest * 0.54))) + "px";
     el.querySelector(".init").style.fontSize = size * 0.4 + "px";
-    el.querySelector(".face").style.setProperty("--vig", "transparent");
+    // vignette: always green on the top 3, always red on the bottom 3
+    const face = el.querySelector(".face");
+    face.style.setProperty("--vig", view === "top" ? "var(--vig-up)" : "var(--vig-down)");
+    face.style.setProperty("--s", size + "px");
   });
 }
 setInterval(renderMixView, 400);
@@ -670,6 +676,7 @@ function mark(el, cls) {
   el.classList.remove("mark-up", "mark-down", "mark-new");
   el.classList.add(cls);
   clearTimeout(el._mark);
+  if (phase === "mix") return; // in the mix the green/red stays until the next move
   el._mark = setTimeout(() => el.classList.remove(cls), MARK_MS);
 }
 
