@@ -28,6 +28,8 @@
   --label-w: min(14vh, 16vw);
   --side-w: min(2.4vh, 4.4vw);
   --row-gap: 3px;                                  /* white line between the tiers (keep in sync with ROW_GAP) */
+  --pod-top-bg: #00ff00;                           /* the mix, left screen: background behind the top 3 */
+  --pod-bottom-bg: #ffffff;                        /* the mix, right screen: background behind the bottom 3 */
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
@@ -136,6 +138,31 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 #mode-switch button[aria-pressed="true"] { background: var(--paper); color: var(--ink); outline: 1px solid #000; outline-offset: -1px; }
 .kiosk #mode-switch { display: none; }
 
+/* ═══ The mix ("everything"): one shared list, three ways of showing it (MIX_VIEW) ═══ */
+/* middle screen: the full list, everything light becomes dark and vice versa */
+body.mix-full { background: #000; }
+body.mix-full #app { filter: invert(1); }
+/* left and right screen: only three entries, big, slowly floating */
+body.mix-top #app, body.mix-bottom #app { display: none; }
+#podium { position: fixed; inset: 0; display: flex; flex-direction: column; padding: 3vmin; gap: 2vmin; }
+body.mix-top #podium { background: var(--pod-top-bg); }
+body.mix-bottom #podium { background: var(--pod-bottom-bg); }
+.pod-label { font-family: var(--f-type); font-size: 5vmin; line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
+.pod-cards { flex: 1; display: flex; flex-direction: column; justify-content: space-around; align-items: center; gap: 2vmin; min-height: 0; }
+@media (orientation: landscape) { .pod-cards { flex-direction: row; } }
+.pod { display: flex; flex-direction: column; align-items: center; gap: 1vmin; min-height: 0;
+       animation: pod-float var(--d, 7s) ease-in-out var(--delay, 0s) infinite alternate; }
+.pod .rk { font-family: var(--f-type); font-size: 4.5vmin; line-height: 1; }
+.pod img, .pod .ph { width: min(26vh, 30vw); aspect-ratio: 1; object-fit: contain; background: #fff; display: block; }
+@media (orientation: landscape) { .pod img, .pod .ph { width: min(28vw, 62vh); } }
+.pod .nm { font-family: var(--f-name); font-size: 3.4vmin; line-height: 1.1; text-align: center; max-width: 80vw; }
+.pod .ph { display: grid; place-items: center; font-family: var(--f-type); font-size: 10vmin; color: #999; }
+@keyframes pod-float {
+  0%   { transform: translate(-.8vmin, .6vmin) rotate(-1.2deg); }
+  50%  { transform: translate(.6vmin, -1vmin) rotate(.6deg); }
+  100% { transform: translate(1vmin, .8vmin) rotate(1.4deg); }
+}
+
 #empty {
   position: absolute; left: 20%; right: 8%; top: 35%; z-index: 20; text-align: center;
   background: var(--ink); color: var(--paper); border: 2px dashed var(--paper); padding: 2vh 3vw;
@@ -177,6 +204,8 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 </style>
 </head>
 <body>
+<!-- the mix on the left and right screen: three big entries -->
+<div id="podium" hidden><div class="pod-label" id="pod-label"></div><div class="pod-cards" id="pod-cards"></div></div>
 <div id="app">
   <div id="stage">
     <div id="title">&nbsp;</div>
@@ -232,10 +261,38 @@ if (qs.get("kiosk")) document.body.classList.add("kiosk");
 const $ = (id) => document.getElementById(id);
 const clamp = (v) => Math.max(1, Math.min(100, Math.round(v)));
 
+// ── the mix: every screen shows the same shared list, each in its own way
+//    top = the top 3 big on green, full = the whole tierlist inverted, bottom = the bottom 3 big
+const MIX_VIEW = { corporations: "top", students: "full", things: "bottom" };
+const MIX_LABEL = { top: "Top 3", bottom: "Bottom 3" };
+let podKey = "";
+function renderMixView() {
+  const view = phase === "mix" ? MIX_VIEW[screen] || "full" : null;
+  document.body.classList.toggle("mix-full", view === "full");
+  document.body.classList.toggle("mix-top", view === "top");
+  document.body.classList.toggle("mix-bottom", view === "bottom");
+  $("podium").hidden = view !== "top" && view !== "bottom";
+  if ($("podium").hidden) { podKey = ""; return; }
+  const all = (lists.mix && lists.mix.entries) || [];
+  const three = view === "top" ? all.slice(0, 3) : all.slice(-3);
+  const key = view + "|" + three.map((e) => e.id + "#" + e.rank).join(",");
+  if (key === podKey) return;
+  podKey = key;
+  $("pod-label").textContent = MIX_LABEL[view];
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  $("pod-cards").innerHTML = three.length ? three.map((e, i) => `
+    <div class="pod" style="--d:${6 + i * 1.7}s;--delay:${-i * 2.3}s">
+      <div class="rk">#${e.rank}</div>
+      ${e.image ? `<img src="${esc(e.image)}" alt="">` : `<div class="ph">${esc(e.title[0])}</div>`}
+      <div class="nm">${esc(e.title)}</div>
+    </div>`).join("") : `<div class="pod"><div class="nm">Ranking…</div></div>`;
+}
+setInterval(renderMixView, 400);
+
 // which list this screen shows right now (null = empty screen)
 function shownId() {
   if (phase === "clearing") return null;
-  if (phase === "mix") return `mix-${screen}`; // this screen's share of the mix
+  if (phase === "mix") return "mix"; // the one shared list (each screen shows it its own way, see MIX_VIEW)
   return screen;
 }
 const shown = () => lists[shownId()] || null;

@@ -67,8 +67,8 @@ function h01(s) {
 const pad = (s, n) => (s + " ".repeat(n)).slice(0, n);
 const dots = (name, n = 30) => name + " " + ".".repeat(Math.max(2, n - name.length)) + " ";
 const clock = () => new Date().toTimeString().slice(0, 8);
-const catOf = (list, id) => (list.startsWith("mix-") ? id.split("/")[0] : list);
-const tagOf = (list) => (list.startsWith("mix-") ? "MIX>" + TAG[list.slice(4)] : TAG[list] || list).padEnd(7);
+const catOf = (list, id) => (list === "mix" ? id.split("/")[0] : list);
+const tagOf = (list) => (list === "mix" ? "MIX" : TAG[list] || list).padEnd(7);
 
 function print(text, cls) {
   const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
@@ -216,7 +216,7 @@ connectDisplay({
       print(`[${clock()}] ======== PURGE: ALL RANKINGS DELETED ========`);
     } else {
       phase = ev.phase;
-      print(`[${clock()}] ======== ${ev.phase === "mix" ? "SEQUENCE 2 · MIX: ALL ENTITIES DEALT TO 3 SCREENS" : "SEQUENCE 1 · SEPARATE: NEW ROUND"} ========`);
+      print(`[${clock()}] ======== ${ev.phase === "mix" ? "SEQUENCE 2 · MIX: 20 ENTITIES FROM ALL LISTS, ONE RANKING" : "SEQUENCE 1 · SEPARATE: NEW ROUND"} ========`);
     }
     status();
   },

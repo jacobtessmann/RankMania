@@ -178,7 +178,7 @@ const TEASERS = {
   },
   mix: {
     word: "EVERYTHING",
-    head: "People vs. Things vs. Capital, Ranked (Part {part} of 3)",
+    head: "People vs. Things vs. Capital, Ranked",
     titles: [
       "Is Your Classmate Worth More Than a Steam Engine? This List Has Decided.",
       "We Threw People, Things and Corporations Into One List. Nobody Is Safe.",
@@ -471,11 +471,12 @@ let edition = null;
 function writeEdition(snap) {
   const ORDER = ["corporations", "students", "things"]; // the order of the articles: capital, people, things
   const rank = (c) => (ORDER.indexOf(c.name) + 1) || 99;
-  const real = snap.categories.filter((c) => !c.virtual).sort((x, y) => rank(x) - rank(y));
-  const byName = Object.fromEntries(snap.categories.map((c) => [c.name, c]));
   const mixed = snap.phase === "mix";
-  const articles = real.map((c, i) => {
-    const L = mixed ? byName[`mix-${c.name}`] || { entries: [] } : c; // in the mix: what each screen shows
+  // three articles (capital, people, things), or in the mix ONE article about the shared list
+  const groups = mixed ? snap.categories.filter((c) => c.name === "mix")
+                       : snap.categories.filter((c) => !c.virtual).sort((x, y) => rank(x) - rank(y));
+  const articles = groups.map((c, i) => {
+    const L = c;
     const key = mixed ? "mix" : c.name;
     const T = TEASERS[key] || TEASERS.mix;
     const entries = (L.entries || []).map((e) => ({ id: e.id, title: e.title, image: e.image, tier: e.tier, rank: e.rank }));
@@ -490,9 +491,9 @@ function writeEdition(snap) {
     const v = { n, part: i + 1, source, label: mixed ? "people, things and capital" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
-      slug: c.name,
-      list: mixed ? `mix-${c.name}` : c.name, // the list on the screen, for the verdict
-      cat: mixed ? `Everything · Part ${i + 1}` : c.label,
+      slug: mixed ? "everything" : c.name,
+      list: c.name, // the list on the screens, for the verdict
+      cat: mixed ? "Everything" : c.label,
       head: fill(T.head, v),
       title: fill(pick(T.titles), v),
       word: T.word,
@@ -503,7 +504,7 @@ function writeEdition(snap) {
       entries,
     };
   });
-  return { at: Date.now(), articles };
+  return { at: Date.now(), mixed, articles };
 }
 
 // ════════ Pieces ════════
@@ -628,7 +629,7 @@ function setupVerdict(a) {
 // ════════ PRINT ════════
 // Called when a visitor presses "Print" on an entry.
 //   entry   = { id, title, image, tier, rank, line }
-//   article = { slug, list, cat, title, entries }   (slug = students | things | corporations)
+//   article = { slug, list, cat, title, entries }   (slug = corporations | students | things, or everything in the mix)
 // Sends a print job to the brain; the print station (print-station.html) prints it on the printer in the room.
 // The print shows the entry as this edition shows it: its place here, and its path only up to this edition.
 // (print.html?list=…&image=… still shows the print on the screen, with the normal print dialog.)
@@ -676,6 +677,8 @@ $("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) his
   try {
     edition = writeEdition(await fetchRankState());
     $("asof").innerHTML = `Rankings from<br>${timeOf(edition.at)}`;
+    // in the mix there is only one article: C, P and T all lead to it
+    if (edition.mixed) document.querySelectorAll(".badges .bdg").forEach((b) => (b.href = "#/everything"));
   } catch {
     $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking can't be reached right now. Try again in a moment.</p>`;
     return;

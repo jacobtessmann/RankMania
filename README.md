@@ -22,7 +22,7 @@ public/images/corporations/     ← company logos/photos
 ```
 
 - **All images are squares** (e.g. 600 × 600 px). Use the script below to square them all at once.
-- **About 45 images per folder, 20 per round:** every round, each screen ranks 20 images picked at random from its folder, so each round has a different line-up. In the mix, each screen gets 20 drawn evenly from all three folders. Change the number with `ENTRIES_PER_SCREEN` in `server.js` (0 = all images).
+- **About 45 images per folder, 20 per round:** every round, each screen ranks 20 images picked at random from its folder, so each round has a different line-up. In the mix, there is one shared list of 20 drawn evenly from all three folders. Change the number with `ENTRIES_PER_SCREEN` in `server.js` (0 = all images).
 - One image = one entry. Allowed: `.jpg .jpeg .png .webp .gif .avif .svg`
 - **The file name becomes the displayed name** (on the tierlist pictures and in the feed headlines): `anna_mueller.jpg` → "Anna Mueller", `IBM.png` → "IBM", `Hans-Peter_Müller.jpg` → "Hans-Peter Müller" (underscore = space, hyphens stay)
 - Keep images small (e.g. max 600 px, under 200 KB) so phones load fast.
@@ -116,7 +116,7 @@ Every start of the server begins with **empty tiers**.
 
 **Sequence 1 · Separate:** each category fills its own screen.
 
-**Sequence 2 · Mix** (only by hand): all pictures fall off every screen, then every image of all three categories is dealt to exactly one of the three screens at random (about a third of every category each), and all three screens fill up again with a mix.
+**Sequence 2 · Mix** (only by hand): all pictures fall off every screen, then **one shared list of 20 images**, drawn evenly from all three folders, is ranked once. The three screens show that same list in three ways (`MIX_VIEW` in `ranking.html`): **left (capital screen)** the top 3, big and slowly floating on green (`--pod-top-bg`); **middle (people screen)** the full tierlist, inverted (light becomes dark); **right (things screen)** the bottom 3, big. RankFeed writes a single "Everything" article, and C, P and T all lead to it.
 
 **Show control** on **/admin.html**: the buttons "Start sequence 2" and "Restart sequence 1", a **speed slider** for the whole brain (0.25× to 3×, live on all screens), and **timers** for the length of each sequence with a live countdown. When sequence 1 runs out, the mix starts; when the mix runs out, sequence 1 starts again. 0 = no timer. The page has no password: anyone who knows the address can control the show, so don't share the link.
 
@@ -125,7 +125,7 @@ Settings at the top of `server.js`:
 | Setting | What it does |
 |---|---|
 | `names` per category | write names on the tierlist pictures (only Students: `true`) |
-| `MIX` | title of the mixed lists (the same on all three screens) |
+| `MIX` | title and source of the one shared mixed list |
 | `START_SPEED` | tempo when the server starts (1); the admin slider changes it live |
 | `HOVER_MIN_MS/MAX_MS` | how long a new entry hovers before it lands |
 | `PAUSE_MIN_MS/MAX_MS` | pause after every action |
@@ -162,9 +162,9 @@ Settings near the top of the script: `TILE_SIZE` (fixed size in px for all scree
 
 RankFeed is set entirely in **CMU Typewriter Text Light** (Donald Knuth's Computer Modern typewriter, `public/fonts/cmunbtl.woff`), no bold; the hierarchy is size alone. The intro, middle and end paragraphs are BuzzFeed babble picked at random (`INTROS_1`, `INTROS_2`, `MIDDLES`, `END`). Each article has a plain headline that says what is ranked (`head` in `TEASERS`) and the clickbait as subheadline (`titles`, `subs`). The vote at the end is a full-width green/red block ("Help us train the machine.").
 
-The sticky top bar shows "RANKINGS FROM 13:39" (when this edition was written) and three red buttons C, P, T that jump to capital, people and things (in the mix, each opens one part of "everything"). The thumbnails are one red word in a red frame: CAPITAL, PEOPLE, THINGS, EVERYTHING.
+The sticky top bar shows "RANKINGS FROM 13:39" (when this edition was written) and three red buttons C, P, T that jump to capital, people and things (in the mix, all three open the one "Everything" article). The thumbnails are one red word in a red frame: CAPITAL, PEOPLE, THINGS, EVERYTHING.
 
-RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
+RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one "Everything" article). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
 **Entries** look like a BuzzFeed shopping list: a yellow number, one line about the entry (`HOOKS` in `public/feed.html`, keyed by the displayed name: written for all 25 corporations and the things; new files without a line get a plain one until it is written; students get a plain line from `LINES`), the picture (big for the top 3, small for the rest) and, for every Corporation, a **"Critical review:"** with a real court case or scandal and its source (`EXPOSED`). Researched November 2026, so check the facts again before a later show.
 

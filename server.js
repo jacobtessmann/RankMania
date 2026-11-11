@@ -2,9 +2,9 @@
 //  RANKMANIA — the central server
 //
 //  The show has two sequences:
-//   1. SEPARATE  every category fills its own screen (students, things, corporations)
-//   2. MIX       all screens clear, then every image of all three categories is dealt
-//                to one of the three screens at random, so each screen shows a mix
+//   1. SEPARATE  every category fills its own screen (corporations, students, things)
+//   2. MIX       all screens clear, then ONE shared list of 20 images from all three
+//                categories is ranked; the three screens show it in three different ways
 //  In both, each screen does one thing at a time: a new entry hovers in and lands, or one
 //  ranked entry moves up or down. After every action there is a pause.
 //
@@ -27,7 +27,16 @@ const IMAGES = path.join(PUBLIC, "images");
 //    title    = heading of the tierlist screen, {n} = number of images
 //    source   = small line under the tiers (leave "" for none)
 //    headline = this category's main feed headline ({W} moved up, {L} moved down)
+// in screen order: left = capital, middle = people, right = things
 const CATEGORIES = [
+  {
+    id: "corporations",
+    label: "Corporations",
+    names: true,
+    title: "Ranking {n} Corporations",
+    source: "List sourced from forbes.com/lists/global2000",
+    headline: "{W} Overtook {L} and the Shareholders Are Screaming",
+  },
   {
     id: "students",
     label: "Students",
@@ -44,19 +53,11 @@ const CATEGORIES = [
     source: "List sourced from listchallenges.com/top-100-greatest-things-ever",
     headline: "{W} Just Out-Invented {L} and History Will Never Recover",
   },
-  {
-    id: "corporations",
-    label: "Corporations",
-    names: true,
-    title: "Ranking {n} Corporations",
-    source: "List sourced from forbes.com/lists/global2000",
-    headline: "{W} Overtook {L} and the Shareholders Are Screaming",
-  },
 ];
 
 // ── How many images each screen ranks per round. Each round picks them at random from the folder
 //    (e.g. 20 out of ~45), so every round has a different line-up. 0 = all images.
-//    In the mix, each screen gets this many, drawn evenly from all three folders.
+//    The mix has this many in total, drawn evenly from all three folders.
 const ENTRIES_PER_SCREEN = 20;
 
 // ── Verdicts from RankFeed: visitors rate a whole list "good" or "bad". The brain "learns" a little:
@@ -86,8 +87,9 @@ const DEFAULT_HEADLINES = {
   rotateSec: 0, // 0 = one headline per sequence; otherwise switch to another one every N seconds
 };
 
-// ── Sequence 2: everything mixed. Every image goes to exactly one of the three screens;
-//    each screen gets a random third of every category. Same settings for all three screens.
+// ── Sequence 2: everything mixed. ONE list of ENTRIES_PER_SCREEN images, drawn evenly from all three
+//    folders, ranked once and shared by all three screens. Each screen shows it its own way
+//    (ranking.html: left = top 3 on green, middle = the full list inverted, right = bottom 3).
 const MIX = {
   label: "Everything",
   title: "Ranking {n} Students, Things and Corporations",
@@ -167,10 +169,10 @@ const clients = new Set(); // { res, lite }
 const files = {}; // category → [file names]
 const lists = {};
 for (const c of CATEGORIES) lists[c.id] = newList(c);
-// one mixed list per screen: "mix-students", "mix-things", "mix-corporations"
-for (const c of CATEGORIES) lists[`mix-${c.id}`] = newList({ ...MIX, id: `mix-${c.id}`, screen: c.id, virtual: true });
-const mixLists = () => CATEGORIES.map((c) => lists[`mix-${c.id}`]);
-const mixAssign = new Map(); // image id → screen, for the mix
+// the mix: one shared list, "mix"
+lists.mix = newList({ ...MIX, id: "mix", screen: "mix", virtual: true });
+const mixLists = () => [lists.mix];
+const mixAssign = new Map(); // image id → "mix" for the images picked for this mix
 const allLists = () => Object.values(lists);
 
 function newList(c) {
@@ -276,7 +278,7 @@ function wantedItems(list) {
   );
   // a single category: only the images picked for this round
   if (!list.virtual) return list.selection ? items.filter((it) => list.selection.has(it.id)) : items;
-  // the mix: only the images dealt to this screen
+  // the mix: only the images picked for it
   return items.filter((it) => mixAssign.get(it.id) === list.screen);
 }
 
@@ -286,21 +288,18 @@ function pickSelection(list) {
   list.selection = new Set(ENTRIES_PER_SCREEN ? all.slice(0, ENTRIES_PER_SCREEN) : all);
 }
 
-// the mix: every screen gets ENTRIES_PER_SCREEN images, taken in turn from the three folders
+// the mix: ENTRIES_PER_SCREEN images in total, taken in turn from the three folders (0 = all images)
 function dealMix() {
   mixAssign.clear();
-  const screens = CATEGORIES.map((c) => c.id);
   const piles = CATEGORIES.map((c) => shuffle([...(files[c.id] || [])]).map((f) => `${c.id}/${f}`));
   const total = piles.reduce((n, p) => n + p.length, 0);
-  const per = ENTRIES_PER_SCREEN || Math.ceil(total / screens.length);
-  screens.forEach((scr, si) => {
-    for (let j = 0, got = 0; got < per && piles.some((p) => p.length); j++) {
-      const pile = piles[(j + si) % piles.length]; // each screen starts with a different folder
-      if (!pile.length) continue;
-      mixAssign.set(pile.shift(), scr);
-      got++;
-    }
-  });
+  const want = ENTRIES_PER_SCREEN ? Math.min(ENTRIES_PER_SCREEN, total) : total;
+  for (let j = Math.floor(Math.random() * piles.length), got = 0; got < want; j++) {
+    const pile = piles[j % piles.length];
+    if (!pile.length) continue;
+    mixAssign.set(pile.shift(), "mix");
+    got++;
+  }
 }
 
 function readFolders() {
@@ -769,7 +768,7 @@ function status() {
     },
     lists: allLists().map((l) => ({
       name: l.id,
-      label: l.virtual ? `Mix on the ${lists[l.screen].label} screen` : l.label,
+      label: l.virtual ? "Everything (shared by all three screens)" : l.label,
       active: l.active,
       ranked: ranking(l).length,
       hovering: l.hovering.size,

@@ -8,7 +8,7 @@
 <body>
 <h1>Rankmania · Show control</h1>
 <p><button data-action="mix">Start sequence 2 (mix)</button><br>
-All screens clear, then every screen fills with a random mix of all three categories.</p>
+All screens clear, then 20 images from all three categories are ranked in one shared list. Left screen: top 3 on green · middle: the full list, inverted · right: bottom 3.</p>
 <p><button data-action="separate">Restart sequence 1 (separate)</button><br>
 All screens clear and every category starts again from empty.</p>
 <p><label for="speed">Brain speed: <output id="speedval">1×</output></label><br>
@@ -27,12 +27,12 @@ A timer counts from the start of its sequence.</p>
 <h2>Headlines</h2>
 <p>One headline per line. <code>{n}</code> becomes the number of entries on that screen (underlined).
 Each screen picks one at the start of every sequence. In the mix, the three screens always show different ones.</p>
-<p><label for="h-students">Students screen</label><br>
-<textarea id="h-students" rows="5" cols="60"></textarea></p>
-<p><label for="h-things">Things screen</label><br>
-<textarea id="h-things" rows="5" cols="60"></textarea></p>
-<p><label for="h-corporations">Corporations screen</label><br>
+<p><label for="h-corporations">Corporations screen (left)</label><br>
 <textarea id="h-corporations" rows="5" cols="60"></textarea></p>
+<p><label for="h-students">Students screen (middle)</label><br>
+<textarea id="h-students" rows="5" cols="60"></textarea></p>
+<p><label for="h-things">Things screen (right)</label><br>
+<textarea id="h-things" rows="5" cols="60"></textarea></p>
 <p><label for="h-mix">Mix (all three screens, each a different one)</label><br>
 <textarea id="h-mix" rows="5" cols="60"></textarea></p>
 <p><label for="h-rotate">Switch to another headline every</label>
@@ -152,7 +152,7 @@ function applyStatus(s) {
 }
 
 // headlines
-const H_KEYS = ["students", "things", "corporations", "mix"];
+const H_KEYS = ["corporations", "students", "things", "mix"];
 let headlinesLoaded = false;
 function fillHeadlines(h) {
   H_KEYS.forEach((k) => ($("h-" + k).value = (h[k] || []).join("\n")));
