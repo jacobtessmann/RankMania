@@ -41,7 +41,7 @@ const CATEGORIES = [
     label: "Things",
     names: true,
     title: "Ranking {n} Things",
-    source: "list sourced from listchallenges.com, \"Top 100 Greatest Things Ever\": \"There are the worst things that happen in the world, but there are also great things that can happen too!\"",
+    source: "list sourced from listchallenges.com, \"Top 100 Greatest Things Ever\"",
     headline: "{W} Just Out-Invented {L} and History Will Never Recover",
   },
   {
