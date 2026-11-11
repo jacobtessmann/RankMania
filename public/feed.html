@@ -561,7 +561,6 @@ function article(slug) {
       <a class="back" href="#">← All articles</a>
       <h1>${esc(a.head)}</h1>
       <p class="deck">${esc(a.title)}</p>
-      ${thumb(a)}
       <div class="body">
         ${a.intros.map((p) => `<p>${esc(p)}</p>`).join("")}
         <ol class="entries">${top.map((e) => entry(e, true)).join("")}</ol>
