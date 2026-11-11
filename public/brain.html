@@ -38,8 +38,7 @@ function flash(vote) {
                         { duration: f.fadeMs, easing: "ease-out" });
 }
 // ── the intermission: a laughing ASCII face, drawn from shapes (smile → laugh, mouth opening and closing)
-const FACE_W = 44, FACE_H = 22; // small enough that one whole face fits on the screen
-function faceFrame(mood, t) {
+function faceFrame(mood, t, FACE_W, FACE_H) {
   const rows = [], shade = "  ..:";
   const bob = Math.sin(t / 260) * (mood === "smile" ? 0.01 : 0.035); // laughing shakes the face a little
   for (let y = 0; y < FACE_H; y++) {
@@ -86,14 +85,29 @@ function showFace(start, end) {
     if (now >= start) {
       const k = (now - start) % 4500; // smiling for a moment, then laughing: mouth open, half, open …
       const mood = k < 1350 ? "smile" : Math.floor(k / FACE_FRAME_MS) % 2 ? "laugh1" : "laugh2";
-      print("");
-      faceFrame(mood, now).split("\n").forEach((l) => print(l));
+      // as big as the screen allows (same font size as the log), and padded with empty lines so that
+      // exactly one face is on the screen: the one before has scrolled out of view
+      const { rows, cols, aspect } = logGrid();
+      const h = Math.max(12, rows - 1), w = Math.max(20, Math.min(cols - 2, Math.round(h * aspect)));
+      for (let i = 0; i < rows - h + 2; i++) print("\u00a0"); // a line with height (an empty one has none); +2 so the last face is fully out of view
+      faceFrame(mood, now, w, h).split("\n").forEach((l) => print(l || "\u00a0"));
     }
     faceTimer = setTimeout(tick, now < start ? Math.min(500, start - now) : FACE_FRAME_MS);
   };
   tick();
 }
 function hideFace() { clearTimeout(faceTimer); faceTimer = null; }
+// how many lines and characters fit into the log, and how many characters make a round width
+function logGrid() {
+  const cs = getComputedStyle(log), probe = document.createElement("span");
+  probe.textContent = "M".repeat(50); probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
+  log.append(probe);
+  const cw = probe.getBoundingClientRect().width / 50 || 8.4;
+  probe.remove();
+  const lh = parseFloat(cs.lineHeight) || 19;
+  const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), padH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  return { rows: Math.floor((log.clientHeight - padV) / lh), cols: Math.floor((log.clientWidth - padH) / cw), aspect: lh / cw };
+}
 
 const VARS = {
   _any: ["attention_yield", "consensus_drift", "taste_conformity", "click_probability", "outrage_elasticity",

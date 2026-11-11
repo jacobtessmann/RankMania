@@ -49,7 +49,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
     linear-gradient(90deg, var(--label-gap, var(--paper)) 0 var(--label-w), transparent var(--label-w)),
     repeating-linear-gradient(180deg, var(--paper) 0%, var(--paper) calc(50% - var(--band)), var(--shade) 50%,
                               var(--paper) calc(50% + var(--band)), var(--paper) 100%) 0 0 / 100% 50%;
-  animation: render var(--render-time) linear infinite;
+  animation: render var(--render-time) linear infinite var(--render-dir, normal);
 }
 @keyframes render { from { transform: translateY(0); } to { transform: translateY(50%); } }
 
@@ -209,11 +209,13 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
 #inter-head { flex: 0 0 auto; border: 3px solid #fff; background: #000; font-family: var(--f-type); font-weight: 400;
               font-size: min(3.6vh, 4.6vw); line-height: 1.15; padding: .45em .6em .5em; position: relative; z-index: 2; }
 #inter-head i { display: block; }
+#inter-text::after { content: "▍"; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 #inter-log { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
              font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: min(1.25vh, 2.1vw); line-height: 1.35;
              white-space: pre; padding: .6em .4em 0; }
 #inter-log .dim { opacity: .55; }
-#inter-bar { position: absolute; left: 0; right: 0; top: 30%; height: 6.5vh; z-index: 1; pointer-events: none; }
+#inter-bar { position: absolute; left: var(--frame); right: var(--frame); top: var(--inter-top, 15vh); bottom: var(--frame); z-index: 1; pointer-events: none; }
 #inter-fill { height: 100%; width: 0; background: linear-gradient(90deg, #1f45ff, #4fb2ff 50%, #d2e4ff) 0 0 / 300% 100%; }
 
 #soundhint {
@@ -256,6 +258,7 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
     <div>Shade <input id="shade" type="color"> <span id="shadeval"></span></div>
     <div>Band width <input id="band" type="range" min="4" max="48" step="1"> <span id="bandval"></span></div>
     <div>Speed <input id="render" type="range" min="3" max="60" step="1"> <span id="renderval"></span></div>
+    <div>Direction <button type="button" id="renderdir"></button></div>
     <div>Vignette blur <input id="vblur" type="range" min="0" max="0.4" step="0.01"> <span id="vblurval"></span></div>
     <div>Vignette spread <input id="vspread" type="range" min="0" max="0.3" step="0.01"> <span id="vspreadval"></span></div>
     <div><button type="button" id="bgreset">Reset background and vignette</button></div>
@@ -314,7 +317,8 @@ function startIntermission(start, end) {
   stopIntermission();
   const entries = (lists[screen] && lists[screen].entries) || [];
   inter = { start, end, lines: interLines(entries), shown: 0 };
-  $("inter-text").textContent = INTER_TEXT[screen] || "Processing …";
+  inter.text = INTER_TEXT[screen] || "Processing …";
+  $("inter-text").textContent = "";
   $("inter-log").textContent = "";
   const idx = Math.max(0, screens.indexOf(screen)), n = Math.max(1, screens.length);
   $("inter-fill").style.backgroundPosition = `${(idx / Math.max(1, n - 1)) * 100}% 0`; // one gradient across all screens
@@ -322,6 +326,13 @@ function startIntermission(start, end) {
     if (!inter) return;
     const now = Date.now();
     $("black").hidden = now < inter.start;
+    // the bar covers everything below the headline
+    const head = $("inter-head").getBoundingClientRect();
+    if (head.height) $("inter-bar").style.top = head.bottom + 4 + "px";
+    // the second headline line types itself, waits, and types again
+    const cyc = (now - inter.start) % 6000, chars = Math.min(inter.text.length, Math.floor(cyc / 90));
+    const typed = cyc > 4800 ? "" : inter.text.slice(0, chars);
+    if ($("inter-text").textContent !== typed) $("inter-text").textContent = typed;
     const p = Math.max(0, Math.min(1, (now - inter.start) / (inter.end - inter.start)));
     $("inter-fill").style.width = Math.max(0, Math.min(1, p * n - idx)) * 100 + "%"; // this screen's third of the bar
     const want = Math.floor(p * inter.lines.length * 1.05);
@@ -610,7 +621,7 @@ function flashBand(vote) {
 let userSize = 0;
 const sizeKey = () => `rankmania-size-${screen}`;
 // ── background settings in the same hidden panel (saved in this browser, for all screens)
-const BG_DEFAULT = { shade: "#666666", band: 18, render: 14, vblur: 0.14, vspread: 0.1 };
+const BG_DEFAULT = { up: false, shade: "#666666", band: 18, render: 14, vblur: 0.14, vspread: 0.1 };
 let bg = { ...BG_DEFAULT };
 try { bg = { ...BG_DEFAULT, ...JSON.parse(localStorage.getItem("rankmania-bg") || "{}") }; } catch {}
 function applyBg(save) {
@@ -618,6 +629,8 @@ function applyBg(save) {
   r.setProperty("--shade", bg.shade);
   r.setProperty("--band", bg.band + "%");
   r.setProperty("--render-time", bg.render + "s");
+  r.setProperty("--render-dir", bg.up ? "reverse" : "normal");
+  $("renderdir").textContent = bg.up ? "↑ bottom to top (click: top to bottom)" : "↓ top to bottom (click: bottom to top)";
   r.setProperty("--vig-blur", bg.vblur);
   r.setProperty("--vig-spread", bg.vspread);
   const px = (k) => Math.round((fixed.tier || 100) * k); // in px at the current icon size
@@ -630,6 +643,7 @@ function applyBg(save) {
 }
 $("shade").addEventListener("input", () => { bg.shade = $("shade").value; applyBg(true); });
 $("band").addEventListener("input", () => { bg.band = +$("band").value; applyBg(true); });
+$("renderdir").addEventListener("click", () => { bg.up = !bg.up; applyBg(true); }); // the band runs down or up
 $("render").addEventListener("change", () => { bg.render = +$("render").value; applyBg(true); });
 $("render").addEventListener("input", () => { $("renderval").textContent = $("render").value + " s per pass"; });
 $("vblur").addEventListener("input", () => { bg.vblur = +$("vblur").value; applyBg(true); });
