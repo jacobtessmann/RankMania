@@ -29,8 +29,8 @@ A timer counts from the start of its sequence.</p>
 Each screen picks one at the start of every sequence. In the mix, the three screens always show different ones.</p>
 <p><label for="h-students">Students screen</label><br>
 <textarea id="h-students" rows="5" cols="60"></textarea></p>
-<p><label for="h-inventions">Inventions screen</label><br>
-<textarea id="h-inventions" rows="5" cols="60"></textarea></p>
+<p><label for="h-things">Things screen</label><br>
+<textarea id="h-things" rows="5" cols="60"></textarea></p>
 <p><label for="h-corporations">Corporations screen</label><br>
 <textarea id="h-corporations" rows="5" cols="60"></textarea></p>
 <p><label for="h-mix">Mix (all three screens, each a different one)</label><br>
@@ -152,7 +152,7 @@ function applyStatus(s) {
 }
 
 // headlines
-const H_KEYS = ["students", "inventions", "corporations", "mix"];
+const H_KEYS = ["students", "things", "corporations", "mix"];
 let headlinesLoaded = false;
 function fillHeadlines(h) {
   H_KEYS.forEach((k) => ($("h-" + k).value = (h[k] || []).join("\n")));

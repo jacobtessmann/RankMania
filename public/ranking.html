@@ -754,7 +754,7 @@ connectDisplay({
     screens = snap.categories.filter((c) => !c.virtual).map((c) => c.name);
     if (first) buildRows();
     buildSwitch();
-    const want = screen || ({ konzerne: "corporations" }[qs.get("cat")] || qs.get("cat")); // old links keep working
+    const want = screen || ({ konzerne: "corporations", inventions: "things" }[qs.get("cat")] || qs.get("cat")); // old links keep working
     screen = lists[want] && !lists[want].virtual ? want : screens[0];
     try { userSize = +localStorage.getItem(sizeKey()) || 0; } catch { userSize = 0; }
     markSwitch();

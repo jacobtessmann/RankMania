@@ -9,9 +9,10 @@
   :root { --red: #ee3322; --yellow: #ffee00; --ink: #222; --grey: #757575; --line: #e8e8e8; --soft: #f6f6f6;
           --tier-S: #ff7f7f; --tier-A: #ffff7f; --tier-B: #7fff7f; --tier-C: #7fffff; --tier-D: #ff7fff; --tier-F: #9b30ff; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #fff; color: var(--ink); font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  @font-face { font-family: "CMU Typewriter Light"; src: url("fonts/cmunbtl.woff") format("woff"); font-weight: normal; font-style: normal; font-display: swap; }
+  body { margin: 0; background: #fff; color: var(--ink); font-family: "CMU Typewriter Light", "Courier New", monospace;
          -webkit-font-smoothing: antialiased; }
-  /* everything in regular Arial: no bold anywhere, the hierarchy is size only */
+  /* everything in CMU Typewriter Light: no bold anywhere, the hierarchy is size only */
   h1, h2, h3, b, strong, .logo, .entry .place, .entry .rk, .poll button { font-weight: normal; }
   button { font: inherit; }
   .mast { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line);
@@ -22,14 +23,14 @@
          font-size: 8px; font-weight: normal; color: #fff; background: var(--red); }
   .bdg.y { background: var(--yellow); color: var(--ink); }
   .bdg.k { background: var(--ink); }
-  main { max-width: 680px; margin: 0 auto; padding: 0 18px 60px; }
+  main { max-width: 680px; margin: 0 auto; padding: 0 18px 40px; }
   .edition { font-size: 12px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; padding: 18px 0 6px; margin: 0; }
   .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; }
 
   /* thumbnail: one red word in a red frame (PEOPLE, THINGS, CAPITAL, EVERYTHING) */
   .thumb { aspect-ratio: 16 / 10; display: grid; place-items: center; background: #fff; border: 3px solid var(--red);
            container-type: inline-size; overflow: hidden; }
-  .thumb span { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; color: var(--red); font-size: 11.5cqw;
+  .thumb span { color: var(--red); font-size: 12cqw;
                 line-height: 1; text-transform: uppercase; letter-spacing: -.01em; }
 
   /* home */
@@ -98,6 +99,10 @@
   .related .card .thumb { margin: 0; border-width: 2px; aspect-ratio: auto; height: 100%; min-height: 90px; } /* as tall as the text next to it */
   .related .card h2 { font-size: 18px; line-height: 1.15; color: var(--ink); text-transform: none; margin: 0 0 6px; }
   .related .card .sub { font-size: 16px; }
+  /* the three sources, at the bottom of every page */
+  .sources { max-width: 680px; margin: 0 auto; padding: 18px 18px 40px; border-top: 1px solid var(--ink); font-size: 15px; line-height: 1.5; }
+  .sources p { margin: 0 0 6px; color: var(--red); }
+  .sources a { display: block; color: #000; word-break: break-all; }
   .end { margin-top: 30px; padding-top: 16px; border-top: 4px solid var(--ink); font-size: 15px; line-height: 1.5; }
 
   /* one entry, with the print button */
@@ -121,6 +126,12 @@
   <div class="badges"><div class="bdg">OMG</div><div class="bdg y">LOL</div><div class="bdg k">WTF</div></div>
 </div>
 <main id="view"><p class="edition">Loading your edition…</p></main>
+<footer class="sources">
+  <p>Sources</p>
+  <a href="https://www.listchallenges.com/top-100-greatest-things-ever" target="_blank" rel="noopener">listchallenges.com/top-100-greatest-things-ever</a>
+  <a href="https://www.forbes.com/lists/global2000/" target="_blank" rel="noopener">forbes.com/lists/global2000</a>
+  <a href="https://visualcommunication.zhdk.ch/personen/bachelor/" target="_blank" rel="noopener">visualcommunication.zhdk.ch/personen/bachelor</a>
+</footer>
 <div class="sheet" id="sheet" hidden><div class="panel" id="panel"></div></div>
 
 <script src="shared.js"></script>
@@ -154,13 +165,13 @@ const TEASERS = {
       "You Spent Years Building a Portfolio. It Took Us Two Seconds to Rank You.",
     ],
   },
-  inventions: {
+  things: {
     word: "THINGS",
-    head: "{n} Inventions That Changed the World, Ranked",
+    head: "{n} of the Greatest Things Ever, Ranked",
     titles: [
-      "Scientists Picked the Greatest Breakthroughs in History. We Re-Ranked Them in Seconds.",
-      "Only One Invention Can Be Number 1, and Your History Teacher Will Not Agree",
-      "Thousands of Years of Progress, Sorted From Best to Worst. Sorry, Last Place.",
+      "Sleep, Coffee or Oxygen? Only One Can Be Number 1.",
+      "The Internet Picked the Greatest Things Ever. We Re-Ranked Them in Seconds.",
+      "Everything Good in the World, Sorted From Best to Worst. Sorry, Last Place.",
     ],
   },
   mix: {
@@ -168,7 +179,7 @@ const TEASERS = {
     head: "People vs. Things vs. Capital, Ranked (Part {part} of 3)",
     titles: [
       "Is Your Classmate Worth More Than a Steam Engine? This List Has Decided.",
-      "We Threw People, Inventions and Corporations Into One List. Nobody Is Safe.",
+      "We Threw People, Things and Corporations Into One List. Nobody Is Safe.",
       "Everything Competes With Everything Now. Here's the Proof.",
     ],
   },
@@ -219,7 +230,7 @@ const HOOKS = {
   "Starbucks": "Starbucks, the Seattle coffee chain with more than 40,000 stores, so you're never more than a few blocks from a misspelled name on a cup.",
   "Uber": "Uber, the ride-hailing app that turned millions of private cars into taxis, so you can get anywhere without ever calling a dispatcher.",
   "UBS": "UBS, Switzerland's biggest bank and the world's largest wealth manager, which since 2023 has been the only Swiss big bank left.",
-  // The everyday things currently in the inventions folder (until the Atlantic list replaces them)
+  // The everyday things that were in the things folder before the listchallenges list
   "Frank Ocean": "Frank Ocean's Blonde (2016), the album he put out on his own label one day after finishing his record deal with the visual album Endless, so you can cry to \"Nights\" at 3 a.m.",
   "Snowboarding": "Snowboarding, born in 1965 when Sherman Poppen screwed two skis together for his daughter and called it the \"Snurfer\", so you can fall down a mountain in style.",
   "Tanks": "The tank, first sent into battle by the British at the Somme in 1916, so wars could be fought from inside a rolling steel box.",
@@ -253,62 +264,11 @@ const HOOKS = {
   "Sweater": "The sweater, first knitted for fishermen on islands like Guernsey and Aran to stay warm and dry at sea, so you can stay cozy on the couch.",
   "Swiss-cheese": "Swiss cheese, better known as Emmentaler, whose holes come from carbon dioxide bubbles and, as Swiss researchers found in 2015, tiny bits of hay in the milk.",
   "Wheel": "The wheel, invented around 3500 BC in Mesopotamia (first for pottery, then for carts), so everything since could finally get rolling.",
-  // Inventions (The Atlantic, "The 50 Greatest Breakthroughs Since the Wheel")
-  "Printing Press": "The printing press, Johannes Gutenberg's 1440s machine with movable metal type, so ideas could be copied faster than anyone could ban them.",
-  "Electricity": "Electricity, tamed by Faraday, Edison, Tesla and many others in the 1800s, so you can read this on a glowing rectangle at 2 a.m.",
-  "Penicillin": "Penicillin, the antibiotic Alexander Fleming found growing on a forgotten Petri dish in 1928, which has since saved hundreds of millions of lives.",
-  "Semiconductors": "Semiconductors, the tiny silicon switches inside every chip since Bell Labs built the transistor in 1947, so your phone can out-think a 1960s supercomputer.",
-  "Optical Lenses": "Optical lenses, from medieval reading glasses to microscopes and telescopes, so humans could finally see bacteria and the moons of Jupiter.",
-  "Paper": "Paper, invented in China around 2,000 years ago, so everything from money to memes had something to live on.",
-  "Combustion Engine": "The internal combustion engine, developed in the late 1800s by Otto, Daimler and Diesel, so cars, ships and planes could burn their way across the planet.",
-  "Vaccination": "Vaccination, pioneered by Edward Jenner with cowpox in 1796, which went on to wipe smallpox off the planet by 1980.",
-  "The Internet": "The internet, grown out of the US military's ARPANET in 1969, so you can access all of human knowledge and still choose cat videos.",
-  "Steam Engine": "The steam engine, improved by James Watt in the 1760s and 1770s, which kicked off the Industrial Revolution and its coal-black skies.",
-  "Nitrogen Fixation": "Nitrogen fixation, the Haber-Bosch process from the 1910s that pulls fertiliser out of thin air and helps feed about half the world.",
-  "Sanitation": "Sanitation, the sewers and clean water that turned 19th-century cities from cholera traps into places you could actually survive.",
-  "Refrigeration": "Refrigeration, so food could survive the trip from farm to fridge and you can have ice cream in July.",
-  "Gunpowder": "Gunpowder, discovered by Chinese alchemists in the 9th century while looking for an elixir of life, which is ironic, all things considered.",
-  "The Airplane": "The airplane, first flown by the Wright brothers at Kitty Hawk in 1903 for 12 whole seconds, so you can now cross an ocean in a movie and a half.",
-  "Personal Computer": "The personal computer, which went from hobby kits in the 1970s to the Apple II and the IBM PC, so everyone could have a computer at home.",
-  "Compass": "The compass, a magnetised needle used for navigation in China by the 11th century, so sailors finally knew which way was home.",
-  "The Automobile": "The automobile, born with Carl Benz's Motorwagen in 1886 and mass-produced by Ford, so cities could be redesigned around parking spaces.",
-  "Steelmaking": "Industrial steelmaking, made cheap by Henry Bessemer's converter in 1856, so we could build railways, skyscrapers and battleships.",
-  "The Pill": "The pill, the oral contraceptive approved in the US in 1960, so people could decide for themselves when to have kids.",
-  "Nuclear Fission": "Nuclear fission, discovered by Otto Hahn, Fritz Strassmann and Lise Meitner in 1938, which brought us both nuclear power plants and the atomic bomb.",
-  "Green Revolution": "The Green Revolution, Norman Borlaug's high-yield wheat and rice from the 1940s to 60s, credited with saving a billion people from famine.",
-  "Sextant": "The sextant, the 18th-century instrument that measures the angle between sun and horizon, so ships could figure out where on earth they were.",
-  "Telephone": "The telephone, patented by Alexander Graham Bell in 1876, so you could finally ignore calls from your relatives in real time.",
-  "Alphabet": "The alphabet, developed around 4,000 years ago in Egypt and the Levant, so writing no longer needed thousands of different symbols.",
-  "Telegraph": "The telegraph, with Samuel Morse's code from the 1830s and 1840s, so news could cross continents in minutes instead of weeks.",
-  "Mechanical Clock": "The mechanical clock, ticking in European church towers since the 13th century, so everyone could be late at exactly the same time.",
-  "Radio": "Radio, pushed by Guglielmo Marconi around 1900, so music, news and propaganda could reach millions of homes at once.",
-  "Photography": "Photography, from Niépce's first surviving photo around 1826 to Daguerre's daguerreotype in 1839, so nobody had to sit still for a painter again.",
-  "Moldboard Plow": "The moldboard plow, which turns heavy soil over instead of just scratching it, so medieval farmers could grow far more food.",
-  "Archimedes' Screw": "Archimedes' screw, a rotating spiral that lifts water uphill, still in use more than 2,000 years after the Greek mathematician.",
-  "Cotton Gin": "The cotton gin, patented by Eli Whitney in 1793, which made cotton hugely profitable and tragically expanded slavery in the American South.",
-  "Pasteurization": "Pasteurization, Louis Pasteur's 1860s trick of gently heating liquids to kill germs, so your milk doesn't make you sick.",
-  "Gregorian Calendar": "The Gregorian calendar, introduced by Pope Gregory XIII in 1582, which deleted ten days from October to fix the drift of the seasons.",
-  "Oil Refining": "Oil refining, which turns crude oil into kerosene, petrol and plastic and made Rockefeller's Standard Oil the richest company of its time.",
-  "Steam Turbine": "The steam turbine, invented by Charles Parsons in 1884, which still spins in most power plants to make the electricity you're using right now.",
-  "Cement": "Cement, used by the Romans and reinvented as Portland cement in 1824, so the world could pour concrete everywhere.",
-  "Plant Breeding": "Scientific plant breeding, built on Gregor Mendel's pea experiments in the 1860s, so crops could grow bigger and resist disease.",
-  "Oil Drilling": "Oil drilling, kicked off by Edwin Drake's well in Titusville, Pennsylvania, in 1859, so the world could start pumping its fuel out of the ground.",
-  "Sailboat": "The sailboat, which let humans catch the wind thousands of years ago and eventually connected every continent by sea.",
-  "Rocketry": "Rocketry, from Robert Goddard's liquid-fuel rocket in 1926 to the Moon landing in 1969, so humans could leave the planet.",
-  "Paper Money": "Paper money, first used in China in the 11th century, so you no longer had to carry a bag of coins.",
-  "Abacus": "The abacus, a frame of sliding beads used for thousands of years, so merchants could calculate faster than anyone with a pen.",
-  "Air Conditioning": "Air conditioning, invented by Willis Carrier in 1902 for a printing plant, so whole cities could grow in places that are way too hot.",
-  "Television": "Television, from John Logie Baird's demonstration in 1926 to a TV in almost every living room by the 1960s, so families had something to stare at together.",
-  "Anesthesia": "Anesthesia, first publicly demonstrated with ether in Boston in 1846, so surgery stopped being the worst moment of your life.",
-  "The Nail": "The nail, hand-forged for thousands of years and mass-produced since the 1800s, so you can build a house, or at least hang a poster.",
-  "The Lever": "The lever, explained by Archimedes, who supposedly said: give me a place to stand and I will move the Earth.",
-  "Assembly Line": "The moving assembly line, introduced by Henry Ford in 1913, which cut the time to build a Model T from about 12 hours to 90 minutes.",
-  "Combine Harvester": "The combine harvester, which reaps, threshes and cleans grain in a single pass, so one farmer can do the work of a whole village.",
 };
 // where each list comes from, said in the intro ({source})
 const SOURCES = {
   students: "the VisCom class list (faces by thispersondoesnotexist.com)",
-  inventions: "The Atlantic's 50 Greatest Breakthroughs Since the Wheel",
+  things: "a listchallenges.com list that promises \"There are the worst things that happen in the world, but there are also great things that can happen too!\"",
   corporations: "the Forbes Global 2000",
 };
 // the intro: one paragraph from each pool, picked at random. Pure BuzzFeed babble, no real content.
@@ -493,7 +453,7 @@ let edition = null;
 
 // ════════ Write the edition (once) ════════
 function writeEdition(snap) {
-  const ORDER = ["corporations", "students", "inventions"]; // the order of the articles: capital, people, things
+  const ORDER = ["corporations", "students", "things"]; // the order of the articles: capital, people, things
   const rank = (c) => (ORDER.indexOf(c.name) + 1) || 99;
   const real = snap.categories.filter((c) => !c.virtual).sort((x, y) => rank(x) - rank(y));
   const byName = Object.fromEntries(snap.categories.map((c) => [c.name, c]));
@@ -510,7 +470,7 @@ function writeEdition(snap) {
       e.line = HOOKS[e.title] || fill(generic, { N: e.title, A: entries[k - 1]?.title, B: entries[k + 1]?.title, T: e.tier, R: e.rank, n });
       e.fact = EXPOSED[e.title] || null; // every Corporation gets its critical review
     });
-    const source = mixed ? `${SOURCES.students}, ${SOURCES.inventions} and ${SOURCES.corporations}` : SOURCES[c.name] || "the internet";
+    const source = mixed ? `${SOURCES.students}, ${SOURCES.things} and ${SOURCES.corporations}` : SOURCES[c.name] || "the internet";
     const v = { n, part: i + 1, source, label: mixed ? "people, things and capital" : c.label.toLowerCase(),
                 top: entries[0]?.title, last: entries[n - 1]?.title };
     return {
@@ -653,7 +613,7 @@ function setupVerdict(a) {
 // ════════ PRINT ════════
 // Called when a visitor presses "Print" on an entry.
 //   entry   = { id, title, image, tier, rank, line }
-//   article = { slug, list, cat, title, entries }   (slug = students | inventions | corporations)
+//   article = { slug, list, cat, title, entries }   (slug = students | things | corporations)
 // Sends a print job to the brain; the print station (print-station.html) prints it on the printer in the room.
 // The print shows the entry as this edition shows it: its place here, and its path only up to this edition.
 // (print.html?list=…&image=… still shows the print on the screen, with the normal print dialog.)
