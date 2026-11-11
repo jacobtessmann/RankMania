@@ -9,9 +9,10 @@
   :root { --red: #ee3322; --yellow: #ffee00; --ink: #222; --grey: #757575; --line: #e8e8e8; --soft: #f6f6f6;
           --tier-S: #ff7f7f; --tier-A: #ffff7f; --tier-B: #7fff7f; --tier-C: #7fffff; --tier-D: #ff7fff; --tier-F: #9b30ff; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #fff; color: var(--ink); font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  @font-face { font-family: "CMU Typewriter Light"; src: url("fonts/cmunbtl.woff") format("woff"); font-weight: normal; font-style: normal; font-display: swap; }
+  body { margin: 0; background: #fff; color: var(--ink); font-family: "CMU Typewriter Light", "Courier New", monospace;
          -webkit-font-smoothing: antialiased; }
-  /* everything in regular Arial: no bold anywhere, the hierarchy is size only */
+  /* everything in CMU Typewriter Light: no bold anywhere, the hierarchy is size only */
   h1, h2, h3, b, strong, .logo, .entry .place, .entry .rk, .poll button { font-weight: normal; }
   button { font: inherit; }
   .mast { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line);
@@ -29,7 +30,7 @@
   /* thumbnail: one red word in a red frame (PEOPLE, THINGS, CAPITAL, EVERYTHING) */
   .thumb { aspect-ratio: 16 / 10; display: grid; place-items: center; background: #fff; border: 3px solid var(--red);
            container-type: inline-size; overflow: hidden; }
-  .thumb span { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; color: var(--red); font-size: 11.5cqw;
+  .thumb span { color: var(--red); font-size: 12cqw;
                 line-height: 1; text-transform: uppercase; letter-spacing: -.01em; }
 
   /* home */
