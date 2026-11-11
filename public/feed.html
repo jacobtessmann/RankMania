@@ -16,13 +16,14 @@
   h1, h2, h3, b, strong, .logo, .entry .place, .entry .rk, .poll button { font-weight: normal; }
   button { font: inherit; }
   .mast { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line);
-          display: flex; align-items: center; gap: 14px; padding: 12px 18px; padding-top: max(12px, env(safe-area-inset-top)); }
+          display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+          padding: 12px 18px; padding-top: max(12px, env(safe-area-inset-top)); }
+  .asof { text-align: center; font-size: 11px; line-height: 1.3; letter-spacing: .08em; color: var(--grey); text-transform: uppercase; }
   .logo { font-size: 30px; font-weight: normal; letter-spacing: -.5px; color: var(--red); text-decoration: none; }
-  .badges { margin-left: auto; display: flex; gap: 6px; }
-  .bdg { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
-         font-size: 8px; font-weight: normal; color: #fff; background: var(--red); }
-  .bdg.y { background: var(--yellow); color: var(--ink); }
-  .bdg.k { background: var(--ink); }
+  /* C, P, T: jump to capital, people, things (in the mix, each opens one part of "everything") */
+  .badges { display: flex; gap: 6px; }
+  .bdg { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; text-decoration: none;
+         font-size: 15px; font-weight: normal; color: #fff; background: var(--red); }
   main { max-width: 680px; margin: 0 auto; padding: 0 18px 40px; }
   .edition { font-size: 12px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; padding: 18px 0 6px; margin: 0; }
   .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; }
@@ -123,7 +124,8 @@
 <body>
 <div class="mast">
   <a class="logo" href="#">RankFeed</a>
-  <div class="badges"><div class="bdg">OMG</div><div class="bdg y">LOL</div><div class="bdg k">WTF</div></div>
+  <div class="asof" id="asof"></div>
+  <nav class="badges"><a class="bdg" href="#/corporations" title="Capital">C</a><a class="bdg" href="#/students" title="People">P</a><a class="bdg" href="#/things" title="Things">T</a></nav>
 </div>
 <main id="view"><p class="edition">Loading your edition…</p></main>
 <footer class="sources">
@@ -505,7 +507,7 @@ function writeEdition(snap) {
 }
 
 // ════════ Pieces ════════
-const timeOf = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const timeOf = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }); // always 24h, e.g. 13:39
 const img = (e, cls = "") => e.image
   ? `<img class="${cls}" src="${esc(e.image)}" alt="${esc(e.title)}" loading="lazy">`
   : `<div class="ph ${cls}">${esc(e.title[0])}</div>`;
@@ -541,7 +543,6 @@ function home() {
   delete $("view").dataset.slug;
   const ready = edition.articles.filter((a) => a.ready);
   $("view").innerHTML = `
-    <p class="edition">Snapshot${edition.n ? ` #${edition.n.toLocaleString("en")}` : ""} · ${timeOf(edition.at)}</p>
     ${ready.map((a) => teaser(a)).join("")}
     ${ready.length ? "" : `<p class="note">Still ranking. Come back in a minute for your edition.</p>`}`;
   window.scrollTo(0, 0);
@@ -674,10 +675,7 @@ $("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) his
   // every page load (also a manual refresh) writes a new edition from the ranking at that moment
   try {
     edition = writeEdition(await fetchRankState());
-    try { // count it: "Snapshot #1234"
-      const r = await fetch(RANK_BASE + "/api/edition", { method: "POST" });
-      if (r.ok) edition.n = (await r.json()).n;
-    } catch {}
+    $("asof").innerHTML = `Rankings from<br>${timeOf(edition.at)}`;
   } catch {
     $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking can't be reached right now. Try again in a moment.</p>`;
     return;

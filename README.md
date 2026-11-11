@@ -162,7 +162,7 @@ Settings near the top of the script: `TILE_SIZE` (fixed size in px for all scree
 
 RankFeed is set entirely in **CMU Typewriter Text Light** (Donald Knuth's Computer Modern typewriter, `public/fonts/cmunbtl.woff`), no bold; the hierarchy is size alone. The intro, middle and end paragraphs are BuzzFeed babble picked at random (`INTROS_1`, `INTROS_2`, `MIDDLES`, `END`). Each article has a plain headline that says what is ranked (`head` in `TEASERS`) and the clickbait as subheadline (`titles`, `subs`). The vote at the end is a full-width green/red block ("Help us train the machine.").
 
-The home page shows **"Snapshot #n"**: how many editions have been written since the last restart (counted by the brain, `/api/edition`). The thumbnails are one red word in a red frame: CAPITAL, PEOPLE, THINGS, EVERYTHING.
+The sticky top bar shows "RANKINGS FROM 13:39" (when this edition was written) and three red buttons C, P, T that jump to capital, people and things (in the mix, each opens one part of "everything"). The thumbnails are one red word in a red frame: CAPITAL, PEOPLE, THINGS, EVERYTHING.
 
 RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
