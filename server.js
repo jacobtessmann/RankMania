@@ -140,7 +140,7 @@ const PRINT_QUEUE_MAX = 100; // print jobs waiting for the print station (print-
 const PRINT_PER_LIST = 4; // when sequence 1 ends, the entries of every category that moved most stay standing and are printed …
 const PRINT_SHEET = 12; // … together one sheet of stickers (if a category has fewer, the others give more)
 const PRINT_STAY_MS = 6000; // they stay standing this long, then fall too …
-const PAUSE_AFTER_SEPARATE_MS = 60000; // … and the screens are black for the rest of a 1-minute pause; then the mix
+const INTERMISSION_MS = 45000; // … then the 45-second intermission (terminal replay, progress bar over all screens, laughing face on the brain); then the mix
 const TRACK_MAX = 2000; // the most points kept per entry for the print (its path through the tiers this round)
 
 const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
@@ -249,7 +249,8 @@ function snapshot() {
     now: Date.now(),
     seq,
     phase,
-    black: blackSince != null && Date.now() >= blackSince, // the screens are black (the pause after sequence 1)
+    black: blackSince != null && Date.now() >= blackSince, // the intermission is running (the pause after sequence 1)
+    intermission: blackSince != null ? { startsAt: blackSince, endsAt: blackSince + INTERMISSION_MS } : null,
     parallel: 1,
     titles,
     tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
@@ -646,14 +647,14 @@ function switchTo(next) {
   // the feed shows two of the current number 1s as they disappear
   const tops = allLists().filter((l) => l.active).map((l) => ranking(l)[0]).filter(Boolean).map(brief);
   // at the end of sequence 1 the entries that moved most stay standing for a moment (they are printed),
-  // then the screens are black for the rest of the pause
+  // then the intermission runs on all screens
   const keep = phase === "separate" ? pickPrints() : null;
   const stay = keep ? PRINT_STAY_MS : 0;
   const black = keep ? PRINT_STAY_MS + CLEAR_MS : null; // when the kept ones have fallen
   blackSince = keep ? Date.now() + black : null;
   allLists().forEach(stop);
   phase = "clearing";
-  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay, black });
+  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay, black, intermission: keep ? INTERMISSION_MS : null });
   console.log(`Clearing → ${next}`);
 
   setTimeout(() => {
@@ -679,7 +680,7 @@ function switchTo(next) {
       sample = pickTwo(CATEGORIES.flatMap((c) => [...lists[c.id].items.values()].map(brief)));
     }
     record({ type: "phase", phase: next, sample });
-  }, keep ? PAUSE_AFTER_SEPARATE_MS : CLEAR_MS);
+  }, keep ? black + INTERMISSION_MS : CLEAR_MS);
   return true;
 }
 

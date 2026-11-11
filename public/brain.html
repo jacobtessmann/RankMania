@@ -12,11 +12,15 @@
   .dim { color: #888; }
   .cur::after { content: "█"; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
+  /* the intermission: a big ASCII face of the brain that smiles and laughs */
+  #face { position: fixed; inset: 0; z-index: 5; background: #000; display: grid; place-items: center; }
+  #face pre { margin: 0; background: #fff; color: #000; padding: 2vmin 3vmin; font: min(1.55vh, 1.1vw)/1.05 Menlo, Monaco, "Courier New", monospace; }
 </style>
 </head>
 <body>
 <div id="bar">rankmania brain — connecting…</div>
 <div id="log"></div>
+<div id="face" hidden><pre id="face-art"></pre></div>
 
 <script src="shared.js"></script>
 <script>
@@ -37,6 +41,62 @@ function flash(vote) {
   document.body.animate([{ backgroundColor: f.color }, { backgroundColor: "#000" }],
                         { duration: f.fadeMs, easing: "ease-out" });
 }
+// ── the intermission: a laughing ASCII face, drawn from shapes (smile → laugh, mouth opening and closing)
+const FACE_W = 62, FACE_H = 34;
+function faceFrame(mood, t) {
+  const rows = [], shade = "  ..:";
+  const bob = Math.sin(t / 260) * (mood === "smile" ? 0.01 : 0.035); // laughing shakes the face a little
+  for (let y = 0; y < FACE_H; y++) {
+    let row = "";
+    for (let x = 0; x < FACE_W; x++) {
+      const nx = (x - FACE_W / 2 + 0.5) / (FACE_W / 2), ny = (y - FACE_H / 2 + 0.5) / (FACE_H / 2) - bob;
+      const d = Math.hypot(nx, ny);
+      let c = " ";
+      if (d <= 1) {
+        c = d > 0.92 ? "#" : shade[Math.max(0, Math.min(shade.length - 1, Math.round(((nx * 0.5 + ny * 0.5 + 0.4) / 1.4) * (shade.length - 1))))]; // a light shadow bottom right
+        // eyes: round when smiling, squeezed into ^ ^ when laughing
+        for (const ex of [-0.36, 0.36]) {
+          const dx = (nx - ex) / 0.13, dy = (ny + 0.3) / 0.2;
+          if (mood === "smile") { if (dx * dx + dy * dy <= 1) c = "@"; }
+          else if (Math.abs(dy - (Math.abs(dx) * 0.9 - 0.25)) < 0.28 && Math.abs(dx) < 1.1) c = "@";
+        }
+        // cheeks
+        if (mood !== "smile" && Math.hypot((Math.abs(nx) - 0.62) / 0.13, (ny - 0.12) / 0.1) <= 1) c = "*";
+        // mouth: a curved smile, or a wide open laughing mouth (open is 0..1)
+        const open = mood === "smile" ? 0 : mood === "laugh1" ? 0.55 : 1;
+        const w = mood === "smile" ? 0.5 : 0.6;
+        if (Math.abs(nx) < w) {
+          const top = 0.18 + 0.12 * (nx / w) ** 2;
+          const bottom = top + 0.06 + open * 0.42 * (1 - (nx / w) ** 2);
+          if (open === 0) { if (Math.abs(ny - (0.32 - 0.22 * (nx / w) ** 2 + 0.22)) < 0.07) c = "@"; }
+          else if (ny >= top && ny <= bottom) c = ny < top + 0.08 ? "=" : ny > bottom - 0.12 && Math.abs(nx) < w * 0.5 ? "o" : "@";
+        }
+      }
+      row += c;
+    }
+    rows.push(row.replace(/\s+$/, ""));
+  }
+  return rows.join("\n");
+}
+let faceTimer = null, faceUntil = 0;
+function showFace(start, end) {
+  hideFace();
+  faceUntil = end;
+  const t0 = start;
+  const tick = () => {
+    const now = Date.now();
+    if (now >= faceUntil) return hideFace();
+    $face.hidden = now < start;
+    const k = (now - t0) % 3200; // 1 s smiling, then laughing: mouth open, half, open, half …
+    const mood = k < 1000 ? "smile" : Math.floor(k / 180) % 2 ? "laugh1" : "laugh2";
+    $art.textContent = faceFrame(mood, now);
+    faceTimer = setTimeout(tick, 90);
+  };
+  tick();
+}
+function hideFace() { clearTimeout(faceTimer); faceTimer = null; $face.hidden = true; }
+const $face = document.getElementById("face"), $art = document.getElementById("face-art");
+
 const VARS = {
   _any: ["attention_yield", "consensus_drift", "taste_conformity", "click_probability", "outrage_elasticity",
          "cultural_half_life", "nostalgia_coeff", "trust_decay", "virality_index", "aesthetic_entropy",
@@ -170,6 +230,7 @@ setInterval(status, 1000);
 connectDisplay({
   onSnapshot(snap) {
     phase = snap.phase;
+    if (snap.intermission) showFace(toLocalTime(snap.intermission.startsAt), toLocalTime(snap.intermission.endsAt)); else hideFace();
     snap.categories.forEach((c) => (lists[c.name] = c.entries));
     const active = snap.categories.filter((c) => c.entries.length + c.pool.length + c.hovering.length && (phase === "mix") === !!c.virtual);
     print("rankmania brain — model loaded", "dim");
@@ -208,6 +269,11 @@ connectDisplay({
   },
   onPhase(ev) {
     if (ev.replay) return;
+    if (ev.phase === "clearing" && ev.black != null && ev.intermission) {
+      const start = toLocalTime(ev.t + ev.black);
+      showFace(start, start + ev.intermission);
+      print(`[${clock()}] ======== INTERMISSION: ANALYZING · MEDIATING · PREPARING PRINT ========`);
+    } else if (ev.phase !== "clearing") hideFace();
     pending.forEach((t) => t.forEach(clearTimeout));
     pending.clear();
     print("");
