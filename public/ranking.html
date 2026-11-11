@@ -77,12 +77,16 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
 #pool-row { flex: 1 1 auto; display: flex; min-height: 0; margin-top: var(--row-gap); } /* the waiting row gets all the space that is left */
 
 /* ═══ Side strip: vertical texts, read from bottom to top ═══ */
+/* the source sits fixed at the top; the verdict dots grow up from the bottom and slide UNDER the source */
 #side {
-  flex: 0 0 var(--side-w); display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+  flex: 0 0 var(--side-w); position: relative; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
   font-family: var(--f-type); font-size: min(1.1vh, 1.9vw); color: var(--ink); white-space: nowrap; overflow: hidden;
 }
 #side span { writing-mode: vertical-rl; transform: rotate(180deg); }
-#side-votes { font-size: 1.3em; line-height: 1.05; letter-spacing: .05em; }
+#side-url, #side-source { position: relative; z-index: 1; background: var(--paper); padding-bottom: .6em; }
+#side-url:empty { display: none; }
+#side-votes { position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: center;
+              font-size: 1.3em; line-height: 1.05; letter-spacing: .05em; }
 #side-votes .good { color: #00ff00; }
 #side-votes .bad { color: #ff0000; }
 
