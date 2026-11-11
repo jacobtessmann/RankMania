@@ -114,7 +114,7 @@ const HOVER_MIN_MS = 4000; // how long a new entry hovers before it lands (4–6
 const HOVER_MAX_MS = 6000;
 const PAUSE_MIN_MS = 2500; // pause after every action before the next one (2.5–5 s)
 const PAUSE_MAX_MS = 5000;
-const START_SPEED = 1; // tempo of the whole brain: 2 = twice as fast, 0.5 = half (also a slider on /admin.html)
+const START_SPEED = 1.25; // tempo of the whole brain: 2 = twice as fast, 0.5 = half (also a slider on /admin.html)
 // While images are still waiting, each action is either a new entry or a rearrangement (a move).
 // The chance of a move grows as the list fills: +10 % after every 6 placements.
 const MOVE_CHANCE_START = 0.35; // chance of a move at the start (35 %)
