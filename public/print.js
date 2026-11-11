@@ -24,8 +24,8 @@
   const C = SIZE / 2; // the middle
   const FRAME = 10; // the black circle on the edge of the sticker (exactly 60 mm across, the line is centred on it)
   const BLEED = 34; // the color band on the edge: this wide outside and inside the black circle (about 2.4 mm; the labels are 7 mm apart on the sheet)
-  const INNER = 70; // the ring of F starts this far from the middle
-  const STROKE = 105; // line width (about 7.4 mm on the 60 mm sticker)
+  const INNER = 50; // the ring of F starts this far from the middle
+  const STROKE = 52; // line width (about 3.7 mm on the 60 mm sticker)
   const OUTLINE = 5; // dark outline around the line (0 = none)
   const OUTLINE_COLOR = "#181716";
   // the tier colors of the tierlist (the same as the tier chips in feed.html)
@@ -43,12 +43,15 @@
   const TEXT_INSET = BLEED + 18; // its baseline is this far inside the edge, clear of the color band (the letters stand towards the middle)
   const RING_GAP = 14; // at least this much room between name and place, in degrees
   const LINE_GAP = 16; // room between the line and the text
-  const MAX_STOPS = 14; // at most this many places from the history (more would be one blob)
-  const TURN_MIN = 50, TURN_MAX = 130; // how far the line turns around the middle per stop, in degrees
-  const NOISE = 0.1; // how wobbly the line is, relative to one tier ring
-  const LOOP_EVERY_MS = 20000; // one curl for every 20 s the entry stayed in one place …
-  const LOOP_MAX = 2; // … but at most this many at one stop
-  const LOOP_R = 0.9; // curl radius, relative to one tier ring
+  const STOP_JUMP = 5; // a jump of this many score points inside one tier is a stop of its own (one tier = 20)
+  const MAX_STOPS = 18; // at most this many places from the history (more would be one blob)
+  const TURN_MIN = 70, TURN_MAX = 170; // how far the line turns around the middle per stop, in degrees
+  const KICK_CHANCE = 0.4, KICK_MIN = 20, KICK_MAX = 45; // now and then the line breaks out to the left or right, in degrees …
+  const KICK_OUT = 1.2; // … and up to this far in or out, relative to one tier ring
+  const NOISE = 0.6; // how wobbly the line is, relative to one tier ring
+  const LOOP_EVERY_MS = 12000; // one curl for every 12 s the entry stayed in one place …
+  const LOOP_MAX = 3; // … but at most this many at one stop
+  const LOOP_R = 1.5; // curl radius, relative to one tier ring
   const STEPS = 10; // points drawn between two points of the way
 
   // a small seeded random, so the same entry gets the same scribble on every print
@@ -109,8 +112,8 @@
       return INNER + level * ringW;
     }
 
-    // the stops: every tier it was in, in order (staying in the same tier counts once, with all its time;
-    // the distance inside the ring is where it was when it arrived there)
+    // the stops: every tier it was in and every bigger jump inside a tier, in order (small changes count as
+    // one stop, with all their time; the distance inside the ring is where it was when it arrived there)
     const pts = (data.track || []).filter((p) => p && Number.isFinite(p.score)).sort((a, b) => a.t - b.t);
     if (!pts.length) pts.push({ t: data.now || Date.now(), score: 50 });
     const now = Math.max(data.now || Date.now(), pts[pts.length - 1].t);
@@ -118,8 +121,8 @@
     pts.forEach((p, k) => {
       const until = pts[k + 1]?.t ?? now;
       const last = stops[stops.length - 1];
-      if (last && last.tier === p.tier) last.stay += until - p.t;
-      else stops.push({ r: radiusOf(p), tier: p.tier, stay: until - p.t });
+      if (last && last.tier === p.tier && Math.abs(p.score - last.score) < STOP_JUMP) last.stay += until - p.t;
+      else stops.push({ r: radiusOf(p), tier: p.tier, score: p.score, stay: until - p.t });
     });
     if (stops.length > MAX_STOPS) {
       // too many: keep evenly spread ones, always the last (where it is now)
@@ -136,7 +139,14 @@
     for (const s of stops) {
       const turn = (rnd() < 0.5 ? -1 : 1) * (TURN_MIN + rnd() * (TURN_MAX - TURN_MIN)) * (Math.PI / 180);
       const parts = 4;
-      for (let k = 1; k <= parts; k++) way.push(xy(a + (turn * k) / parts, r + ((s.r - r) * k) / parts));
+      for (let k = 1; k <= parts; k++) {
+        const along = [a + (turn * k) / parts, r + ((s.r - r) * k) / parts];
+        if (k < parts && rnd() < KICK_CHANCE) { // a breakout
+          along[0] += (rnd() < 0.5 ? -1 : 1) * (KICK_MIN + rnd() * (KICK_MAX - KICK_MIN)) * (Math.PI / 180);
+          along[1] += (rnd() * 2 - 1) * KICK_OUT * ringW;
+        }
+        way.push(xy(along[0], Math.max(0, along[1])));
+      }
       a += turn;
       r = s.r;
       const [x, y] = xy(a, r);

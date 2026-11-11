@@ -137,9 +137,10 @@ const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
 const PRINT_QUEUE_MAX = 100; // print jobs waiting for the print station (print-station.html)
-const PRINT_PER_LIST = 4; // when sequence 1 ends, this many random entries of every category stay standing and are printed …
+const PRINT_PER_LIST = 4; // when sequence 1 ends, the entries of every category that moved most stay standing and are printed …
 const PRINT_SHEET = 12; // … together one sheet of stickers (if a category has fewer, the others give more)
-const PRINT_STAY_MS = 6000; // how long they stay standing on the screens before they fall too
+const PRINT_STAY_MS = 6000; // they stay standing this long, then fall too …
+const PAUSE_AFTER_SEPARATE_MS = 60000; // … and the screens are black for the rest of a 1-minute pause; then the mix
 const TRACK_MAX = 2000; // the most points kept per entry for the print (its path through the tiers this round)
 
 const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
@@ -162,6 +163,7 @@ const biasOf = (e) => (e && learned.get(e.image)?.bias) || 0;
 const archive = new Map(); // image → its track from the last round it was in, so it can still be printed (in memory)
 const printQueue = []; // print jobs: { id, at, data }  (data = the track when sequence 1 ended)
 let printId = 0;
+let blackSince = null; // the pause after sequence 1: from this time the screens are black, until the mix starts
 let phaseEndsAt = null;
 let phaseTimer = null;
 let seq = 0;
@@ -247,6 +249,7 @@ function snapshot() {
     now: Date.now(),
     seq,
     phase,
+    black: blackSince != null && Date.now() >= blackSince, // the screens are black (the pause after sequence 1)
     parallel: 1,
     titles,
     tiers: TIERS.map((t) => ({ id: t.id, min: Number.isFinite(t.min) ? t.min : 0 })),
@@ -587,14 +590,24 @@ function checkAutoMix() {
 
 const pickTwo = (arr) => shuffle([...arr]).slice(0, 2);
 
-// the end of sequence 1: PRINT_PER_LIST random entries of every category are kept and go to the print queue
-// (one sheet of PRINT_SHEET stickers, at least one of every category that has entries). → { category: [ids] }
+// how much an entry moved this round: all its score changes added up (up and down)
+function movementOf(list, id) {
+  const tr = list.tracks.get(id) || [];
+  let sum = 0;
+  for (let i = 1; i < tr.length; i++) sum += Math.abs(tr[i].score - tr[i - 1].score);
+  return sum;
+}
+
+// the end of sequence 1: the PRINT_PER_LIST entries of every category that moved most are kept and go to the
+// print queue (one sheet of PRINT_SHEET stickers, at least one of every category that has entries). → { category: [ids] }
 function pickPrints() {
   const cats = CATEGORIES.map((c) => lists[c.id]).filter((l) => l.active);
-  const left = new Map(cats.map((l) => [l, shuffle(entriesOf(l))]));
+  const most = (l) => shuffle(entriesOf(l)).map((e) => [movementOf(l, e.id), e]).sort((a, b) => b[0] - a[0]).map(([, e]) => e); // ties: random
+  const left = new Map(cats.map((l) => [l, most(l)]));
   const picked = new Map(cats.map((l) => [l, left.get(l).splice(0, PRINT_PER_LIST)]));
   let missing = PRINT_SHEET - [...picked.values()].reduce((n, p) => n + p.length, 0);
-  for (const [l, e] of shuffle(cats.flatMap((l) => left.get(l).map((e) => [l, e])))) {
+  const rest = cats.flatMap((l) => left.get(l).map((e) => [l, e, movementOf(l, e.id)])).sort((a, b) => b[2] - a[2]);
+  for (const [l, e] of rest) {
     if (missing-- <= 0) break;
     picked.get(l).push(e);
   }
@@ -632,16 +645,20 @@ function switchTo(next) {
 
   // the feed shows two of the current number 1s as they disappear
   const tops = allLists().filter((l) => l.active).map((l) => ranking(l)[0]).filter(Boolean).map(brief);
-  // at the end of sequence 1 a few entries stay standing for a moment: they are printed
+  // at the end of sequence 1 the entries that moved most stay standing for a moment (they are printed),
+  // then the screens are black for the rest of the pause
   const keep = phase === "separate" ? pickPrints() : null;
   const stay = keep ? PRINT_STAY_MS : 0;
+  const black = keep ? PRINT_STAY_MS + CLEAR_MS : null; // when the kept ones have fallen
+  blackSince = keep ? Date.now() + black : null;
   allLists().forEach(stop);
   phase = "clearing";
-  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay });
+  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay, black });
   console.log(`Clearing → ${next}`);
 
   setTimeout(() => {
     phase = next;
+    blackSince = null;
     phaseStartedAt = Date.now();
     pickTitles(next, false);
     armPhaseTimer();
@@ -662,7 +679,7 @@ function switchTo(next) {
       sample = pickTwo(CATEGORIES.flatMap((c) => [...lists[c.id].items.values()].map(brief)));
     }
     record({ type: "phase", phase: next, sample });
-  }, CLEAR_MS + stay);
+  }, keep ? PAUSE_AFTER_SEPARATE_MS : CLEAR_MS);
   return true;
 }
 
