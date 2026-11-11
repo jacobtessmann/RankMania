@@ -65,7 +65,7 @@ const ENTRIES_PER_SCREEN = 20;
 //    "good" calms it down. The effect adds up per vote and fades out by itself.
 const VOTE_WEIGHT = 0.15; // how much one vote changes the mood (the mood goes from -1 calm to +1 restless)
 const MOOD_HALF_LIFE_MS = 90000; // after 90 s, half of the effect is gone
-const VOTE_COOLDOWN_MS = 15000; // one phone can vote for the same list at most every 15 s
+const VOTE_COOLDOWN_MS = 700; // the vote can be pressed again and again; this only stops accidental double taps
 // The brain also really learns from every verdict, per image: a "good" verdict on a list gives everything
 // that was high in the voter's list a tiny plus and everything low a tiny minus ("this order was right").
 // "bad" does the opposite. What it learned stays with the image across all rounds and both sequences,
@@ -114,7 +114,7 @@ const HOVER_MIN_MS = 4000; // how long a new entry hovers before it lands (4–6
 const HOVER_MAX_MS = 6000;
 const PAUSE_MIN_MS = 2500; // pause after every action before the next one (2.5–5 s)
 const PAUSE_MAX_MS = 5000;
-const START_SPEED = 1; // tempo of the whole brain: 2 = twice as fast, 0.5 = half (also a slider on /admin.html)
+const START_SPEED = 1.25; // tempo of the whole brain: 2 = twice as fast, 0.5 = half (also a slider on /admin.html)
 // While images are still waiting, each action is either a new entry or a rearrangement (a move).
 // The chance of a move grows as the list fills: +10 % after every 6 placements.
 const MOVE_CHANCE_START = 0.35; // chance of a move at the start (35 %)
@@ -137,7 +137,9 @@ const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
 const PRINT_QUEUE_MAX = 100; // print jobs waiting for the print station (print-station.html)
-const PRINT_COOLDOWN_MS = 5000; // one phone can send a print at most every 5 s
+const PRINT_PER_LIST = 4; // when sequence 1 ends, this many random entries of every category stay standing and are printed …
+const PRINT_SHEET = 12; // … together one sheet of stickers (if a category has fewer, the others give more)
+const PRINT_STAY_MS = 6000; // how long they stay standing on the screens before they fall too
 const TRACK_MAX = 2000; // the most points kept per entry for the print (its path through the tiers this round)
 
 const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
@@ -158,8 +160,7 @@ let verdictCount = 0;
 let editions = 0; // how many RankFeed editions were written (resets on restart, like the votes)
 const biasOf = (e) => (e && learned.get(e.image)?.bias) || 0;
 const archive = new Map(); // image → its track from the last round it was in, so it can still be printed (in memory)
-const printQueue = []; // print jobs: { id, at, data }  (data = the track at the moment Print was pressed)
-const printSeen = new Map(); // phone → time of its last print
+const printQueue = []; // print jobs: { id, at, data }  (data = the track when sequence 1 ended)
 let printId = 0;
 let phaseEndsAt = null;
 let phaseTimer = null;
@@ -573,22 +574,6 @@ function trackOf(listId, image, at) {
   };
 }
 
-// the track as it was at an earlier moment (when a RankFeed edition was written): the history up to then,
-// and the place the feed showed. snap = { rank, tier, of } from the feed (checked), else taken from the track.
-function trackAt(data, at, snap) {
-  if (!data || !(at > 0) || at >= data.now) return data;
-  const track = data.track.filter((p) => p.t <= at);
-  if (!track.length) return null; // it had no place yet at that moment
-  const last = [...track].reverse().find((p) => p.rank);
-  const ok = snap && Number.isInteger(snap.rank) && snap.rank > 0 && TIERS.some((t) => t.id === snap.tier);
-  return {
-    ...data,
-    now: at,
-    track,
-    current: ok ? { rank: snap.rank, tier: snap.tier, of: Number(snap.of) || null } : last ? { rank: last.rank, tier: last.tier, of: last.n } : null,
-  };
-}
-
 // ════════════════ THE TWO SEQUENCES ════════════════
 function checkAutoMix() {
   if (phase !== "separate" || autoMixTimer || AUTO_MIX_AFTER_MS == null) return;
@@ -601,6 +586,30 @@ function checkAutoMix() {
 }
 
 const pickTwo = (arr) => shuffle([...arr]).slice(0, 2);
+
+// the end of sequence 1: PRINT_PER_LIST random entries of every category are kept and go to the print queue
+// (one sheet of PRINT_SHEET stickers, at least one of every category that has entries). → { category: [ids] }
+function pickPrints() {
+  const cats = CATEGORIES.map((c) => lists[c.id]).filter((l) => l.active);
+  const left = new Map(cats.map((l) => [l, shuffle(entriesOf(l))]));
+  const picked = new Map(cats.map((l) => [l, left.get(l).splice(0, PRINT_PER_LIST)]));
+  let missing = PRINT_SHEET - [...picked.values()].reduce((n, p) => n + p.length, 0);
+  for (const [l, e] of shuffle(cats.flatMap((l) => left.get(l).map((e) => [l, e])))) {
+    if (missing-- <= 0) break;
+    picked.get(l).push(e);
+  }
+  const keep = {};
+  for (const [l, entries] of picked) {
+    keep[l.id] = entries.map((e) => e.id);
+    for (const e of entries) {
+      const data = trackOf(l.id, e.image);
+      if (!data || printQueue.length >= PRINT_QUEUE_MAX) continue;
+      printQueue.push({ id: ++printId, at: Date.now(), data: { ...data, track: [...data.track] } }); // frozen at this moment
+    }
+  }
+  console.log(`Sequence 1 ended: ${Object.values(keep).flat().length} entries kept for the print (${printQueue.length} waiting)`);
+  return keep;
+}
 
 // the timer of the running sequence: when it runs out, the other sequence starts
 function armPhaseTimer() {
@@ -623,9 +632,12 @@ function switchTo(next) {
 
   // the feed shows two of the current number 1s as they disappear
   const tops = allLists().filter((l) => l.active).map((l) => ranking(l)[0]).filter(Boolean).map(brief);
+  // at the end of sequence 1 a few entries stay standing for a moment: they are printed
+  const keep = phase === "separate" ? pickPrints() : null;
+  const stay = keep ? PRINT_STAY_MS : 0;
   allLists().forEach(stop);
   phase = "clearing";
-  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops) });
+  record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay });
   console.log(`Clearing → ${next}`);
 
   setTimeout(() => {
@@ -650,7 +662,7 @@ function switchTo(next) {
       sample = pickTwo(CATEGORIES.flatMap((c) => [...lists[c.id].items.values()].map(brief)));
     }
     record({ type: "phase", phase: next, sample });
-  }, CLEAR_MS);
+  }, CLEAR_MS + stay);
   return true;
 }
 
@@ -842,10 +854,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // a print from RankFeed: POST /api/print  {"list": "students", "image": "/images/students/x.jpg"}
-  // the print station takes the jobs as full sheets: POST /api/print/next  {"key": "...", "count": 6}
-  //   → { jobs: [6 jobs] } once 6 are waiting, else { jobs: [] }; with "flush": true it takes what is there (a part sheet)
-  if ((url.pathname === "/api/print" || url.pathname === "/api/print/next") && req.method === "POST") {
+  // the print station takes the jobs as full sheets: POST /api/print/next  {"key": "...", "count": 12}
+  //   → { jobs: [12 jobs] } once 12 are waiting, else { jobs: [] }; with "flush": true it takes what is there (a part sheet)
+  if (url.pathname === "/api/print/next" && req.method === "POST") {
     let body = "";
     req.on("data", (d) => {
       body += d;
@@ -856,24 +867,10 @@ const server = http.createServer((req, res) => {
       try {
         msg = JSON.parse(body || "{}");
       } catch {}
-      if (url.pathname === "/api/print/next") {
-        if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
-        const count = Math.max(1, Math.min(24, Math.round(Number(msg.count) || 1)));
-        const jobs = printQueue.length >= count || msg.flush ? printQueue.splice(0, count) : [];
-        return json(res, 200, { ok: true, jobs, job: jobs[0] || null, waiting: printQueue.length });
-      }
-      const who = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
-      if (Date.now() - (printSeen.get(who) || 0) < PRINT_COOLDOWN_MS) return json(res, 429, { ok: false, error: "too fast" });
-      // the print shows the entry as the visitor's RankFeed edition showed it (msg.at = when it was written)
-      const at = Number(msg.at) || 0;
-      const data = trackAt(trackOf(msg.list, msg.image, at), at, { rank: msg.rank, tier: msg.tier, of: msg.of });
-      if (!data) return json(res, 404, { ok: false, error: "no path for this entry" });
-      if (printQueue.length >= PRINT_QUEUE_MAX) return json(res, 503, { ok: false, error: "too many prints waiting" });
-      printSeen.set(who, Date.now());
-      const job = { id: ++printId, at: Date.now(), data: { ...data, track: [...data.track] } }; // frozen at this moment
-      printQueue.push(job);
-      console.log(`Print #${job.id}: ${data.entry.title} (${printQueue.length} waiting)`);
-      json(res, 200, { ok: true, id: job.id, waiting: printQueue.length });
+      if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
+      const count = Math.max(1, Math.min(24, Math.round(Number(msg.count) || 1)));
+      const jobs = printQueue.length >= count || msg.flush ? printQueue.splice(0, count) : [];
+      json(res, 200, { ok: true, jobs, job: jobs[0] || null, waiting: printQueue.length });
     });
     return;
   }

@@ -13,7 +13,7 @@
   body { margin: 0; background: #fff; color: var(--ink); font-family: "CMU Typewriter Light", "Courier New", monospace;
          -webkit-font-smoothing: antialiased; }
   /* everything in CMU Typewriter Light: no bold anywhere, the hierarchy is size only */
-  h1, h2, h3, b, strong, .logo, .entry .place, .entry .rk, .poll button { font-weight: normal; }
+  h1, h2, h3, b, strong, .logo, .poll button { font-weight: normal; }
   button { font: inherit; }
   .mast { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--line);
           display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
@@ -54,22 +54,18 @@
   .box td:last-child { text-align: right; font-weight: normal; }
   .redact { background: #111; color: #111; padding: 0 .2em; user-select: none; }
 
-  /* entries: big for the top 3, compact rows for the rest. Pictures get a thin red outline. */
+  /* entries, grouped by tier under a big colored block (like the sketch) */
+  .tierhead { aspect-ratio: 2.4 / 1; background: var(--c); display: grid; place-items: center; margin: 34px 0 6px;
+              container-type: inline-size; }
+  .tierhead span { font-size: 13cqw; line-height: 1; color: #000; }
+  .tierhead[data-t="F"] span { color: #fff; }
   .entries { list-style: none; margin: 0; padding: 0; }
-  .entry { cursor: pointer; padding: 22px 0; border-top: 1px solid var(--ink); }
-  .entry img, .entry .ph { border: 3px solid var(--red); background: #fff; display: block; object-fit: contain; }
-  .entry h3 { margin: 0; color: #000; }
-  .entry .hook { margin: 0; color: #000; }
-  .entry.big .place { font-size: 64px; line-height: 1; color: var(--red); margin-bottom: 6px; }
-  .entry.big h3 { font-size: 32px; line-height: 1.1; margin-bottom: 14px; }
-  .entry.big img, .entry.big .ph { width: 100%; aspect-ratio: 1; margin-bottom: 14px; }
-  .entry.big .hook { font-size: 19px; line-height: 1.45; }
-  .entry.small { display: grid; grid-template-columns: 40px 92px 1fr; gap: 12px; align-items: start; padding: 16px 0; }
-  .entry.small .rk { font-size: 34px; line-height: 1; color: var(--red); text-align: center; }
-  .entry.small img, .entry.small .ph { width: 92px; height: 92px; }
-  .entry.small h3 { font-size: 22px; line-height: 1.1; margin-bottom: 6px; }
-  .entry.small .hook { font-size: 16px; line-height: 1.4; }
-  .entry.small .review { grid-column: 2 / -1; margin-top: 2px; font-size: 16px; }
+  .entry { cursor: pointer; padding: 18px 0 22px; }
+  .entry + .entry { border-top: 1px solid var(--ink); }
+  .entry img, .entry .ph { border: 3px solid var(--red); background: #fff; display: block; object-fit: contain;
+                           width: 100%; aspect-ratio: 1; margin-bottom: 12px; }
+  .entry h3 { margin: 0 0 12px; font-size: 24px; line-height: 1.15; font-weight: normal; color: #000; }
+  .entry .hook { margin: 0; font-size: 16px; line-height: 1.5; color: #000; }
   .review { margin: 12px 0 0; font-size: 17px; line-height: 1.45; color: #000; }
   .review .lbl { color: var(--red); }
   .review .src { display: block; margin-top: 6px; font-size: 14px; color: #000; }
@@ -77,23 +73,16 @@
           margin-right: 8px; vertical-align: .35em; background: var(--c); color: #000; }
   .tier[data-t="F"] { color: #fff; }
 
-  /* the vote: big, loud, impossible to miss (full width of the phone) */
-  .poll { margin: 34px -18px; padding: 30px 0 0; background: #fff; border-top: 4px solid var(--ink); border-bottom: 4px solid var(--ink); }
-  .poll h2 { margin: 0 14px 22px; font-size: 16px; line-height: 1.35; text-transform: uppercase; letter-spacing: .14em;
-             text-align: center; }
-  .poll .row2 { display: grid; grid-template-columns: 1fr 1fr; }
-  .poll button { aspect-ratio: 1 / 1; max-height: 340px; width: 100%; border: 0; cursor: pointer; color: #fff;
-                 font-size: clamp(26px, 8vw, 42px); letter-spacing: .12em; text-transform: uppercase;
-                 transition: transform .12s, opacity .3s, filter .3s; -webkit-tap-highlight-color: transparent; }
-  .poll button.good { background: #77ff55; color: #0a3d00; }
-  .poll button.bad { background: var(--red); }
-  .poll button:active:not(:disabled) { transform: scale(.96); }
-  .poll button:disabled { cursor: default; opacity: .25; filter: grayscale(1); }
-  .poll button.chosen { opacity: 1; filter: none; }
-  .poll button.chosen::after { content: " ✓"; }
-  .poll .answer { margin: 0; padding: 16px 18px 18px; font-size: 16px; line-height: 1.45; text-align: center; min-height: 1.4em; }
-  .poll .answer:empty { padding: 0; }
-  .poll .catch { margin: 6px 0 0; color: var(--grey); }
+  /* the vote: fixed at the bottom of the screen in an article (like the sketch), press as often as you like */
+  .votebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; padding-bottom: env(safe-area-inset-bottom); background: #000; }
+  .vote-msg { margin: 0; padding: 9px 12px 10px; background: #000; color: #fff; text-align: center; font-size: 16px; line-height: 1.3; }
+  .votebar .row2 { display: grid; grid-template-columns: 1fr 1fr; }
+  .votebar button { height: 64px; border: 0; cursor: pointer; font-size: 22px; color: #000; -webkit-tap-highlight-color: transparent; }
+  .votebar .good { background: #77ff55; }
+  .votebar .bad { background: var(--red); color: #fff; }
+  .votebar button.hit { animation: hit .25s ease-out; }
+  @keyframes hit { 0% { filter: brightness(1.6); } 100% { filter: none; } }
+  body.with-vote main { padding-bottom: 140px; }
   .related { margin-top: 34px; }
   .related h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--grey); margin: 0 0 4px; }
   .related .card { display: grid; grid-template-columns: 40% 1fr; gap: 12px; align-items: stretch; padding: 14px 0; }
@@ -101,12 +90,12 @@
   .related .card h2 { font-size: 18px; line-height: 1.15; color: var(--ink); text-transform: none; margin: 0 0 6px; }
   .related .card .sub { font-size: 16px; }
   /* the three sources, at the bottom of every page */
-  .sources { max-width: 680px; margin: 0 auto; padding: 18px 18px 40px; border-top: 1px solid var(--ink); font-size: 15px; line-height: 1.5; }
+  .sources { margin: 30px 0 0; padding: 14px 0 0; border-top: 1px solid var(--ink); font-size: 15px; line-height: 1.5; }
   .sources p { margin: 0 0 6px; color: var(--red); }
   .sources a { display: block; color: #000; word-break: break-all; }
   .end { margin-top: 30px; padding-top: 16px; border-top: 4px solid var(--ink); font-size: 15px; line-height: 1.5; }
 
-  /* one entry, with the print button */
+  /* one entry */
   .sheet { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.45); display: flex; align-items: center; padding: 16px; }
   .sheet[hidden] { display: none; }
   .panel { background: #fff; width: 100%; max-width: 340px; margin: 0 auto; max-height: 86vh; overflow: auto;
@@ -115,9 +104,7 @@
   .panel h2 { margin: 12px 0 4px; font-size: 22px; font-weight: normal; letter-spacing: -.3px; }
   .panel .meta { font-size: 14px; margin-bottom: 6px; }
   .panel p { font-size: 14px; line-height: 1.4; margin: 0 0 12px; }
-  .print { width: 100%; padding: 13px; border: 0; background: var(--ink); color: #fff; font-weight: normal; font-size: 16px; cursor: pointer; }
   .close { width: 100%; padding: 12px; border: 0; background: none; color: var(--grey); margin-top: 6px; cursor: pointer; }
-  .printnote { font-size: 13px; color: var(--grey); text-align: center; min-height: 1.3em; margin-top: 8px; }
   .ph { display: grid; place-items: center; font-size: 40px; font-weight: normal; color: #bbb; }
 </style>
 </head>
@@ -128,12 +115,11 @@
   <nav class="badges"><a class="bdg" href="#/corporations" title="Capital">C</a><a class="bdg" href="#/students" title="People">P</a><a class="bdg" href="#/things" title="Things">T</a></nav>
 </div>
 <main id="view"><p class="edition">Loading your edition…</p></main>
-<footer class="sources">
-  <p>Sources</p>
-  <a href="https://www.listchallenges.com/top-100-greatest-things-ever" target="_blank" rel="noopener">listchallenges.com/top-100-greatest-things-ever</a>
-  <a href="https://www.forbes.com/lists/global2000/" target="_blank" rel="noopener">forbes.com/lists/global2000</a>
-  <a href="https://visualcommunication.zhdk.ch/personen/bachelor/" target="_blank" rel="noopener">visualcommunication.zhdk.ch/personen/bachelor</a>
-</footer>
+<!-- the vote: fixed at the bottom while an article is open; can be pressed as often as you like -->
+<div class="votebar" id="votebar" hidden>
+  <p class="vote-msg" id="vote-msg"></p>
+  <div class="row2"><button type="button" class="good" data-vote="good" aria-label="Good"></button><button type="button" class="bad" data-vote="bad" aria-label="Bad"></button></div>
+</div>
 <div class="sheet" id="sheet" hidden><div class="panel" id="panel"></div></div>
 
 <script src="shared.js"></script>
@@ -194,16 +180,16 @@ const TEASERS = {
 const LINES = {
   // students: real names from the ZHdK VisCom class list, faces from thispersondoesnotexist.com
   students: {
-    first: "{N}, a real VisCom student at ZHdK with a face that doesn't exist (thanks, thispersondoesnotexist.com), now officially number one of {n}.",
-    last: "{N}, a real name from the VisCom class list, an AI-generated face, and the very last place of {n}.",
+    first: "{N}, a real VisCom student at ZHdK with a face that doesn't exist (thanks, thispersondoesnotexist.com), now officially at the very top.",
+    last: "{N}, a real name from the VisCom class list, an AI-generated face, and the very last place.",
     mid: [
       "{N}, a real name from the ZHdK VisCom class list, wearing an AI-generated face from thispersondoesnotexist.com. Tier {T}.",
       "{N}, a VisCom student at ZHdK whose face was generated by thispersondoesnotexist.com, so nobody in this ranking has actually been seen. Tier {T}.",
-      "{N}, a real VisCom student, a face that belongs to nobody, and a spot in tier {T}. Number {R} of {n}.",
+      "{N}, a real VisCom student, a face that belongs to nobody, and a spot in tier {T}.",
     ],
   },
   // anything else without its own line in HOOKS
-  other: { first: "{N}, number one of {n}, in tier {T}.", last: "{N}, the last place of {n}, in tier {T}.", mid: ["{N}, number {R} of {n}, in tier {T}."] },
+  other: { first: "{N}, right at the top, in tier {T}.", last: "{N}, at the very bottom, in tier {T}.", mid: ["{N}, landing in tier {T}."] },
 };
 const HOOKS = {
   // Corporations
@@ -281,6 +267,17 @@ const HOOKS = {
   "Vaccines": "Vaccines, pioneered by Edward Jenner with cowpox in 1796, which went on to wipe smallpox off the planet by 1980.",
   "Writing": "Writing, invented in Mesopotamia around 3200 BC as cuneiform, mostly to keep track of grain and beer, so the first texts ever written were basically receipts.",
 };
+// the source links at the bottom of an article (the mix: all three)
+const SOURCE_LINKS = {
+  corporations: "https://www.forbes.com/lists/global2000/",
+  students: "https://visualcommunication.zhdk.ch/personen/bachelor/",
+  things: "https://www.listchallenges.com/top-100-greatest-things-ever",
+};
+const sourceFooter = (slug) => {
+  const urls = slug === "everything" ? Object.values(SOURCE_LINKS) : [SOURCE_LINKS[slug]].filter(Boolean);
+  return urls.length ? `<footer class="sources"><p>Source${urls.length > 1 ? "s" : ""}</p>${urls.map((u) =>
+    `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https:\/\/(www\.)?/, "").replace(/\/$/, "")}</a>`).join("")}</footer>` : "";
+};
 // where each list comes from, said in the intro ({source})
 const SOURCES = {
   students: "the VisCom class list (faces by thispersondoesnotexist.com)",
@@ -311,15 +308,11 @@ const END = "And that's the list! Agree? Disagree? Absolutely furious? Come back
 // The verdict at the end of each article: the visitor rates the whole list. It really goes to the brain
 // (one green or red dot on that screen, a flash on the brain screen, and a tiny shift in the ranking).
 const VERDICT = {
-  title: "Help us train the machine.",
-  question: "Is this ranking good or bad?",
-  good: "Good",
-  bad: "Bad",
-  thanksGood: "Thank you! Your vote has been counted. 💚",
-  thanksBad: "Thank you! Your vote has been counted. 💔",
-  catch: "Nothing on the screens jumps right away. Your vote nudges every entry on this list a tiny bit, and over the next rounds the ranking slowly drifts in your direction.",
-  tooFast: "Whoa, slow down. One vote at a time, try again in a moment.",
-  offline: "Voting is down right now. Try again in a moment.",
+  title: "How is this ranking? Calibrate the machine.",
+  thanksGood: "Good. The machine adjusts. 💚",
+  thanksBad: "Bad. The machine adjusts. 💔",
+  tooFast: "Slow down a little.",
+  offline: "The machine can't be reached right now.",
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -494,7 +487,7 @@ function writeEdition(snap) {
       slug: mixed ? "everything" : c.name,
       list: c.name, // the list on the screens, for the verdict
       cat: mixed ? "Everything" : c.label,
-      head: fill(T.head, v),
+      head: screenTitle(snap, mixed ? "students" : c.name, n) || fill(T.head, v), // the same headline as on the screen
       title: fill(pick(T.titles), v),
       word: T.word,
       intros: [fill(pick(INTROS_1), v), fill(pick(INTROS_2), v)],
@@ -505,6 +498,12 @@ function writeEdition(snap) {
     };
   });
   return { at: Date.now(), mixed, articles };
+}
+
+// the headline the tierlist screen shows right now ({n} = number of entries); in the mix the middle screen's
+function screenTitle(snap, screen, n) {
+  const t = (snap.titles || {})[screen];
+  return t ? t.replace(/\{n\}/g, n) : "";
 }
 
 // ════════ Pieces ════════
@@ -525,23 +524,23 @@ const teaser = (a, cls = "card") => `
 const review = (e) => e.fact ? `
     <p class="review"><span class="lbl">Critical review:</span> ${esc(e.fact.text)}
       <a class="src" href="${esc(e.fact.url)}" target="_blank" rel="noopener">Source: ${esc(e.fact.src)}</a></p>` : "";
-const entry = (e, big) => big ? `
-  <li class="entry big" data-id="${esc(e.id)}">
-    <div class="place">#${e.rank}</div>
-    <h3>${tierChip(e.tier)}${esc(e.title)}</h3>
+// one entry: the name, the picture, the one-liner and (corporations) the critical review. No numbers.
+const entry = (e) => `
+  <li class="entry" data-id="${esc(e.id)}">
+    <h3>${esc(e.title)}</h3>
     ${img(e)}
     <p class="hook">${esc(e.line)}</p>
     ${review(e)}
-  </li>` : `
-  <li class="entry small" data-id="${esc(e.id)}">
-    <div class="rk">${e.rank}</div>${img(e)}
-    <div class="txt"><h3>${tierChip(e.tier)}${esc(e.title)}</h3><p class="hook">${esc(e.line)}</p></div>
-    ${review(e)}
   </li>`;
+// the entries grouped by tier, each group under a big colored "A-TIER" block
+const TIER_ORDER = ["S", "A", "B", "C", "D", "F"];
+const tierBlock = (t) => `<div class="tierhead" data-t="${t}" style="--c:var(--tier-${t})"><span>${t}-TIER</span></div>`;
+const byTier = (entries) => TIER_ORDER.map((t) => [t, entries.filter((e) => e.tier === t)]).filter(([, l]) => l.length);
 
 // ════════ Views ════════
 function home() {
   delete $("view").dataset.slug;
+  hideVote();
   const ready = edition.articles.filter((a) => a.ready);
   $("view").innerHTML = `
     ${ready.map((a) => teaser(a)).join("")}
@@ -553,8 +552,7 @@ function article(slug) {
   const a = edition.articles.find((x) => x.slug === slug);
   if (!a || !a.ready) return home();
   $("view").dataset.slug = slug;
-  const top = a.entries.slice(0, 3);
-  const rest = a.entries.slice(3);
+  const groups = byTier(a.entries);
   const others = edition.articles.filter((x) => x.slug !== slug && x.ready);
   $("view").innerHTML = `
     <div class="article">
@@ -563,15 +561,13 @@ function article(slug) {
       <p class="deck">${esc(a.title)}</p>
       <div class="body">
         ${a.intros.map((p) => `<p>${esc(p)}</p>`).join("")}
-        <ol class="entries">${top.map((e) => entry(e, true)).join("")}</ol>
-        ${rest.length ? `<p>${esc(a.middle)}</p><ol class="entries">${rest.map((e) => entry(e, false)).join("")}</ol>` : ""}
-        <div class="poll"><h2>${esc(VERDICT.title)}<br>${esc(VERDICT.question)}</h2>
-          <div class="row2"><button type="button" class="good" data-vote="good">${esc(VERDICT.good)}</button>
-          <button type="button" class="bad" data-vote="bad">${esc(VERDICT.bad)}</button></div>
-          <p class="answer" id="answer"></p>
-        </div>
+        ${groups.map(([t, list], gi) => `
+          ${gi === 1 ? `<p>${esc(a.middle)}</p>` : ""}
+          ${tierBlock(t)}
+          <ol class="entries">${list.map(entry).join("")}</ol>`).join("")}
         ${others.length ? `<div class="related"><h2>You might also be ranked in</h2>${others.map((o) => teaser(o, "card")).join("")}</div>` : ""}
         <p class="end">${esc(END)}</p>
+        ${sourceFooter(slug)}
       </div>
     </div>`;
   document.querySelectorAll(".entry").forEach((el) => (el.onclick = (ev) => { if (!ev.target.closest("a")) location.hash = `#/${slug}/${encodeURIComponent(el.dataset.id)}`; }));
@@ -586,76 +582,48 @@ function sheet(slug, id) {
   $("panel").innerHTML = `
     ${img(e)}
     <h2>${esc(e.title)}</h2>
-    <div class="meta">${tierChip(e.tier)}#${e.rank} of ${a.entries.length} · ${esc(a.cat)}</div>
-    <button class="print" id="print">Print</button>
-    <div class="printnote" id="printnote"></div>
+    <div class="meta">${tierChip(e.tier)}${esc(a.cat)}</div>
     <button class="close" id="close">Close</button>`;
   $("sheet").hidden = false;
-  $("print").onclick = () => printEntry(e, a);
   $("close").onclick = () => history.back();
 }
 
 // ════════ The verdict: one vote per article, sent to the brain ════════
 function setupVerdict(a) {
-  const key = `rankfeed-voted-${edition.at}-${a.slug}`;
-  const buttons = document.querySelectorAll(".poll [data-vote]");
-  const done = (vote) => {
-    buttons.forEach((b) => { b.disabled = true; b.classList.toggle("chosen", b.dataset.vote === vote); });
-    $("answer").innerHTML = `${esc(vote === "good" ? VERDICT.thanksGood : VERDICT.thanksBad)}<p class="catch">${esc(VERDICT.catch)}</p>`;
+  const bar = $("votebar"), msg = $("vote-msg"), count = { good: 0, bad: 0 };
+  let reset = null;
+  const say = (t, ms) => {
+    msg.textContent = t;
+    clearTimeout(reset);
+    if (ms) reset = setTimeout(() => (msg.textContent = VERDICT.title), ms);
   };
-  let already = null;
-  try { already = localStorage.getItem(key); } catch {}
-  if (already) return done(already);
-  buttons.forEach((b) => (b.onclick = async () => {
-    const vote = b.dataset.vote;
-    buttons.forEach((x) => (x.disabled = true));
-    try {
-      const r = await fetch(RANK_BASE + "/api/vote", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ list: a.list, vote, order: a.entries.map((e) => e.image) }), // the voter's list, best first
-      });
-      if (r.status === 429) { $("answer").textContent = VERDICT.tooFast; buttons.forEach((x) => (x.disabled = false)); return; }
-      if (!r.ok) throw new Error();
-      try { localStorage.setItem(key, vote); } catch {}
-      done(vote);
-    } catch {
-      $("answer").textContent = VERDICT.offline;
-      buttons.forEach((x) => (x.disabled = false));
-    }
-  }));
+  say(VERDICT.title);
+  bar.hidden = false;
+  document.body.classList.add("with-vote");
+  bar.querySelectorAll("[data-vote]").forEach((b) => {
+    b.textContent = "";
+    b.onclick = async () => {
+      const vote = b.dataset.vote;
+      b.classList.remove("hit"); void b.offsetWidth; b.classList.add("hit"); // a little pop on every press
+      try {
+        const r = await fetch(RANK_BASE + "/api/vote", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ list: a.list, vote, order: a.entries.map((e) => e.image) }), // the voter's list, best first
+        });
+        if (r.status === 429) return say(VERDICT.tooFast, 1200);
+        if (!r.ok) throw new Error();
+        count[vote]++;
+        b.textContent = "+" + count[vote];
+        say(vote === "good" ? VERDICT.thanksGood : VERDICT.thanksBad, 1600);
+      } catch {
+        say(VERDICT.offline, 2000);
+      }
+    };
+  });
 }
-
-// ════════ PRINT ════════
-// Called when a visitor presses "Print" on an entry.
-//   entry   = { id, title, image, tier, rank, line }
-//   article = { slug, list, cat, title, entries }   (slug = corporations | students | things, or everything in the mix)
-// Sends a print job to the brain; the print station (print-station.html) prints it on the printer in the room.
-// The print shows the entry as this edition shows it: its place here, and its path only up to this edition.
-// (print.html?list=…&image=… still shows the print on the screen, with the normal print dialog.)
-async function printEntry(entry, article) {
-  const note = $("printnote"), button = $("print");
-  button.disabled = true;
-  note.textContent = "Sending…";
-  try {
-    const at = edition.at + (serverNow() - Date.now()); // when this edition was written, on the server's clock
-    const r = await fetch(RANK_BASE + "/api/print", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ list: article.list, image: entry.image, at, rank: entry.rank, tier: entry.tier, of: article.entries.length }),
-    });
-    // stickers are printed 12 to a sheet: say how many are still missing until this one is printed
-    const m = r.ok ? await r.json().catch(() => ({})) : {};
-    const missing = m.waiting ? (12 - (m.waiting % 12)) % 12 : null;
-    note.textContent = r.ok
-      ? missing === 0 ? "Your sticker is on a full sheet. It is printing now."
-        : missing ? `Your sticker is in the queue. It prints when the sheet of 12 is full (${missing} more to go).`
-        : "Your sticker is in the queue."
-      : r.status === 429 ? "One print at a time. Try again in a few seconds."
-      : r.status === 404 ? "This one can't be printed yet."
-      : "The printer is busy. Try again in a moment.";
-  } catch {
-    note.textContent = VERDICT.offline;
-  }
-  setTimeout(() => (button.disabled = false), 5000);
+function hideVote() {
+  $("votebar").hidden = true;
+  document.body.classList.remove("with-vote");
 }
 
 // ════════ Routing: #/students and #/students/<entry id> ════════
@@ -677,7 +645,7 @@ $("sheet").addEventListener("click", (ev) => { if (ev.target === $("sheet")) his
     edition = writeEdition(await fetchRankState());
     $("asof").innerHTML = `Rankings from<br>${timeOf(edition.at)}`;
     // in the mix there is only one article: C, P and T all lead to it
-    if (edition.mixed) document.querySelectorAll(".badges .bdg").forEach((b) => (b.href = "#/everything"));
+    if (edition.mixed) document.querySelector(".badges").innerHTML = '<a class="bdg" href="#/everything" title="Everything">E</a>'; // the mix: one article
   } catch {
     $("view").innerHTML = `<p class="edition">Offline</p><p class="note">The ranking can't be reached right now. Try again in a moment.</p>`;
     return;

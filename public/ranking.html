@@ -149,6 +149,7 @@ body.mix-full { --vig-up: #ff00ff; --vig-down: #00ffff; }
 body.mix-full .face { --vig: #000; }
 /* the white frame, the white lines between the tier letters and the white side strip stay as in sequence 1 */
 body.mix-full #app { background: #000; --label-gap: #000; }
+body.mix-full #tierlist { padding-top: 0; border-top: var(--row-gap) solid #000; } /* the white line under the title, full width */
 body.mix-full #side { color: var(--paper); }
 body.mix-full #side-votes .good { color: #ff00ff; }
 body.mix-full #side-votes .bad { color: #00ffff; }
@@ -763,21 +764,27 @@ function landHover(ev) {
 }
 
 // ════════ Clearing between the sequences ════════
-function fallOff() {
+// keep = ids that stay standing (at the end of sequence 1: the ones that are printed); they fall after stay ms
+function fallOff(keep = [], stay = 0) {
   Sound.clear();
   hovers.forEach((h) => clearTimeout(h.timer));
-  const els = [...cards.values(), ...hovers.values()].map((c) => c.el);
+  const kept = keep.map((id) => cards.get(id)?.el).filter(Boolean);
+  const els = [...cards.values(), ...hovers.values()].map((c) => c.el).filter((el) => !kept.includes(el));
   hovers.clear();
   cards.clear();
   const H = window.innerHeight;
-  els.forEach((el) => {
-    el.classList.remove("hover", "settled", "no-anim");
-    el.classList.add("falling");
-    el.style.transitionDelay = Math.random() * 0.7 + "s";
-    const x = +el.dataset.x + (Math.random() * 2 - 1) * 120;
-    el.style.transform = `translate(${x}px,${H + 80}px) rotate(${(Math.random() * 2 - 1) * 70}deg)`;
-  });
-  setTimeout(() => els.forEach((el) => el.remove()), 2000);
+  const fall = (els) => {
+    els.forEach((el) => {
+      el.classList.remove("hover", "settled", "no-anim");
+      el.classList.add("falling");
+      el.style.transitionDelay = Math.random() * 0.7 + "s";
+      const x = +el.dataset.x + (Math.random() * 2 - 1) * 120;
+      el.style.transform = `translate(${x}px,${H + 80}px) rotate(${(Math.random() * 2 - 1) * 70}deg)`;
+    });
+    setTimeout(() => els.forEach((el) => el.remove()), 2000);
+  };
+  fall(els);
+  if (kept.length) setTimeout(() => { Sound.clear(); fall(kept); }, stay);
   $("rail").classList.remove("on");
   $("pool-row").hidden = true;
 }
@@ -918,8 +925,9 @@ connectDisplay({
   },
   onPhase(ev) {
     if (ev.replay || ev.phase !== "clearing") return;
+    const keep = (ev.keep && ev.keep[shownId()]) || []; // asked before the phase changes (it shows no list while clearing)
     phase = "clearing";
-    fallOff();
+    fallOff(keep, ev.stay || 0);
     renderHeader();
   },
   onVote(ev) {
