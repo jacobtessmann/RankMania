@@ -2,7 +2,7 @@
 //  RANKMANIA — the central server
 //
 //  The show has two sequences:
-//   1. SEPARATE  every category fills its own screen (students, inventions, corporations)
+//   1. SEPARATE  every category fills its own screen (students, things, corporations)
 //   2. MIX       all screens clear, then every image of all three categories is dealt
 //                to one of the three screens at random, so each screen shows a mix
 //  In both, each screen does one thing at a time: a new entry hovers in and lands, or one
@@ -37,11 +37,11 @@ const CATEGORIES = [
     headline: "{W} Is Now Ahead of {L} and the Whole Class Knows It",
   },
   {
-    id: "inventions",
-    label: "Historic Inventions",
+    id: "things",
+    label: "Things",
     names: true,
-    title: "Ranking {n} Historic Inventions",
-    source: "list sourced from The Atlantic, \"The 50 Greatest Breakthroughs Since the Wheel\" (2013), picked by a panel of scientists and historians",
+    title: "Ranking {n} Things",
+    source: "list sourced from listchallenges.com, \"Top 100 Greatest Things Ever\": \"There are the worst things that happen in the world, but there are also great things that can happen too!\"",
     headline: "{W} Just Out-Invented {L} and History Will Never Recover",
   },
   {
@@ -80,7 +80,7 @@ const LEARN_TILT = 0.25; // at the maximum, moves go the learned way this much m
 const HEADLINES_FILE = path.join(__dirname, "headlines.json"); // saved here when edited on /admin.html
 const DEFAULT_HEADLINES = {
   students: ["The Official Top {n} Students of VC ZHdK", "Ranking {n} Students of VisCom"],
-  inventions: ["The All-Time Top {n} Things", "The {n} Greatest Inventions"],
+  things: ["The All-Time Top {n} Things", "The {n} Greatest Things Ever"],
   corporations: ["The {n} Hottest Brands", "The {n} Best Corporations", "{n} Most Influential Businesses"],
   mix: ["The Index of Everything", "The Best of Everything", "Everything, Ranked"],
   rotateSec: 0, // 0 = one headline per sequence; otherwise switch to another one every N seconds
@@ -90,7 +90,7 @@ const DEFAULT_HEADLINES = {
 //    each screen gets a random third of every category. Same settings for all three screens.
 const MIX = {
   label: "Everything",
-  title: "Ranking {n} Students, Inventions and Corporations",
+  title: "Ranking {n} Students, Things and Corporations",
   source: "",
   headline: "{W} Just Beat {L}. Yes, We Are Comparing These Now.",
 };
@@ -167,7 +167,7 @@ const clients = new Set(); // { res, lite }
 const files = {}; // category → [file names]
 const lists = {};
 for (const c of CATEGORIES) lists[c.id] = newList(c);
-// one mixed list per screen: "mix-students", "mix-inventions", "mix-corporations"
+// one mixed list per screen: "mix-students", "mix-things", "mix-corporations"
 for (const c of CATEGORIES) lists[`mix-${c.id}`] = newList({ ...MIX, id: `mix-${c.id}`, screen: c.id, virtual: true });
 const mixLists = () => CATEGORIES.map((c) => lists[`mix-${c.id}`]);
 const mixAssign = new Map(); // image id → screen, for the mix
@@ -892,7 +892,7 @@ const server = http.createServer((req, res) => {
       if (msg.action === "headlines") {
         const clean = (a) => (Array.isArray(a) ? a : []).map((x) => String(x).trim().slice(0, 200)).filter(Boolean).slice(0, 100);
         const next = { rotateSec: Math.max(0, Math.min(3600, Number(msg.rotateSec) || 0)) };
-        for (const k of ["students", "inventions", "corporations", "mix"]) next[k] = clean(msg.lists && msg.lists[k]);
+        for (const k of ["students", "things", "corporations", "mix"]) next[k] = clean(msg.lists && msg.lists[k]);
         headlines = next;
         fs.writeFile(HEADLINES_FILE, JSON.stringify(headlines, null, 2), () => {});
         pickTitles(phase === "clearing" ? "separate" : phase, true);

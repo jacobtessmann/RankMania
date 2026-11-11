@@ -17,7 +17,7 @@ One central server computes the rankings. Every screen and phone just shows what
 
 ```
 public/images/students/     ← photos of the students
-public/images/inventions/   ← historic inventions
+public/images/things/       ← things (listchallenges.com, "Top 100 Greatest Things Ever")
 public/images/corporations/     ← company logos/photos
 ```
 
@@ -40,7 +40,7 @@ python tools/square_images.py my_photos/students public/images/students
 python tools/square_images.py my_photos/corporations public/images/corporations --mode pad
 ```
 
-- You can also give it one folder that contains `students/`, `inventions/` and `corporations/` subfolders, and they are recreated in the output folder.
+- You can also give it one folder that contains `students/`, `things/` and `corporations/` subfolders, and they are recreated in the output folder.
 - Output: 600 × 600 px JPG. File names are kept (only the ending becomes `.jpg`).
 - **Names from a list:** put a `names.txt` into the folder with the photos (one name per line, UTF-8 or normal Windows text). Every photo gets a random name from the list as its file name, e.g. `Léna_Aebi.jpg`. Extra photos are left out; names without a photo are listed at the end. Add `--in-order` to give the names to the photos in alphabetical order instead.
 
@@ -75,7 +75,7 @@ Pages:
 | Page | Use |
 |---|---|
 | `/ranking.html?cat=students&kiosk=1` | Ranking screen, Students only, no switch buttons |
-| `/ranking.html?cat=inventions&kiosk=1` | Ranking screen, Historic Inventions |
+| `/ranking.html?cat=things&kiosk=1` | Ranking screen, Things |
 | `/ranking.html?cat=corporations&kiosk=1` | Ranking screen, Corporations |
 | `/ranking.html` | All categories with the switch at the bottom |
 | `/feed.html` | The personal snapshot feed for visitors' phones (make a QR code of this link) |
@@ -144,7 +144,7 @@ Black title block with the number underlined, black tier letters on a white back
 
 Look settings at the top of the `<style>` part: `--shade` and `--render-time` (the grey band that slowly runs down the white background), `--name` (name color), `--vig-undecided`, `--vig-up`, `--vig-down` (vignette colors), `--frame` (white frame), `--label-w` (width of the letter boxes), `--side-w` (side strip). The vignette strength is `--vig-blur` (.14) and `--vig-spread` (.1), both relative to the icon size.
 
-**Headlines** come from the lists on **/admin.html** (one list per mode: students, inventions, Corporations, mix). Each screen picks one at the start of every sequence; in the mix the three screens always show different ones. Optional: switch to another headline every N seconds. `{n}` becomes the live number of entries (underlined). Headlines saved on the admin page last until the next redeploy; to keep them for good, put them into `DEFAULT_HEADLINES` in `server.js` (or a `headlines.json` file next to it). The title block always has room for two lines, so a longer or shorter headline never changes the icon size.
+**Headlines** come from the lists on **/admin.html** (one list per mode: students, things, corporations, mix). Each screen picks one at the start of every sequence; in the mix the three screens always show different ones. Optional: switch to another headline every N seconds. `{n}` becomes the live number of entries (underlined). Headlines saved on the admin page last until the next redeploy; to keep them for good, put them into `DEFAULT_HEADLINES` in `server.js` (or a `headlines.json` file next to it). The title block always has room for two lines, so a longer or shorter headline never changes the icon size.
 
 **Sound effects** are made in the browser (no files): a rising blip when an entry starts hovering, ticks while it is undecided (higher for a higher place), a thud when it lands, two notes up or down when an entry moves, and a whoosh when the screens clear. Browsers only play sound after someone clicks or presses a key on the page once, so click each screen once after opening it (a small note reminds you). **M** mutes and unmutes. Settings: `SOUND_ON`, `VOLUME` in `ranking.html`.
 
@@ -162,7 +162,7 @@ The home page shows **"Snapshot #n"**: how many editions have been written since
 
 RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one per screen). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
-**Entries** look like a BuzzFeed shopping list: a yellow number, one line about the entry (`HOOKS` in `public/feed.html`, keyed by the displayed name: written for all 25 Corporations and the 50 Atlantic inventions; students get a plain line from `LINES`), the picture (big for the top 3, small for the rest) and, for every Corporation, a **"Critical review:"** with a real court case or scandal and its source (`EXPOSED`). Researched November 2026, so check the facts again before a later show.
+**Entries** look like a BuzzFeed shopping list: a yellow number, one line about the entry (`HOOKS` in `public/feed.html`, keyed by the displayed name: written for all 25 corporations and the things; new files without a line get a plain one until it is written; students get a plain line from `LINES`), the picture (big for the top 3, small for the rest) and, for every Corporation, a **"Critical review:"** with a real court case or scandal and its source (`EXPOSED`). Researched November 2026, so check the facts again before a later show.
 
 - The home page shows the three articles. Tapping one opens the full list, entries under each other with place, tier, picture, name and a short line.
 - Tapping an entry opens it large with a **Print** button. Printing is not connected yet: put the real code into `printEntry(entry, article)` in `feed.html`.
