@@ -152,6 +152,8 @@ Look settings at the top of the `<style>` part: `--shade` and `--render-time` (t
 
 **After the mix** the screens fade slowly to black while the mix stays as it is (`MIX_FADE_MS` = 3 s), clear in the dark, then sequence 1 fades in a bit faster. The intermission only runs on the way from sequence 1 to the mix; "Restart sequence 1" goes straight on, and "Skip the intermission" on /admin.html ends it at once. Titles are always set in two lines, broken where both lines are about equally long. The black title bar has the same size and font size in every mode on every screen, and category words in it (Students, Things, Brands, Everything …) are italic.
 
+**Music:** minimal, generated in the browser, played by the middle screen only (all screens share the speakers; `MUSIC_SCREEN`, `MUSIC_ON`, `MUSIC_VOLUME` in `ranking.html`). Sequence 1: a calm 60-bpm piece (low notes, slow pad, sparse melody); intermission: a slow pulse that rises with the loading bar over a low drone; mix: the same idea twice as fast and tenser. It follows the server's clock, so it changes exactly with the phases.
+
 **Band direction:** the hidden panel (press S) has a Direction button: the grey band runs top → bottom or bottom → top (saved in that browser).
 
 **Verdict flash:** when a RankFeed verdict reaches a screen, its whole background flashes green (good, fades in 0.9 s) or red (bad, fades in 2.5 s), like the brain screen (`BAND_FLASH` in `ranking.html`).
