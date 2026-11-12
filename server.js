@@ -138,8 +138,7 @@ const AUTO_MIX_AFTER_MS = null; // null = the mix starts only by hand on /admin.
 const RESCAN_MS = 15000; // how often the image folders are checked
 const HISTORY = 60; // how many past events a newly opened feed gets
 const PRINT_QUEUE_MAX = 100; // print jobs waiting for the print station (print-station.html)
-const PRINT_PER_LIST = 4; // when sequence 1 ends, the entries of every category that moved most stay standing and are printed …
-const PRINT_SHEET = 12; // … together one sheet of stickers (if a category has fewer, the others give more)
+const PRINT_SHEET = 12; // when sequence 1 ends, the 12 entries that moved most (of all categories) are printed: one sheet of stickers
 const PRINT_STAY_MS = 0; // (not used any more: nothing stays standing after sequence 1)
 const INTERMISSION_MS = 45000; // … then the 45-second intermission (terminal replay, progress bar over all screens, laughing face on the brain); then the mix
 const TRACK_MAX = 2000; // the most points kept per entry for the print (its path through the tiers this round)
@@ -164,6 +163,7 @@ const biasOf = (e) => (e && learned.get(e.image)?.bias) || 0;
 const archive = new Map(); // image → its track from the last round it was in, so it can still be printed (in memory)
 const printQueue = []; // print jobs: { id, at, data }  (data = the track when sequence 1 ended)
 let printId = 0;
+let printRound = 0; // every end of sequence 1 makes one sheet (a round)
 let blackSince = null; // the pause after sequence 1: from this time the screens are black, until the mix starts
 let phaseEndsAt = null;
 let phaseTimer = null;
@@ -600,29 +600,23 @@ function movementOf(list, id) {
   return sum;
 }
 
-// the end of sequence 1: the PRINT_PER_LIST entries of every category that moved most are kept and go to the
-// print queue (one sheet of PRINT_SHEET stickers, at least one of every category that has entries). → { category: [ids] }
+// the end of sequence 1: the PRINT_SHEET entries that moved most (of all categories together) go to the print
+// queue as one sheet, with at least the one that moved most of every category that has entries. → { category: [ids] }
 function pickPrints() {
   const cats = CATEGORIES.map((c) => lists[c.id]).filter((l) => l.active);
-  const most = (l) => shuffle(entriesOf(l)).map((e) => [movementOf(l, e.id), e]).sort((a, b) => b[0] - a[0]).map(([, e]) => e); // ties: random
-  const left = new Map(cats.map((l) => [l, most(l)]));
-  const picked = new Map(cats.map((l) => [l, left.get(l).splice(0, PRINT_PER_LIST)]));
-  let missing = PRINT_SHEET - [...picked.values()].reduce((n, p) => n + p.length, 0);
-  const rest = cats.flatMap((l) => left.get(l).map((e) => [l, e, movementOf(l, e.id)])).sort((a, b) => b[2] - a[2]);
-  for (const [l, e] of rest) {
-    if (missing-- <= 0) break;
-    picked.get(l).push(e);
-  }
+  const all = shuffle(cats.flatMap((l) => entriesOf(l).map((e) => [l, e, movementOf(l, e.id)]))).sort((a, b) => b[2] - a[2]); // ties: random
+  const picked = cats.map((l) => all.find(([x]) => x === l)).filter(Boolean); // the best of every category …
+  for (const p of all) if (picked.length < PRINT_SHEET && !picked.includes(p)) picked.push(p); // … then the rest by movement
+  picked.sort((a, b) => b[2] - a[2]);
+  const round = ++printRound;
   const keep = {};
-  for (const [l, entries] of picked) {
-    keep[l.id] = entries.map((e) => e.id);
-    for (const e of entries) {
-      const data = trackOf(l.id, e.image);
-      if (!data || printQueue.length >= PRINT_QUEUE_MAX) continue;
-      printQueue.push({ id: ++printId, at: Date.now(), data: { ...data, track: [...data.track] } }); // frozen at this moment
-    }
+  for (const [l, e] of picked) {
+    (keep[l.id] ||= []).push(e.id);
+    const data = trackOf(l.id, e.image);
+    if (!data || printQueue.length >= PRINT_QUEUE_MAX) continue;
+    printQueue.push({ id: ++printId, round, at: Date.now(), data: { ...data, track: [...data.track] } }); // frozen at this moment
   }
-  console.log(`Sequence 1 ended: ${Object.values(keep).flat().length} entries kept for the print (${printQueue.length} waiting)`);
+  console.log(`Sequence 1 ended: ${picked.length} entries for the print (${printQueue.length} waiting)`);
   return keep;
 }
 
@@ -890,7 +884,10 @@ const server = http.createServer((req, res) => {
       } catch {}
       if (msg.key !== ADMIN_KEY) return json(res, 403, { ok: false, error: "wrong password" });
       const count = Math.max(1, Math.min(24, Math.round(Number(msg.count) || 1)));
-      const jobs = printQueue.length >= count || msg.flush ? printQueue.splice(0, count) : [];
+      // one sheet per round: the stickers of the oldest round, even if it has fewer than a full sheet
+      const first = printQueue[0]?.round;
+      const n = printQueue.findIndex((j) => j.round !== first);
+      const jobs = printQueue.splice(0, Math.min(count, n < 0 ? printQueue.length : n));
       json(res, 200, { ok: true, jobs, job: jobs[0] || null, waiting: printQueue.length });
     });
     return;
