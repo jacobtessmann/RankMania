@@ -61,6 +61,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   font-family: var(--f-type); font-weight: 400; font-size: var(--title-fs); line-height: 1.02;
   letter-spacing: -.01em; padding: .3em .5em .35em; overflow: hidden;
   height: var(--title-h); /* always room for two lines, so the icon size never changes */
+  box-shadow: 0 var(--row-gap) 0 var(--paper); /* the white line under the title, always white (the band runs behind it) */
   display: flex; align-items: flex-start; /* one or two lines: they start at the top */
 }
 #title .t { display: block; }
@@ -175,7 +176,7 @@ body.mix-bottom #tierlist, body.mix-bottom #pool-row, body.mix-bottom #cards, bo
             container-type: size; --u: min(100cqw, 54cqh); }
 body.mix-top #pod-area { background: var(--pod-top-bg); }
 body.mix-bottom #pod-area { background: var(--pod-bottom-bg); }
-#pod-flash { position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; }
+#pod-flash { position: absolute; inset: 0; z-index: 2; opacity: 0; pointer-events: none; } /* over the pictures, so it shows on green and red too */
 #pod-items { position: absolute; inset: 0; z-index: 1; }
 .pod { position: absolute; width: calc(var(--w) * var(--u)); aspect-ratio: 1;
        animation: pod-shake var(--d, 3s) ease-in-out var(--delay, 0s) infinite alternate; }
