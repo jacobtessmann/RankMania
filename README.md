@@ -166,7 +166,7 @@ Settings near the top of the script: `TILE_SIZE` (fixed size in px for all scree
 
 ## 7. The phone feed (feed.html)
 
-RankFeed is set entirely in **CMU Typewriter Text Light** (Donald Knuth's Computer Modern typewriter, `public/fonts/cmunbtl.woff`), no bold; the hierarchy is size alone. The intro, middle and end paragraphs are BuzzFeed babble picked at random (`INTROS_1`, `INTROS_2`, `MIDDLES`, `END`). Each article has a plain headline that says what is ranked (`head` in `TEASERS`) and the clickbait as subheadline (`titles`, `subs`). The vote at the end is a full-width green/red block ("Help us train the machine.").
+RankFeed is set entirely in **CMU Typewriter Text Light** (Donald Knuth's Computer Modern typewriter, `public/fonts/cmunbtl.woff`), no bold; the hierarchy is size alone. Each article has a plain headline that says what is ranked (`head` in `TEASERS`) and the clickbait as subheadline (`titles`, `subs`). The vote at the end is a full-width green/red block ("Help us train the machine.").
 
 The sticky top bar shows "RANKINGS FROM 13:39" (when this edition was written) and three red buttons C, P, T that jump to capital, people and things (in the mix, all three open the one "Everything" article). The thumbnails are one red word in a red frame: CAPITAL, PEOPLE, THINGS, EVERYTHING.
 
@@ -174,7 +174,7 @@ Article headlines are the headlines the tierlist screens show right now (in the 
 
 RankFeed is a **personal snapshot**. The moment someone opens it, it loads the ranking once and writes three articles for that visitor only, one per category (during the mix: one "Everything" article). It never changes while you read it; a manual refresh writes a new edition from the ranking at that moment.
 
-**Entries** are grouped by tier, each group under a big colored "A-TIER" block, with no numbers: the name, the picture, one line about the entry (`HOOKS` in `public/feed.html`, keyed by the displayed name: written for all 25 corporations and the things; new files without a line get a plain one until it is written; students get a plain line from `LINES`), the picture (big for the top 3, small for the rest) and, for every Corporation, a **"Critical review:"** with a real court case or scandal and its source (`EXPOSED`). Researched November 2026, so check the facts again before a later show.
+**Entries** are grouped by tier, each group under a big colored "A-TIER" block, with no numbers: the picture, the name, and one line of drama about its placement (`DRAMA` in `public/feed.html`, many lines per tier, none repeated in one article). Every corporation also gets **"The receipts:"**, a short structural critique resting on a documented case, with its source (`EXPOSED`). All texts stay in character (a BuzzFeed writer taking the ranking very seriously): intro (`INTRO`), red subheadline (`TEASERS`), one line after the first tier (`MIDDLES`). Researched November 2026.
 
 - The home page shows the three articles. Tapping one opens the full list, entries under each other with place, tier, picture, name and a short line.
 - Tapping an entry opens it large with a **Print** button. Printing is not connected yet: put the real code into `printEntry(entry, article)` in `feed.html`.
