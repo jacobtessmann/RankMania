@@ -639,7 +639,8 @@ function flashBand(vote) {
   const f = BAND_FLASH[vote];
   if (!f) return;
   // the whole background (on the inverted middle screen the opposite color, so it shows green / red)
-  const onPodium = !$("pod-area").hidden, el = onPodium ? $("pod-flash") : $("flash");
+  if (!$("pod-area").hidden) return; // in the mix only the middle screen flashes, not the top 3 / bottom 3 screens
+  const el = $("flash");
   const inverted = document.body.classList.contains("mix-full");
   el.style.background = inverted ? (vote === "good" ? "#ff00ff" : "#00ffff") : f.color;
   el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: f.fadeMs, easing: "ease-out" });
