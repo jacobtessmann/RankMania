@@ -150,7 +150,7 @@ Look settings at the top of the `<style>` part: `--shade` and `--render-time` (t
 
 **One design system on every screen and in every mode:** white frame (`--frame`), black title bar of the same size (`--title-h`), black letter column with white lines between the tiers (or the same white line under the title), white side strip with the source and the verdict dots. The mix's top 3 / bottom 3 sit inside that same frame instead of the tiers; the intermission keeps the frame and the line under its title. Verdict flashes only colour the main area, never the title, the letter column, the white lines or the side strip.
 
-**After the mix** the screens fade slowly to black (`MIX_FADE_MS` = 3 s), then sequence 1 fades in a bit faster. The black title bar has the same size and font size in every mode on every screen, and category words in it (Students, Things, Brands, Everything …) are italic.
+**After the mix** the screens fade slowly to black while the mix stays as it is (`MIX_FADE_MS` = 3 s), clear in the dark, then sequence 1 fades in a bit faster. The intermission only runs on the way from sequence 1 to the mix; "Restart sequence 1" goes straight on, and "Skip the intermission" on /admin.html ends it at once. Titles are always set in two lines, broken where both lines are about equally long. The black title bar has the same size and font size in every mode on every screen, and category words in it (Students, Things, Brands, Everything …) are italic.
 
 **Band direction:** the hidden panel (press S) has a Direction button: the grey band runs top → bottom or bottom → top (saved in that browser).
 

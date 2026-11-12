@@ -165,6 +165,7 @@ const printQueue = []; // print jobs: { id, at, data }  (data = the track when s
 let printId = 0;
 let printRound = 0; // every end of sequence 1 makes one sheet (a round)
 let blackSince = null; // the pause after sequence 1: from this time the screens are black, until the mix starts
+let pendingSwitch = null, pendingTimer = null; // what happens when the clearing / intermission is over
 let phaseEndsAt = null;
 let phaseTimer = null;
 let seq = 0;
@@ -645,7 +646,8 @@ function switchTo(next) {
   // then the intermission runs on all screens
   // (the entries that moved most are still picked and printed, but nothing stays standing on the screens:
   //  everything falls and the intermission starts right away)
-  const printed = phase === "separate" ? pickPrints() : null;
+  // (only on the way from sequence 1 to the mix; restarting sequence 1 by hand goes straight on)
+  const printed = phase === "separate" && next === "mix" ? pickPrints() : null;
   const keep = null, stay = 0;
   const black = printed ? CLEAR_MS : null; // when everything has fallen
   blackSince = printed ? Date.now() + black : null;
@@ -654,7 +656,9 @@ function switchTo(next) {
   record({ type: "phase", phase: "clearing", next, sample: pickTwo(tops), keep, stay, black, intermission: printed ? INTERMISSION_MS : null });
   console.log(`Clearing → ${next}`);
 
-  setTimeout(() => {
+  pendingSwitch = () => {
+    pendingSwitch = null;
+    clearTimeout(pendingTimer);
     phase = next;
     blackSince = null;
     phaseStartedAt = Date.now();
@@ -677,7 +681,14 @@ function switchTo(next) {
       sample = pickTwo(CATEGORIES.flatMap((c) => [...lists[c.id].items.values()].map(brief)));
     }
     record({ type: "phase", phase: next, sample });
-  }, printed ? black + INTERMISSION_MS : next === "separate" ? MIX_FADE_MS : CLEAR_MS);
+  };
+  pendingTimer = setTimeout(pendingSwitch, printed ? black + INTERMISSION_MS : next === "separate" ? MIX_FADE_MS : CLEAR_MS);
+  return true;
+}
+// /admin.html "Skip": end the intermission (or any clearing) right now
+function skipClearing() {
+  if (phase !== "clearing" || !pendingSwitch) return false;
+  pendingSwitch();
   return true;
 }
 
@@ -937,6 +948,10 @@ const server = http.createServer((req, res) => {
         if (!(v >= 0.1 && v <= 5)) return json(res, 400, { ok: false, error: "speed must be between 0.1 and 5" });
         speed = v;
         console.log(`Speed → ${speed}×`);
+        return json(res, 200, { ok: true, ...status() });
+      }
+      if (msg.action === "skip") {
+        if (!skipClearing()) return json(res, 409, { ok: false, error: "nothing to skip right now" });
         return json(res, 200, { ok: true, ...status() });
       }
       if (!["mix", "separate"].includes(msg.action)) return json(res, 400, { ok: false, error: "unknown action" });
