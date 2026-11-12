@@ -148,6 +148,8 @@ Look settings at the top of the `<style>` part: `--shade` and `--render-time` (t
 
 **Brain view** (/brain.html) prints only a little so people can read along: 3 variables per evaluation, one result line, about a third of the small moves, 2 "LEARNED" lines per verdict. Tune at the top of `brain.html` (`VARS_SHOWN`, `DRIFT_SHOWN`, `REEVAL_CHANCE`, `LESSONS_SHOWN`).
 
+**One design system on every screen and in every mode:** white frame (`--frame`), black title bar of the same size (`--title-h`), black letter column with white lines between the tiers (or the same white line under the title), white side strip with the source and the verdict dots. The mix's top 3 / bottom 3 sit inside that same frame instead of the tiers; the intermission keeps the frame and the line under its title. Verdict flashes only colour the main area, never the title, the letter column, the white lines or the side strip.
+
 **After the mix** the screens fade slowly to black (`MIX_FADE_MS` = 3 s), then sequence 1 fades in a bit faster. The black title bar has the same size and font size in every mode on every screen, and category words in it (Students, Things, Brands, Everything …) are italic.
 
 **Band direction:** the hidden panel (press S) has a Direction button: the grey band runs top → bottom or bottom → top (saved in that browser).
