@@ -18,7 +18,7 @@
   --band: 18%;                                     /* half the height of the grey band (share of the screen) */
   --vig-blur: .14;                                 /* vignette blur, as a share of the icon size */
   --vig-spread: .1;                                /* vignette spread, as a share of the icon size */
-  --name: #ffff00;                                 /* color of the names on the pictures */
+  --name: #D7FF37;                                 /* color of the names on the pictures */
   --vig-undecided: transparent;                    /* vignette while an entry is still hovering (transparent = none) */
   --vig-up: #00ff00;                               /* vignette after moving up */
   --vig-down: #ff0000;                             /* vignette after moving down */
@@ -114,7 +114,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: var(--f-name); color: #777; font-size: 40%;
 }
-/* the name on the picture: yellow Helvetica Regular with a thin black outline */
+/* the name on the picture: lime (--name) Helvetica Regular with a thin black outline */
 .name {
   position: absolute; left: 2%; right: 2%; top: 4%; z-index: 2; text-align: center;
   font-family: var(--f-name); font-weight: 400; color: var(--name); line-height: 1.12; letter-spacing: -.01em;
@@ -229,7 +229,10 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
              white-space: pre; padding: .6em .4em 0; }
 #inter-log .dim { opacity: .55; }
 #inter-bar { position: absolute; left: var(--frame); right: var(--frame); top: var(--inter-top, 15vh); bottom: var(--frame); z-index: 1; pointer-events: none; }
-#inter-fill { height: 100%; width: 0; background: linear-gradient(90deg, #1f45ff, #4fb2ff 50%, #d2e4ff) 0 0 / 300% 100%; }
+/* the loading bar: blue pillars that appear one by one, like an old loading screen, across all three screens */
+#inter-bar { display: flex; gap: var(--pillar-gap, 8px); }
+#inter-bar .pillar { flex: 1 1 0; background: #2357ff; visibility: hidden; }
+#inter-bar .pillar.on { visibility: visible; box-shadow: 4px 0 0 #fff, -4px 0 0 #fff, 0 -4px 0 #fff; } /* white gaps between the lit pillars, like the sketch */
 
 #soundhint {
   position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 25;
@@ -265,7 +268,7 @@ body.mix-bottom #podium { background: var(--pod-bottom-bg); }
   <div id="live">verbinde…</div>
   <div id="empty" hidden></div>
   <div id="black" hidden><div id="inter-head"><i>intermission</i><span id="inter-text"></span></div>
-    <div id="inter-log"></div><div id="inter-bar"><div id="inter-fill"></div></div></div>
+    <div id="inter-log"></div><div id="inter-bar"></div></div>
   <div id="soundhint" hidden>Click anywhere to turn on sound · M = mute</div>
   <div id="sizer" hidden>
     <div>Icon size <input id="size" type="range" min="0" max="400" step="2"> <span id="sizeval"></span>
@@ -308,6 +311,7 @@ const INTER_VARS = {
 };
 const INTER_TAG = { corporations: "COR", students: "STU", things: "THG" };
 let inter = null; // { start, end, lines, shown, raf }
+const PILLARS_PER_SCREEN = 6; // the loading bar: this many pillars per screen (18 over all three)
 function h01(str) {
   let x = 2166136261;
   for (let i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619); }
@@ -336,7 +340,8 @@ function startIntermission(start, end) {
   $("inter-text").textContent = "";
   $("inter-log").textContent = "";
   const idx = Math.max(0, screens.indexOf(screen)), n = Math.max(1, screens.length);
-  $("inter-fill").style.backgroundPosition = `${(idx / Math.max(1, n - 1)) * 100}% 0`; // one gradient across all screens
+  $("inter-bar").innerHTML = '<div class="pillar"></div>'.repeat(PILLARS_PER_SCREEN);
+  const pillars = [...$("inter-bar").children];
   const step = () => {
     if (!inter) return;
     const now = Date.now();
@@ -349,7 +354,9 @@ function startIntermission(start, end) {
     const typed = cyc > 4800 ? "" : inter.text.slice(0, chars);
     if ($("inter-text").textContent !== typed) $("inter-text").textContent = typed;
     const p = Math.max(0, Math.min(1, (now - inter.start) / (inter.end - inter.start)));
-    $("inter-fill").style.width = Math.max(0, Math.min(1, p * n - idx)) * 100 + "%"; // this screen's third of the bar
+    // the pillars of all screens are counted left → right; this screen lights its own share
+    const lit = Math.floor(p * n * PILLARS_PER_SCREEN) - idx * PILLARS_PER_SCREEN;
+    pillars.forEach((el, j) => el.classList.toggle("on", j < lit));
     const want = Math.floor(p * inter.lines.length * 1.05);
     const log = $("inter-log");
     while (inter.shown < Math.min(want, inter.lines.length)) {
