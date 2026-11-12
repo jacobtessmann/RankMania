@@ -10,7 +10,7 @@
 //  on the way. How far out is the data; the turns, the wobble and the curls (more where it stayed
 //  longer) are noise. One color: the tier the entry is in right now.
 //  In the middle: the letter of the tier right now. Around the edge, upright towards the middle: the name at the
-//  top and the bottom, the place left and right. The black circle is the edge of the sticker (60 mm), in the middle
+//  top and the bottom, the tier ("S-TIER") left and right. The black circle is the edge of the sticker (60 mm), in the middle
 //  of a color band that runs as far over the edge as inside it, so a sticker cut off-centre still has color to the edge.
 // ════════════════════════════════════════════════════════════════
 (function () {
@@ -32,7 +32,7 @@
   const COLORS = { S: "#ff7f7f", A: "#ffff7f", B: "#7fff7f", C: "#7fffff", D: "#ff7fff", F: "#9b30ff" };
   const INK = "#000";
   const FONT = 'Helvetica, "Helvetica Neue", Arial, sans-serif';
-  const TRACKING = -0.02; // letter spacing relative to the font size (a bit tighter)
+  const TRACKING = 0.01; // letter spacing relative to the font size (a bit wider)
   // the tier letter in the middle is in Porky's (fonts/porkys.ttf, next to this script)
   const LETTER_FONT = '"Rank Letter", Helvetica, Arial, sans-serif';
   const MIDDLE_SIZE = 440; // the tier letter in the middle (about half the sticker)
@@ -41,7 +41,7 @@
   const SHADOW = [9, 7], SHADOW_LINE = 7; // a line in the tier color, shifted right and down, behind the letter
   const RING_SIZE = 64; // the text around the edge, always this size
   const TEXT_INSET = BLEED + 18; // its baseline is this far inside the edge, clear of the color band (the letters stand towards the middle)
-  const RING_GAP = 14; // at least this much room between name and place, in degrees
+  const RING_GAP = 14; // at least this much room between name and tier, in degrees
   const LINE_GAP = 16; // room between the line and the text
   const STOP_JUMP = 5; // a jump of this many score points inside one tier is a stop of its own (one tier = 20)
   const MAX_STOPS = 18; // at most this many places from the history (more would be one blob)
@@ -175,25 +175,25 @@
     const tierNow = (data.current && data.current.tier) || pts[pts.length - 1].tier || "F";
     const path = `<polyline points="${line.map((p) => f(p[0]) + "," + f(p[1])).join(" ")}"/>`;
 
-    // the text around the edge, always the same size: the name at the top and the bottom, the place left and right.
+    // the text around the edge, always the same size: the name at the top and the bottom, the tier left and right.
     // The path runs counterclockwise, so the letters stand towards the middle (the name at the top is upside down).
     // A name too long for its half is cut short with "…".
     const cur = data.current;
     const textR = C - TEXT_INSET; // baseline
     const deg = (t) => (360 * (measure(t, RING_SIZE, FONT).width + TRACKING * RING_SIZE * t.length)) / (2 * Math.PI * textR);
-    const rank = cur ? `#${cur.rank}` : "#–";
-    const room = 180 - deg(rank) - 2 * RING_GAP;
+    const tier = cur ? `${cur.tier}-TIER` : "UNRANKED";
+    const room = 180 - deg(tier) - 2 * RING_GAP;
     let name = String((data.entry && data.entry.title) || "").toUpperCase().trim();
     if (deg(name) > room) {
       while (name && deg(name + "…") > room) name = name.slice(0, -1);
       name = name.trimEnd() + "…";
     }
-    // angles clockwise from the top; the path starts in the gap between the name at the top and the place on the right
-    const START = (deg(name) / 2 + 90 - deg(rank) / 2) / 2;
+    // angles clockwise from the top; the path starts in the gap between the name at the top and the tier on the right
+    const START = (deg(name) / 2 + 90 - deg(tier) / 2) / 2;
     const pt = (d) => [C + textR * Math.sin((d * Math.PI) / 180), C - textR * Math.cos((d * Math.PI) / 180)];
     const [sx, sy] = pt(START), [ox, oy] = pt(START + 180);
     const circle = `M ${f(sx)},${f(sy)} A ${f(textR)},${f(textR)} 0 1,0 ${f(ox)},${f(oy)} A ${f(textR)},${f(textR)} 0 1,0 ${f(sx)},${f(sy)}`;
-    const ringText = [[0, name], [90, rank], [180, name], [270, rank]]
+    const ringText = [[0, name], [90, tier], [180, name], [270, tier]]
       .map(([d, t]) => `<textPath href="#ring${uid}" startOffset="${f(((((START - d) % 360) + 360) % 360) / 3.6)}%">${esc(t)}</textPath>`).join("");
 
     // the letter in the middle, centred on its own shape
