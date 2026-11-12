@@ -945,7 +945,7 @@ function fallOff(keep = [], stay = 0) {
 // Browsers only allow sound after someone clicks or presses a key once on the page.
 // M = mute / unmute (remembered in this browser).
 const SOUND_ON = true;  // false = no sound at all
-const MUSIC_VOLUME = 3.6; // the music, relative to the sound effects (doubled when the effects were halved, so the music stays as loud) (1 = as loud as they are written; higher is louder); MUSIC_ON below switches it off
+const MUSIC_VOLUME = 4.5; // the music, relative to the sound effects (higher = louder); MUSIC_ON below switches it off
 const VOLUME = 0.25;    // 0 … 1 (the sound effects; halved)
 const Sound = (() => {
   let ctx = null, master = null, verb = null, musicBus = null;
