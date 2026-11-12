@@ -230,10 +230,8 @@ body.mix-bottom #pod-area { background: var(--pod-bottom-bg); }
              white-space: pre; padding: .6em .4em 0; }
 #inter-log .dim { opacity: .55; }
 #inter-bar { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-/* the loading bar: blue pillars that appear one by one, like an old loading screen, across all three screens */
-#inter-bar { display: flex; gap: var(--pillar-gap, 8px); }
-#inter-bar .pillar { flex: 1 1 0; background: #2357ff; visibility: hidden; }
-#inter-bar .pillar.on { visibility: visible; box-shadow: 4px 0 0 #fff, -4px 0 0 #fff, 0 -4px 0 #fff; } /* white gaps between the lit pillars, like the sketch */
+/* the loading bar: one blue gradient that fills smoothly across all three screens (left → middle → right) */
+#inter-fill { height: 100%; width: 0; background: linear-gradient(90deg, #1f45ff, #4fb2ff 50%, #d2e4ff) 0 0 / 300% 100%; }
 
 #soundhint {
   position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 25;
@@ -270,7 +268,7 @@ body.mix-bottom #pod-area { background: var(--pod-bottom-bg); }
   <div id="live">verbinde…</div>
   <div id="empty" hidden></div>
   <div id="black" hidden><div id="inter-head"><i>intermission</i><span id="inter-text"></span></div>
-    <div id="inter-main"><div id="inter-log"></div><div id="inter-bar"></div></div></div>
+    <div id="inter-main"><div id="inter-log"></div><div id="inter-bar"><div id="inter-fill"></div></div></div></div>
   <div id="soundhint" hidden>Click anywhere to turn on sound · M = mute</div>
   <div id="sizer" hidden>
     <div>Icon size <input id="size" type="range" min="0" max="400" step="2"> <span id="sizeval"></span>
@@ -313,7 +311,6 @@ const INTER_VARS = {
 };
 const INTER_TAG = { corporations: "COR", students: "STU", things: "THG" };
 let inter = null; // { start, end, lines, shown, raf }
-const PILLARS_PER_SCREEN = 6; // the loading bar: this many pillars per screen (18 over all three)
 function h01(str) {
   let x = 2166136261;
   for (let i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619); }
@@ -342,8 +339,7 @@ function startIntermission(start, end) {
   $("inter-text").textContent = "";
   $("inter-log").textContent = "";
   const idx = Math.max(0, screens.indexOf(screen)), n = Math.max(1, screens.length);
-  $("inter-bar").innerHTML = '<div class="pillar"></div>'.repeat(PILLARS_PER_SCREEN);
-  const pillars = [...$("inter-bar").children];
+  $("inter-fill").style.backgroundPosition = `${(idx / Math.max(1, n - 1)) * 100}% 0`; // one gradient across all screens
   const step = () => {
     if (!inter) return;
     const now = Date.now();
@@ -353,9 +349,7 @@ function startIntermission(start, end) {
     const typed = cyc > 4800 ? "" : inter.text.slice(0, chars);
     if ($("inter-text").textContent !== typed) $("inter-text").textContent = typed;
     const p = Math.max(0, Math.min(1, (now - inter.start) / (inter.end - inter.start)));
-    // the pillars of all screens are counted left → right; this screen lights its own share
-    const lit = Math.floor(p * n * PILLARS_PER_SCREEN) - idx * PILLARS_PER_SCREEN;
-    pillars.forEach((el, j) => el.classList.toggle("on", j < lit));
+    $("inter-fill").style.width = Math.max(0, Math.min(1, p * n - idx)) * 100 + "%"; // this screen's third of the bar
     const want = Math.floor(p * inter.lines.length * 1.05);
     const log = $("inter-log");
     while (inter.shown < Math.min(want, inter.lines.length)) {
