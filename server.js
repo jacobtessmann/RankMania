@@ -42,7 +42,7 @@ const CATEGORIES = [
     label: "Students",
     names: true,
     title: "Ranking {n} Students of VisCom",
-    source: "List sourced from visualcommunication.zhdk.ch/personen/bachelor · faces from thispersondoesnotexist.com",
+    source: "List sourced from visualcommunication.zhdk.ch/personen/bachelor",
     headline: "{W} Is Now Ahead of {L} and the Whole Class Knows It",
   },
   {

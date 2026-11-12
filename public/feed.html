@@ -23,8 +23,9 @@
   /* C, P, T: jump to capital, people, things (in the mix, each opens one part of "everything") */
   .badges { display: flex; gap: 6px; }
   .bdg { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; text-decoration: none;
-         font-size: 15px; font-weight: normal; color: #fff; background: var(--red); }
-  main { max-width: 680px; margin: 0 auto; padding: 0 18px 40px; }
+         font-size: 15px; font-weight: normal; color: var(--red); background: #fff; border: 1.5px solid var(--red); }
+  .bdg.on { color: #fff; background: var(--red); } /* the article that is open right now */
+  main { max-width: 680px; margin: 0 auto; padding: 0 32px 40px; } /* some air left and right: pictures and text a bit smaller */
   .edition { font-size: 12px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px; padding: 18px 0 6px; margin: 0; }
   .note { font-size: 15px; line-height: 1.45; margin: 0 0 8px; }
 
@@ -530,6 +531,7 @@ function hideVote() {
 function route() {
   if (!edition) return;
   const [, slug, id] = location.hash.split("/");
+  document.querySelectorAll(".badges .bdg").forEach((b) => b.classList.toggle("on", !!slug && b.getAttribute("href") === `#/${slug}`));
   if (!slug) { $("sheet").hidden = true; return home(); }
   if ($("view").dataset.slug !== slug) article(slug);
   if (id) sheet(slug, decodeURIComponent(id));
