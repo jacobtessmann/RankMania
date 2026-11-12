@@ -62,7 +62,7 @@
   .entries { list-style: none; margin: 0; padding: 0; }
   .entry { padding: 18px 0 22px; }
   .entry + .entry { border-top: 1px solid var(--ink); }
-  .entry .pic { position: relative; border: 3px solid var(--red); margin-bottom: 12px; container-type: inline-size; }
+  .entry .pic { position: relative; border: 3px solid var(--tc, var(--red)); /* the tier's color */ margin-bottom: 12px; container-type: inline-size; }
   .entry .pic img, .entry .pic .ph { background: #fff; display: block; object-fit: contain; width: 100%; aspect-ratio: 1; border: 0; }
   /* static white vignette, scaled like on the screens (blur .14, spread .1 of the picture size) */
   .entry .pic.vig::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 14cqw 10cqw #fff; }
@@ -429,7 +429,7 @@ const lineOf = (e) => e.fact
 // VIGNETTE: the same soft white inner edge as on the tierlist screens (false = plain pictures)
 const VIGNETTE = true;
 const entry = (e) => `
-  <li class="entry" data-id="${esc(e.id)}">
+  <li class="entry" data-id="${esc(e.id)}" style="--tc:var(--tier-${e.tier})">
     <div class="pic${VIGNETTE ? " vig" : ""}">${img(e)}</div>
     <h3>${esc(e.title)}</h3>
     <p class="hook">${lineOf(e)}</p>
