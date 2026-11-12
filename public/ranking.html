@@ -64,7 +64,7 @@ html, body { height: 100%; overflow: hidden; background: var(--paper); color: va
   box-shadow: 0 var(--row-gap) 0 var(--paper); /* the white line under the title, always white (the band runs behind it) */
   display: flex; align-items: flex-start; /* one or two lines: they start at the top */
 }
-#title .t { display: block; }
+#title .t { display: block; text-wrap: balance; } /* two lines of about the same length instead of one lonely word */
 #title .n { text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .12em; }
 
 /* ═══ Tier rows ═══ */
@@ -932,7 +932,7 @@ function fallOff(keep = [], stay = 0) {
 const SOUND_ON = true;  // false = no sound at all
 const VOLUME = 0.5;     // 0 … 1
 const Sound = (() => {
-  let ctx = null, master = null;
+  let ctx = null, master = null, verb = null;
   let muted = false;
   try { muted = localStorage.getItem("rankmania-muted") === "1"; } catch {}
   const hint = () => ($("soundhint").hidden = !SOUND_ON || !!ctx || muted);
@@ -943,6 +943,16 @@ const Sound = (() => {
       master = ctx.createGain();
       master.gain.value = muted ? 0 : VOLUME;
       master.connect(ctx.destination);
+      // air: a soft generated reverb that every sound is sent into
+      verb = ctx.createConvolver();
+      const len = Math.floor(ctx.sampleRate * 2.8), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+      }
+      verb.buffer = ir;
+      const wet = ctx.createGain(); wet.gain.value = 0.55;
+      verb.connect(wet).connect(master);
     } catch { ctx = null; }
     hint();
   }
@@ -957,7 +967,8 @@ const Sound = (() => {
   setTimeout(hint, 1500);
 
   // one tone: frequency (or a slide from f0 to f1), length, loudness, wave shape
-  function tone(f0, f1, dur, vol = 0.3, type = "sine", delay = 0) {
+  // soft attack, long release, a little into the reverb: airy instead of beepy
+  function tone(f0, f1, dur, vol = 0.05, type = "sine", delay = 0, attack = 0.04) {
     if (!ctx || muted) return;
     const t = ctx.currentTime + delay;
     const o = ctx.createOscillator(), g = ctx.createGain();
@@ -965,9 +976,11 @@ const Sound = (() => {
     o.frequency.setValueAtTime(f0, t);
     if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(master);
+    o.connect(g);
+    g.connect(master);
+    if (verb) g.connect(verb);
     o.start(t);
     o.stop(t + dur + 0.05);
   }
@@ -980,22 +993,26 @@ const Sound = (() => {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
     src.buffer = buf;
-    f.type = "bandpass";
+    f.type = "lowpass";
     f.frequency.setValueAtTime(from, t);
     f.frequency.exponentialRampToValueAtTime(to, t + dur);
-    g.gain.setValueAtTime(vol, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + dur * 0.3);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(g).connect(master);
+    src.connect(f).connect(g);
+    g.connect(master);
+    if (verb) g.connect(verb);
     src.start(t);
   }
   return {
-    hoverStart: () => tone(330, 660, 0.18, 0.18, "triangle"),
-    // while undecided: a short tick, higher for a higher place
-    tick: (score) => tone(220 + score * 6, 220 + score * 6, 0.05, 0.08, "square"),
-    land: () => { tone(160, 70, 0.25, 0.45, "sine"); tone(1200, 1200, 0.03, 0.12, "square"); },
-    up: () => { tone(523, 523, 0.09, 0.22, "triangle"); tone(784, 784, 0.14, 0.22, "triangle", 0.09); },
-    down: () => { tone(392, 392, 0.09, 0.22, "triangle"); tone(262, 262, 0.16, 0.22, "triangle", 0.09); },
-    clear: () => { noise(1.4, 0.35); tone(400, 60, 1.2, 0.2, "sawtooth"); },
+    // all sine, quiet, soft and with reverb
+    hoverStart: () => tone(520, 780, 0.7, 0.04, "sine", 0, 0.12),
+    // while undecided: a faint glassy blip, higher for a higher place
+    tick: (score) => tone(900 + score * 5, 900 + score * 5, 0.25, 0.012, "sine", 0, 0.02),
+    land: () => { tone(330, 294, 0.9, 0.05, "sine", 0, 0.03); tone(1320, 1320, 1.2, 0.018, "sine", 0.02, 0.01); },
+    up: () => { tone(660, 660, 0.8, 0.035, "sine"); tone(990, 990, 1.0, 0.03, "sine", 0.12); },
+    down: () => { tone(660, 660, 0.8, 0.035, "sine"); tone(440, 440, 1.0, 0.03, "sine", 0.12); },
+    clear: () => { noise(2.2, 0.06, 1400, 250); tone(330, 165, 2.0, 0.03, "sine", 0, 0.3); },
   };
 })();
 
